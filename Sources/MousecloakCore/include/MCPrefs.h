@@ -9,6 +9,8 @@
 #ifndef Mousecape_MCPreferences_h
 #define Mousecape_MCPreferences_h
 
+#import <Foundation/Foundation.h>
+
 #define kMCDomain @"com.alexzielenski.Mousecape"
 
 extern NSString *MCPreferencesAppliedCursorKey;

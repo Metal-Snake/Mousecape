@@ -12,8 +12,9 @@
 #define MMOut(format, ...) fprintf(stdout, format, ## __VA_ARGS__)
 #define MMLog(format, ...) MMOut(format "\n", ## __VA_ARGS__)
 
-#import "CGSCursor.h"
-#import "CGSAccessibility.h"
+#import <Cocoa/Cocoa.h>
+#import "CGSInternal/CGSCursor.h"
+#import "CGSInternal/CGSAccessibility.h"
 
 #define RESET   "\033[0m"
 #define BLACK   "\033[30m"      /* Black */

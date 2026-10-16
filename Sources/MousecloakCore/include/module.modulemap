@@ -1,0 +1,4 @@
+module MousecloakCore {
+    umbrella header "MousecloakCore.h"
+    export *
+}

@@ -9,6 +9,8 @@
 #ifndef Mousecape_backup_h
 #define Mousecape_backup_h
 
+#import "MCDefs.h"
+
 extern NSString *backupStringForIdentifier(NSString *identifier);
 extern void backupCursorForIdentifier(NSString *ident);
 extern void backupAllCursors(void);

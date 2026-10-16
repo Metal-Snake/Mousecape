@@ -8,6 +8,8 @@
 
 #ifndef Mousecape_create_h
 #define Mousecape_create_h
+
+#import "MCDefs.h"
 extern NSError *createCape(NSString *input, NSString *output, BOOL convert);
 
 extern NSDictionary *processedCapeWithIdentifier(NSString *identifier);

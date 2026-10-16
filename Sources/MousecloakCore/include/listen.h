@@ -9,6 +9,8 @@
 #ifndef Mousecape_listen_h
 #define Mousecape_listen_h
 
+#import "MCDefs.h"
+
 extern NSString *appliedCapePathForUser(NSString *user);
 extern void listener(void);
 

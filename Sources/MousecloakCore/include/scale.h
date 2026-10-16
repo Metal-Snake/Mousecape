@@ -9,6 +9,8 @@
 #ifndef Mousecape_scale_h
 #define Mousecape_scale_h
 
+#import "MCDefs.h"
+
 extern float cursorScale(void);
 extern float defaultCursorScale(void);
 extern BOOL setCursorScale(float scale);

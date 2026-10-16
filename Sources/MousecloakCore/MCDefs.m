@@ -7,7 +7,7 @@
 //
 
 #include "MCDefs.h"
-#import "CGSCursor.h"
+#import "CGSInternal/CGSCursor.h"
 //NSArray *defaultCursors = nil;
 
 NSString *defaultCursors[] = {

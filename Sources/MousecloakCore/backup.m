@@ -6,6 +6,7 @@
 //  Copyright (c) 2014 Alex Zielenski. All rights reserved.
 //
 
+#import "MCDefs.h"
 #import "backup.h"
 #import "apply.h"
 

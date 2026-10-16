@@ -6,11 +6,12 @@
 //  Copyright (c) 2014 Alex Zielenski. All rights reserved.
 //
 
+#import "MCDefs.h"
 #import "listen.h"
 #import "apply.h"
 #import <SystemConfiguration/SystemConfiguration.h>
 #import "MCPrefs.h"
-#import "CGSCursor.h"
+#import "CGSInternal/CGSCursor.h"
 #import <Cocoa/Cocoa.h>
 #import "scale.h"
 

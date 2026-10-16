@@ -9,6 +9,8 @@
 #ifndef Mousecape_restore_h
 #define Mousecape_restore_h
 
+#import "MCDefs.h"
+
 extern NSString *restoreStringForIdentifier(NSString *identifier);
 extern void restoreCursorForIdentifier(NSString *ident);
 extern void resetAllCursors(void);
