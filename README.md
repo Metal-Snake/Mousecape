@@ -1,45 +1,83 @@
 Mousecape
 ===
 
-A free cursor manager for Mac OS 10.8+ built using private, nonintrusive CoreGraphics APIs.
+A free cursor manager for macOS, built on the private, nonintrusive CoreGraphics APIs
+that macOS itself uses to register the system cursors.
 
-![](https://github.com/alexzielenski/Mousecape/raw/master/screenshot.png)
+This is a modernized fork of [Alex Zielenski's Mousecape](https://github.com/alexzielenski/Mousecape):
+the original cursor engine is kept as it is, the app around it is rewritten in SwiftUI.
+
+- macOS 14 Sonoma or later
+- Builds with the Xcode Command Line Tools alone (no Xcode project)
+- No third-party dependencies, no network access
+
+> **Work in progress.** The library, previews, applying, importing and the login agent
+> work. The cape editor of the original app is not ported yet. Use `mousecloak --create`
+> to build capes from a folder of images in the meantime.
 
 ## How it works
 
-Mousecape works by calling the API calls that Apple uses to initialize the system cursors in the system and it registers a daemon that will automatically apply the cursor on login and when cursors get unregistered.
+Mousecape registers your cursors with the window server, the same way macOS registers its
+own. macOS forgets them when you log out, so a small background agent
+(`mousecloak --listen`) applies your cape again at login, on user switches and when
+displays change. Turn it on in **Settings → Apply cape at login**.
 
-It is unintrusive and works in the background. You just need to open the app, click **Mousecape --> Install Helper Tool**, apply your cursor and you're done!
+## Capes
 
-## Where do I get cursors?
+A set of cursors is called a cape. Each cape holds many cursors, each at several scales:
+the Arrow may come at 1x, 2x, 5x and 10x, the Wait cursor at 1x and 2x.
 
-A pack of cursors in Mousecape is called a cape, each cape contains a multiple scales of representations of many cursors. For example, the Arrow cursor can have 1x, 2x, 5x, and 10x representations while the Wait cursor can have 1x, and 2x. 
+An example cape is included: [Examples/com.maxrudberg.svanslosbluehazard.cape](Examples/com.maxrudberg.svanslosbluehazard.cape),
+a remake of [Max Rudberg's](http://maxrudberg.com/) Svanslös cursors, generously crafted by
+Max. Double-click a cape, drop it on the window or use **File → Import…** to add it to
+your library. MightyMouse themes are converted on import.
 
-There is an example cape file included in this Git Repo located [here for download](https://github.com/alexzielenski/Mousecape/blob/master/Mousecape/com.maxrudberg.svanslosbluehazard.cape). It is a remake of [Max Rudberg's](http://maxrudberg.com/) loved Svanslös cursors generously crafted by Max for us to use. Simply double click the cape file with Mousecape on your system and it will be imported into your library.
+Your library lives in `~/Library/Application Support/Mousecape/capes`, the same folder
+the original app used.
 
-## How can I create my own cape?
+### Animated cursors
 
-You can create a new cape document in the Mousecape app by hitting &#8984;N (Command-N) and editing it with &#8984;E. Click the "+" button to add cursors to customize and symply drag your images into the fields provided.
+An animated cursor is one image with all frames stacked vertically, first frame at the
+top. Mousecape walks down the image one frame at a time, each frame the cursor's size.
 
-## How do animated cursors work?
+## Command line
 
-When you want to animate a cursor, change the value in the frames field in the edit window and make sure frame duration is how you want it. Next, create an image that has all of your cursor frames stacked on top of each other vertically. Mousecape will traverse down the image for each frame, using a box the same size as whatever you put in the size field.
+The app bundle contains `mousecloak`, the command line front end of the engine:
 
-## How can I say thanks?
+```
+Mousecape.app/Contents/MacOS/mousecloak --help
+mousecloak --apply my.cape       # apply a cape
+mousecloak --reset               # back to the macOS cursors
+mousecloak --create folder/      # build a cape from <cursor identifier>/<n>.png
+mousecloak --scale 2             # set the cursor scale
+```
 
-Tell your friends.
+## Building
 
-## Where can I get a copy of this sweet tool?
+```
+swift test                       # cape parsing tests
+Scripts/build-app.sh             # → dist/Mousecape.app (ad-hoc signed)
+Scripts/build-app.sh --zip       # → also dist/Mousecape.app.zip
+```
 
-In the [releases section](https://github.com/alexzielenski/Mousecape/releases) of this GitHub page. There are stable reases there. **The current version is 1813**.
+The app is ad-hoc signed, not notarized: on first launch, right-click it and choose
+**Open**.
 
-## There's now the beginning of a wiki
+### Layout
 
-Look for the wiki symbol in the toolbar here on this GitHub page or through here [wiki section](https://github.com/alexzielenski/Mousecape/wiki)
+| Path | What |
+|---|---|
+| `Sources/MousecloakCore` | The original cursor engine (Objective-C, manual retain/release) |
+| `Sources/mousecloak` | Command line tool and background agent |
+| `Sources/CapeKit` | Reading and writing `.cape` files, cursor frames (pure Swift, tested) |
+| `Sources/Mousecape` | The SwiftUI app |
+| `Resources` | Info.plist, launch agent plist, app icon |
 
 ## LICENSE
 
-I worked very hard researching the private methods used in Mousecape and creating this app. Please respect me and my work by not using any of the information provided here for commercial purposes.
+Alex Zielenski: "I worked very hard researching the private methods used in Mousecape and
+creating this app. Please respect me and my work by not using any of the information
+provided here for commercial purposes."
 
 Copyright (c) 2013-2014, Alex Zielenski
 All rights reserved.
@@ -51,4 +89,3 @@ Redistribution and use in source and binary forms, with or without modification,
 * Any redistribution, use, or modification is done solely for personal benefit and not for any commercial purpose or for monetary gain
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
