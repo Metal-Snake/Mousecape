@@ -53,9 +53,10 @@ enum EnginePreferences {
         return CFPreferencesCopyAppValue("MCAppliedCursor" as CFString, domain as CFString) as? String
     }
 
-    /// Cursor scale the agent restores at login.
-    static var cursorScale: Float {
-        get { defaults.object(forKey: "MCCursorScale") as? Float ?? 1 }
+    /// Cursor scale the agent restores at login and on display changes. Nil until the
+    /// user picks one; the agent then leaves the system's scale alone.
+    static var cursorScale: Float? {
+        get { (defaults.object(forKey: "MCCursorScale") as? NSNumber)?.floatValue }
         set { defaults.set(newValue, forKey: "MCCursorScale") }
     }
 

@@ -37,7 +37,7 @@ static void UserSpaceChanged(SCDynamicStoreRef	store, CFArrayRef changedKeys, vo
         MMLog(BOLD RED "Application of cape failed" RESET);
     }
     
-    setCursorScale(defaultCursorScale());
+    setCursorScale(preferredCursorScale());
     
     CFRelease(currentConsoleUser);
 }
@@ -47,8 +47,10 @@ void reconfigurationCallback(CGDirectDisplayID display,
     	void *userInfo) {
     MMLog("Reconfigure user space");
     applyCapeAtPath(appliedCapePathForUser(NSUserName()));
-    float scale;
-    CGSGetCursorScale(CGSMainConnectionID(), &scale);
+    // Restore the preferred scale instead of re-reading the current one: newer macOS
+    // versions (seen on the macOS 27 beta) reset the scale to 1x on display changes.
+    // Setting another value first makes the window server redraw the cursor.
+    float scale = preferredCursorScale();
     CGSSetCursorScale(CGSMainConnectionID(), scale + .3);
     CGSSetCursorScale(CGSMainConnectionID(), scale);
 }
@@ -77,7 +79,7 @@ void listener(void) {
     
     // Apply the cape for the user on load
     applyCapeAtPath(appliedCapePathForUser(NSUserName()));
-    setCursorScale(defaultCursorScale());
+    setCursorScale(preferredCursorScale());
     
     CFRunLoopAddSource(CFRunLoopGetCurrent(), rls, kCFRunLoopDefaultMode);
     CFRunLoopRun();

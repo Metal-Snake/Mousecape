@@ -3,7 +3,7 @@ import SwiftUI
 struct SettingsView: View {
     @Bindable var model: AppModel
 
-    @State private var scale = EnginePreferences.cursorScale
+    @State private var scale = EnginePreferences.cursorScale ?? Engine.scale
     @State private var leftHanded = EnginePreferences.leftHanded
 
     var body: some View {
@@ -25,6 +25,7 @@ struct SettingsView: View {
             } footer: {
                 Text("macOS forgets custom cursors when you log out. A small background agent applies your cape again at login and when displays change.")
                     .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
             }
 
             Section {

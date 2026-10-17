@@ -13,6 +13,7 @@
 
 extern float cursorScale(void);
 extern float defaultCursorScale(void);
+extern float preferredCursorScale(void);
 extern BOOL setCursorScale(float scale);
 
 #endif

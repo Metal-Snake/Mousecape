@@ -23,6 +23,12 @@ float defaultCursorScale() {
     return scale;
 }
 
+// The scale to keep: the one saved in Mousecape's settings, or else the one set right now
+// (e.g. the Accessibility pointer size), so an unset preference never forces 1x.
+float preferredCursorScale() {
+    return MCDefault(MCPreferencesCursorScaleKey) != nil ? defaultCursorScale() : cursorScale();
+}
+
 BOOL setCursorScale(float dbl) {
     if (dbl > 32) {
         MMLog("Not a good idea...");
