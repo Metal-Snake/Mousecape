@@ -80,6 +80,35 @@ final class AppModel {
         }
     }
 
+    // MARK: - Editing
+
+    /// The cape open in the editor sheet.
+    var editorSession: EditorSession?
+
+    func newCape() {
+        editorSession = EditorSession(cape: .untitled(author: NSFullUserName()), originalIdentifier: nil)
+    }
+
+    func edit(_ cape: Cape) {
+        editorSession = EditorSession(cape: cape, originalIdentifier: cape.identifier)
+    }
+
+    /// Saves the editor's draft; returns false (and shows why) if it could not be saved.
+    func save(_ cape: Cape, from session: EditorSession) -> Bool {
+        do {
+            selection = try library.save(cape, originalIdentifier: session.originalIdentifier).id
+            editorSession = nil
+            return true
+        } catch {
+            errorMessage = error.localizedDescription
+            return false
+        }
+    }
+
+    func duplicate(_ cape: Cape) {
+        perform { selection = try library.duplicate(cape).id }
+    }
+
     // MARK: - Library
 
     func captureCurrentCursors() {
@@ -113,4 +142,12 @@ final class AppModel {
     private func show(_ error: Error, file: URL) {
         errorMessage = "\(file.lastPathComponent): \(error.localizedDescription)"
     }
+}
+
+/// One opening of the editor: the cape to start from, and the identifier it is saved under
+/// in the library (nil for a new cape).
+struct EditorSession: Identifiable {
+    let id = UUID()
+    let cape: Cape
+    let originalIdentifier: String?
 }

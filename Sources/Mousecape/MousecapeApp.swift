@@ -13,6 +13,8 @@ struct MousecapeApp: App {
         }
         .commands {
             CommandGroup(replacing: .newItem) {
+                Button("New Cape") { model.newCape() }
+                    .keyboardShortcut("n")
                 Button("Import…") { model.showImportPanel() }
                     .keyboardShortcut("o")
             }
@@ -24,6 +26,17 @@ struct MousecapeApp: App {
                 .disabled(model.selectedCape == nil)
                 Button("Reset to Default Cursors") { model.resetToDefault() }
                     .keyboardShortcut("r", modifiers: [.command, .shift])
+                Divider()
+                Button("Edit…") {
+                    if let cape = model.selectedCape { model.edit(cape) }
+                }
+                .keyboardShortcut("e")
+                .disabled(model.selectedCape == nil)
+                Button("Duplicate") {
+                    if let cape = model.selectedCape { model.duplicate(cape) }
+                }
+                .keyboardShortcut("d")
+                .disabled(model.selectedCape == nil)
                 Divider()
                 Button("Show in Finder") {
                     if let cape = model.selectedCape { model.revealInFinder(cape) }

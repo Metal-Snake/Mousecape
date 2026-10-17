@@ -13,7 +13,8 @@ struct LibraryView: View {
             if let cape = model.selectedCape {
                 CapeDetailView(cape: cape,
                                isApplied: cape.identifier == model.library.appliedIdentifier,
-                               onApply: { model.apply(cape) })
+                               onApply: { model.apply(cape) },
+                               onEdit: { model.edit(cape) })
             } else if model.library.capes.isEmpty {
                 ContentUnavailableView {
                     Label("No Capes", systemImage: "cursorarrow.rays")
@@ -21,6 +22,7 @@ struct LibraryView: View {
                     Text("Drop .cape files here, or choose File → Import.")
                 } actions: {
                     Button("Import…") { model.showImportPanel() }
+                    Button("New Cape") { model.newCape() }
                 }
             } else {
                 ContentUnavailableView("Select a Cape", systemImage: "cursorarrow")
@@ -49,6 +51,9 @@ struct LibraryView: View {
             let files = urls.filter { ["cape", "mightymouse"].contains($0.pathExtension.lowercased()) }
             model.importFiles(files)
             return !files.isEmpty
+        }
+        .sheet(item: $model.editorSession) { session in
+            CapeEditorView(session: session) { model.save($0, from: session) }
         }
         .alert("Mousecape", isPresented: errorBinding) {
             Button("OK") { model.errorMessage = nil }
@@ -101,6 +106,9 @@ struct LibraryView: View {
     private func contextMenu(for cape: Cape) -> some View {
         Button("Apply") { model.apply(cape) }
             .disabled(cape.identifier == model.library.appliedIdentifier)
+        Button("Edit…") { model.edit(cape) }
+        Button("Duplicate") { model.duplicate(cape) }
+        Divider()
         Button("Show in Finder") { model.revealInFinder(cape) }
         Divider()
         Button("Move to Trash…", role: .destructive) { model.capeToDelete = cape }

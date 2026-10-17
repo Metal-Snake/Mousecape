@@ -2,7 +2,7 @@ import Foundation
 
 /// A cursor theme as stored in a `.cape` file: an XML property list holding metadata and,
 /// per system cursor identifier, its frames at one or more pixel densities.
-public struct Cape: Identifiable, Sendable {
+public struct Cape: Identifiable, Equatable, Sendable {
     public var identifier: String
     public var name: String
     public var author: String

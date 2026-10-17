@@ -3,7 +3,7 @@ import CoreGraphics
 
 /// One cursor of a cape. Each representation is an image (PNG or TIFF data) holding all
 /// frames stacked vertically, frame 0 at the top, at one pixel density (1x, 2x, 5x, 10x).
-public struct CapeCursor: Identifiable, Sendable {
+public struct CapeCursor: Identifiable, Equatable, Sendable {
     public var identifier: String
     public var frameCount: Int
     /// Seconds per frame.

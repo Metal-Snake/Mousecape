@@ -101,6 +101,41 @@ final class Library {
         return capes.first { $0.identifier == cape.identifier } ?? cape
     }
 
+    /// Writes an edited (or new) cape. When the identifier changed, the old file goes away;
+    /// an applied cape is applied again so the screen shows the saved version.
+    @discardableResult
+    func save(_ cape: Cape, originalIdentifier: String?) throws -> Cape {
+        let identifier = cape.identifier.trimmingCharacters(in: .whitespaces)
+        guard !identifier.isEmpty, !identifier.contains("/"), !identifier.hasPrefix(".") else {
+            throw LibraryError.invalidIdentifier
+        }
+        if identifier != originalIdentifier, capes.contains(where: { $0.identifier == identifier }) {
+            throw LibraryError.identifierTaken(identifier)
+        }
+        var saved = cape
+        saved.identifier = identifier
+        try saved.propertyListData().write(to: fileURL(for: identifier), options: .atomic)
+
+        let wasApplied = originalIdentifier != nil && originalIdentifier == appliedIdentifier
+        if let originalIdentifier, originalIdentifier != identifier {
+            try? FileManager.default.removeItem(at: fileURL(for: originalIdentifier))
+        }
+        reload()
+        let result = capes.first { $0.identifier == identifier } ?? saved
+        if wasApplied { try apply(result) }
+        return result
+    }
+
+    /// A copy under a new identifier, saved next to the original.
+    @discardableResult
+    func duplicate(_ cape: Cape) throws -> Cape {
+        var copy = cape
+        copy.identifier = cape.identifier + ".copy.\(Int(Date().timeIntervalSince1970))"
+        copy.name = String(localized: "\(cape.name) Copy")
+        copy.fileURL = nil
+        return try save(copy, originalIdentifier: nil)
+    }
+
     /// Moves the cape file to the Trash; resets the cursors first if it is applied.
     func delete(_ cape: Cape) throws {
         if cape.identifier == appliedIdentifier { resetToDefault() }
@@ -139,9 +174,15 @@ enum LibraryError: LocalizedError {
     case applyFailed(String)
     case dumpFailed
     case conversionFailed
+    case invalidIdentifier
+    case identifierTaken(String)
 
     var errorDescription: String? {
         switch self {
+        case .invalidIdentifier:
+            String(localized: "The identifier must not be empty, contain “/” or start with a dot.")
+        case .identifierTaken(let identifier):
+            String(localized: "Another cape in the library already uses the identifier “\(identifier)”.")
         case .notInLibrary: String(localized: "The cape is not saved in the library.")
         case .applyFailed(let name): String(localized: "“\(name)” could not be applied.")
         case .dumpFailed: String(localized: "The current cursors could not be captured.")

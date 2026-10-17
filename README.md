@@ -11,9 +11,8 @@ the original cursor engine is kept as it is, the app around it is rewritten in S
 - Builds with the Xcode Command Line Tools alone (no Xcode project)
 - No third-party dependencies, no network access
 
-> **Work in progress.** The library, previews, applying, importing and the login agent
-> work. The cape editor of the original app is not ported yet. Use `mousecloak --create`
-> to build capes from a folder of images in the meantime.
+> **Work in progress.** Library, previews, applying, importing, the cape editor and the
+> login agent are in place; expect rough edges.
 
 ## How it works
 
@@ -34,6 +33,13 @@ your library. MightyMouse themes are converted on import.
 
 Your library lives in `~/Library/Application Support/Mousecape/capes`, the same folder
 the original app used.
+
+### Making your own
+
+**File → New Cape** (⌘N) opens the editor; **Cape → Edit…** (⌘E) edits an existing one.
+Add cursors with **+**, then drop a PNG into each scale well (1x, 2x, 5x, 10x). The first
+image sets the cursor's size; click the large preview to set the hot spot, where the
+click lands. The editor flags images whose size does not fit.
 
 ### Animated cursors
 

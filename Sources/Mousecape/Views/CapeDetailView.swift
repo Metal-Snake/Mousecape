@@ -6,6 +6,7 @@ struct CapeDetailView: View {
     let cape: Cape
     let isApplied: Bool
     let onApply: () -> Void
+    let onEdit: () -> Void
 
     @AppStorage("showsHotSpots") private var showsHotSpots = false
 
@@ -42,6 +43,8 @@ struct CapeDetailView: View {
                     .foregroundStyle(.secondary)
             }
             Spacer()
+            Button("Edit…", action: onEdit)
+                .controlSize(.large)
             if isApplied {
                 Label("Applied", systemImage: "checkmark.circle.fill")
                     .foregroundStyle(.green)
