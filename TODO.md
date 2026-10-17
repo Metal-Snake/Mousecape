@@ -53,14 +53,24 @@ login items, so they need a person at the Mac.
       beach ball, not the beach ball alone. This only happens in login sessions whose
       backups were made by a version that could not back up Wait (more than 24 frames).
       A new login fixes it for good.
-- [ ] **How frames are dropped.** Over 24 frames, every n-th frame is kept: 30 → 15 at
-      double the duration. Picking 24 of the 30 frames would keep more of them, but with
-      uneven steps, since a cursor has a single frame duration. Compare both on the
-      beach ball.
+- [ ] **Let the user choose the frames to keep** when a cursor has more than 24. Today
+      "Reduce to N" and the engine keep every n-th frame (30 → 15). Idea:
+      - A "Choose Frames…" sheet in the editor with a filmstrip of all frames to tick or
+        untick, and a counter ("15 of at most 24").
+      - Presets: every n-th (today's behaviour), spread 24 evenly, first 24, and custom.
+      - A live preview of the result. The frame duration defaults to the original loop
+        time divided by the frames kept, so the animation keeps its speed, and can be
+        edited.
+      - Caveat: a cursor has one frame duration for all frames, so uneven gaps (e.g. 24 of
+        30) make a steady motion like the beach ball stutter slightly. The preview has to
+        make that visible.
 - [ ] **What `ArrowS` and `IBeamS` are.** On macOS 15.6 the system doesn't register them,
-      and a registered `ArrowS` does not change the visible arrow. On the reporting Mac it
-      apparently did. Find out which macOS versions use them, and whether capes without
-      them should register them from Arrow/IBeam.
+      and an app setting the standard arrow still gets `Arrow` even when `ArrowS` is
+      registered (checked by setting `NSCursor.arrow` in a test window). On macOS 27.0.1
+      `ArrowS` apparently replaces the arrow. To check on another macOS version, apply
+      `Examples/ArrowS-Test.cape`: it replaces only `ArrowS` with a magenta arrow marked
+      "S". Then reset, which should bring the normal arrow back. If macOS 27 uses
+      `ArrowS`, capes without it should probably register it from their `Arrow`.
 - [ ] **Backups live for the whole login session.** The window server won't let a later
       process remove them, so the first backup in a session is the one that counts. If
       another tool changed the cursors before Mousecape's first apply, that is what reset

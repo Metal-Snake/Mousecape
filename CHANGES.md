@@ -40,7 +40,8 @@ them. Found by reading the original code and by testing on macOS 15.6 and 27.0.1
 ### Animations with more than 24 frames
 
 The window server refuses cursors with more than 24 frames: registering 25 or more fails
-with `kCGErrorFailure`. macOS registers its own cursors another way, so its Wait cursor
+with `kCGErrorFailure`. The limit is the same for every cursor name (standard, variant,
+core or made-up), size, pixel density and registration flag tested on macOS 15.6. macOS registers its own cursors another way, so its Wait cursor
 (the beach ball) has 30 frames, and so do capes made from it.
 
 **Original:** a cursor over 24 frames was rejected with a line in the log, and the
