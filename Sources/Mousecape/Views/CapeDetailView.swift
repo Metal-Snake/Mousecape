@@ -5,6 +5,8 @@ import CapeKit
 struct CapeDetailView: View {
     let cape: Cape
     let isApplied: Bool
+    /// Cursors with problems, by identifier.
+    let problems: [String: [CursorProblem]]
     let onApply: () -> Void
     let onEdit: () -> Void
 
@@ -16,9 +18,13 @@ struct CapeDetailView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
                 header
+                if !problems.isEmpty {
+                    ProblemBanner(cape: cape, problems: problems, onEdit: onEdit)
+                }
                 LazyVGrid(columns: columns, spacing: 16) {
                     ForEach(cape.cursors) { cursor in
-                        CursorTile(cursor: cursor, showsHotSpot: showsHotSpots)
+                        CursorTile(cursor: cursor, showsHotSpot: showsHotSpots,
+                                   problems: problems[cursor.identifier] ?? [])
                     }
                 }
                 // Fresh tiles per cape: capes share cursor identifiers, and reused tiles
@@ -71,15 +77,56 @@ struct CapeDetailView: View {
     }
 }
 
+/// What is wrong with which cursor, and the way to the editor.
+private struct ProblemBanner: View {
+    let cape: Cape
+    let problems: [String: [CursorProblem]]
+    let onEdit: () -> Void
+
+    private var hasErrors: Bool { problems.values.joined().contains(where: \.isError) }
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 10) {
+            ProblemBadge(problems: Array(problems.values.joined()))
+                .font(.title3)
+            VStack(alignment: .leading, spacing: 4) {
+                Text(hasErrors ? "Some cursors won't apply correctly" : "Some cursors are adjusted when applied")
+                    .font(.headline)
+                ForEach(affected) { cursor in
+                    Text("**\(cursor.name):** \((problems[cursor.identifier] ?? []).map(\.description).joined(separator: " "))")
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            Spacer()
+            Button("Edit…", action: onEdit)
+        }
+        .padding(12)
+        .background((hasErrors ? Color.red : Color.orange).opacity(0.1), in: RoundedRectangle(cornerRadius: 10))
+    }
+
+    private var affected: [CapeCursor] {
+        cape.cursors.filter { problems[$0.identifier] != nil }
+    }
+}
+
 private struct CursorTile: View {
     let cursor: CapeCursor
     let showsHotSpot: Bool
+    let problems: [CursorProblem]
 
     var body: some View {
         VStack(spacing: 8) {
             CursorPreview(cursor: cursor, zoom: zoom, showsHotSpot: showsHotSpot)
                 .frame(width: 96, height: 96)
                 .background(.quaternary.opacity(0.5), in: RoundedRectangle(cornerRadius: 10))
+                .overlay(alignment: .topTrailing) {
+                    if !problems.isEmpty {
+                        ProblemBadge(problems: problems)
+                            .padding(6)
+                            .help(problems.map(\.description).joined(separator: "\n"))
+                    }
+                }
             VStack(spacing: 2) {
                 Text(cursor.name)
                     .font(.callout)
@@ -101,5 +148,23 @@ private struct CursorTile: View {
         cursor.isAnimated
             ? String(localized: "\(cursor.frameCount) frames")
             : "\(Int(cursor.size.width)) × \(Int(cursor.size.height)) pt"
+    }
+}
+
+/// Red for errors, orange when macOS only adjusts the cursor.
+struct ProblemBadge: View {
+    let problems: [CursorProblem]
+
+    /// "1 cursor needs attention" / "3 cursors need attention".
+    static func summary(cursorCount: Int) -> String {
+        cursorCount == 1
+            ? String(localized: "1 cursor needs attention")
+            : String(localized: "\(cursorCount) cursors need attention")
+    }
+
+    var body: some View {
+        Image(systemName: "exclamationmark.triangle.fill")
+            .foregroundStyle(problems.contains(where: \.isError) ? .red : .orange)
+            .accessibilityLabel(problems.contains(where: \.isError) ? "Error" : "Warning")
     }
 }

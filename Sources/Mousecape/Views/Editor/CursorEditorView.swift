@@ -23,7 +23,7 @@ struct CursorEditorView: View {
             }
             .padding(20)
         }
-        .alert("Image not added", isPresented: Binding(get: { importError != nil },
+        .alert("Cursor not changed", isPresented: Binding(get: { importError != nil },
                                                       set: { if !$0 { importError = nil } })) {
             Button("OK") { importError = nil }
         } message: {
@@ -92,9 +92,18 @@ struct CursorEditorView: View {
                 }
             }
             LabeledContent("Frames") {
-                Stepper(value: $cursor.frameCount, in: 1...CapeCursor.maximumFrameCount) {
-                    Text("\(cursor.frameCount)")
-                        .monospacedDigit()
+                if cursor.frameCount > CapeCursor.maximumFrameCount {
+                    // More than macOS takes: only reducing makes sense, not stepping.
+                    HStack {
+                        Text("\(cursor.frameCount)")
+                            .monospacedDigit()
+                        Button("Reduce to \(CapeCursor.reducedFrameCount(cursor.frameCount))", action: reduceFrames)
+                    }
+                } else {
+                    Stepper(value: $cursor.frameCount, in: 1...CapeCursor.maximumFrameCount) {
+                        Text("\(cursor.frameCount)")
+                            .monospacedDigit()
+                    }
                 }
             }
             LabeledContent("Frame duration") {
@@ -149,10 +158,19 @@ struct CursorEditorView: View {
             VStack(alignment: .leading, spacing: 4) {
                 ForEach(Array(problems.enumerated()), id: \.offset) { _, problem in
                     Label(problem.description, systemImage: "exclamationmark.triangle.fill")
-                        .foregroundStyle(.orange)
+                        .foregroundStyle(problem.isError ? .red : .orange)
                 }
             }
             .font(.callout)
+        }
+    }
+
+    /// Keeps every n-th frame for good, the way the engine would when applying.
+    private func reduceFrames() {
+        if let reduced = cursor.reducingFrames() {
+            cursor = reduced
+        } else {
+            importError = String(localized: "The images of \(cursor.name) could not be read, so its frames were not reduced.")
         }
     }
 

@@ -8,6 +8,8 @@ import CapeKit
 final class Library {
     private(set) var capes: [Cape] = []
     private(set) var appliedIdentifier: String?
+    /// Per cape, the cursors with problems (see `CursorProblem`); capes without any are absent.
+    private(set) var problems: [Cape.ID: [String: [CursorProblem]]] = [:]
     /// Files in the folder that could not be read, shown so they don't vanish silently.
     private(set) var unreadable: [URL] = []
 
@@ -67,6 +69,10 @@ final class Library {
         }
         capes = loaded.sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
         unreadable = failed
+        problems = Dictionary(uniqueKeysWithValues: capes.compactMap { cape in
+            let found = cape.problems
+            return found.isEmpty ? nil : (cape.id, found)
+        })
         appliedIdentifier = EnginePreferences.appliedCapeIdentifier
     }
 

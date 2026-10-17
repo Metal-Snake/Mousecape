@@ -68,6 +68,44 @@ func cursor(size: CGSize = CGSize(width: 20, height: 24), frames: Int = 1) -> Ca
     #expect(CapeCursor.reducedFrameCount(50) == 17)     // every 3rd frame
 }
 
+@Test func reducesFramesPermanently() throws {
+    // 30 frames of 10 × 10 px, each filled with its own grey level so we can tell them apart.
+    let frames = 30, side = 10
+    let rep = NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: side, pixelsHigh: side * frames,
+                               bitsPerSample: 8, samplesPerPixel: 4, hasAlpha: true, isPlanar: false,
+                               colorSpaceName: .deviceRGB, bytesPerRow: 0, bitsPerPixel: 0)!
+    for frame in 0..<frames {
+        let grey = CGFloat(frame) / CGFloat(frames)
+        for y in 0..<side { for x in 0..<side {
+            rep.setColor(NSColor(deviceRed: grey, green: grey, blue: grey, alpha: 1), atX: x, y: frame * side + y)
+        } }
+    }
+    var c = CapeCursor(identifier: "com.apple.coregraphics.Wait", frameCount: frames, frameDuration: 0.02,
+                       size: CGSize(width: side, height: side), representations: [])
+    c.representations = [rep.representation(using: .png, properties: [:])!]
+    #expect(c.problems == [.framesWillBeReduced(from: 30, to: 15)])
+
+    let reduced = try #require(c.reducingFrames())
+    #expect(reduced.frameCount == 15)
+    #expect(abs(reduced.frameDuration - 0.04) < 0.0001)        // same speed overall
+    #expect(reduced.problems.isEmpty)
+    // Frame k of the result is frame 2k of the original.
+    let images = reduced.frames()
+    #expect(images.count == 15)
+    func grey(_ image: CGImage) -> CGFloat {
+        NSBitmapImageRep(cgImage: image).colorAt(x: 5, y: 5)!.usingColorSpace(.deviceRGB)!.redComponent
+    }
+    #expect(abs(grey(images[0]) - 0) < 0.02)
+    #expect(abs(grey(images[1]) - 2.0 / 30) < 0.02)
+    #expect(abs(grey(images[14]) - 28.0 / 30) < 0.02)
+}
+
+@Test func separatesErrorsFromWarnings() {
+    #expect(CursorProblem.noImages.isError)
+    #expect(!CursorProblem.framesWillBeReduced(from: 30, to: 15).isError)
+    #expect(!CursorProblem.hotSpotOutside.isError)
+}
+
 @Test func addsAndRemovesCursors() {
     var cape = Cape.untitled(author: "Metal Snake")
     #expect(cape.identifier.hasPrefix("local.metalsnake.untitled."))

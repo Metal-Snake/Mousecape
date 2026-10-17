@@ -32,6 +32,96 @@ bundled third-party libraries are gone.
   left-handed mirroring, MightyMouse conversion and cursor dumps run the original code.
 - **Command line options.** `mousecloak` accepts the same options as before.
 
+## Bugs in the original
+
+Problems in the original's engine and app, what the user saw, and what this fork does about
+them. Found by reading the original code and by testing on macOS 15.6 and 27.0.1.
+
+### Animations with more than 24 frames
+
+The window server refuses cursors with more than 24 frames: registering 25 or more fails
+with `kCGErrorFailure`. macOS registers its own cursors another way, so its Wait cursor
+(the beach ball) has 30 frames, and so do capes made from it.
+
+**Original:** a cursor over 24 frames was rejected with a line in the log, and the
+whole apply stopped at that point ("Bailing out"). Cursors handled before it stayed
+replaced, the rest did not, and the order was random. The app showed no message and
+didn't mark the cape as applied; the login helper failed the same way at every login.
+The editor only limited typing in the frames field (1–24): a cape with 30 frames
+opened and saved unchanged, and dropping several images set the frame count unchecked.
+
+**This fork:**
+- The engine keeps every n-th frame and shows each one n times as long, so the cape
+  applies and the animation keeps its speed (30 frames at 1/60 s become 15 at 1/30 s).
+  The cape file is not changed.
+- The editor's frame stepper stops at 24. A cursor over the limit shows its frame count
+  with a **Reduce to N** button, which rewrites its images the same way, for good.
+- The library marks such capes with an orange badge, and the cape view explains what
+  happens when they are applied.
+
+### One bad cursor aborted the whole cape
+
+**Original:** whatever made a cursor fail (frame count, an unreadable image), the apply
+stopped there, leaving a mix of the old and the new cape on screen.
+
+**This fork:** a failing cursor is skipped and the rest is applied. The app says that some
+cursors were rejected. If none applies, the cursors are reset to the macOS defaults.
+
+### Reset could not bring back the Wait cursor
+
+**Original:** before the first apply, the engine backs up the system cursors by
+registering copies of them. The system's Wait cursor has 30 frames, so its copy failed,
+and the failure was ignored. Reset then had nothing to restore it from: the Wait cursor
+of the last cape stayed until logout.
+
+**This fork:** the backup is reduced like any long animation, so it succeeds. In a login
+session whose backups were made by an older version, reset falls back to the system's
+busy cursor (an arrow with a beach ball, so close but not identical; see TODO.md).
+
+### Cursors outside the standard set stayed after a reset
+
+Some capes register cursors the original doesn't know, such as
+`com.apple.coregraphics.ArrowS` and `IBeamS`. On macOS 15 they don't change what is shown;
+on macOS 27 they apparently replace the arrow (that is how the bug showed up there).
+
+**Original:** they were never backed up or reset. On macOS 27 the arrow of such a cape
+stayed on screen after a reset, and after applying another cape.
+
+**This fork:** these variants are backed up when the system has them. On reset they are
+restored, or given the default arrow/I-beam when the system never had them. Applying a
+cape without them gives leftover variants the cape's own arrow/I-beam. Any other cursor
+outside the standard set is remembered when applied (`MCAppliedExtraCursors`) and
+handled the same way.
+
+### Cleanup that never worked
+
+**Original:** after restoring, the engine tried to unregister its backups and other
+cursors. The window server only lets the process that registered a cursor remove it,
+and that is always an earlier process, so every one of these calls failed silently.
+Backups therefore live for the whole login session, and the first backup in a session
+is the one that counts.
+
+**This fork:** nothing relies on unregistering; cursors are overwritten instead. The
+session-long backups are documented in TODO.md.
+
+### Captured cursors could not be applied
+
+**Original:** **Capture Current Cursors** copies the system's Wait cursor with its 30
+frames into the new cape, so the original couldn't apply its own capture.
+
+**This fork:** such captures apply, with the Wait animation reduced.
+
+### Cursor size forced to 1x at login
+
+**Original:** with no size saved in Mousecape, the helper set the cursor scale to 1x at
+every login, overriding the pointer size from System Settings → Accessibility.
+
+**This fork:** a size is restored only when one was saved in Mousecape. Otherwise the
+current size stays. On display changes the agent restores the preferred size instead of
+re-reading the current one, because macOS 27 resets the scale to 1x there. The idea comes
+from the Mousecape-swiftUI fork; the implementation is our own, because that fork's licence
+doesn't allow its code to be reused.
+
 ## Cursor engine (`Sources/MousecloakCore`)
 
 The Objective-C sources of `mousecloak` moved unchanged in substance (history kept with
@@ -42,29 +132,7 @@ The Objective-C sources of `mousecloak` moved unchanged in substance (history ke
 - An umbrella header and module map make the engine callable from Swift.
 - Of the vendored `CGSInternal` headers, only the three in use are kept
   (`CGSCursor.h`, `CGSConnection.h`, `CGSAccessibility.h`).
-- **Cursor scale.** The engine used to force 1x at every login when no size was saved in
-  Mousecape, overriding the Accessibility pointer size. It now restores a size only when
-  one was saved, and otherwise keeps the current one.
-- **Display changes.** On a display change, the agent now restores the preferred size
-  instead of re-reading the current one: on the macOS 27 beta, display changes reset the
-  scale to 1x. The idea comes from the Mousecape-swiftUI fork; the implementation is our
-  own, because that fork's licence does not allow its code to be reused.
-- **Long animations.** Animations with more than 24 frames (the window server's limit) used
-  to fail, and the whole apply stopped halfway with part of the cape already on screen.
-  Now every n-th frame is kept, and each is shown n times as long. This also lets the
-  system's own Wait cursor be backed up.
-- **A failing cursor is skipped** instead of aborting the apply. The cape counts as
-  applied, and the app says that some cursors were rejected.
-- **Extra cursor variants.** Some capes bring `com.apple.coregraphics.ArrowS` and
-  `IBeamS`, which the original never backed up or reset, so they stayed after a reset.
-  They are now backed up when the system has them. On reset they are restored, or given
-  the default Arrow/I-beam when the system never had them. The window server only lets
-  the registering process remove a cursor, so removing them is not an option. When a cape
-  without these variants is applied, leftover variants get the cape's Arrow/I-beam.
-  Other cursors outside the standard set are remembered (`MCAppliedExtraCursors`) and
-  handled the same way.
-- **Wait without a backup** (older versions could not back it up) is reset to the
-  system's busy cursor.
+- Behaviour fixes are described under [Bugs in the original](#bugs-in-the-original).
 - Still compiled with manual retain/release (`-fno-objc-arc`), as before.
 - Deprecation warnings are silenced for this target (see TODO.md).
 
@@ -110,6 +178,9 @@ New SwiftUI app. Compared with the original:
 - **Settings** cover the login agent, the cursor size (slider from 1 to 4) and left-handed
   mode. The slider shows the current system size until a size is saved. Changing
   left-handed mode re-applies the current cape right away.
+- **Problem marks.** Capes with cursors that won't apply cleanly get a badge in the
+  sidebar: red when a cursor won't apply or will look wrong, orange when macOS only
+  adjusts it (e.g. a reduced animation). The cape view lists what happens per cursor.
 - **Smoother previews.** Cursor images are decoded off the main thread and cached. Each
   cape gets fresh tiles, so switching capes never shows the previous cape's images.
   Coming back to the app reads the library again only if the folder changed.
@@ -127,7 +198,8 @@ Rebuilt from scratch. It works on a draft and saves explicitly:
   renames the file, and an applied cape is re-applied after saving.
 - **Cursors:** add any system cursor the cape doesn't replace yet, or remove one.
 - **Per cursor:** size, hot spot (also set by clicking the preview), frame count (1–24)
-  and frame duration.
+  and frame duration. A cursor over 24 frames can be reduced with one click (see
+  [Bugs in the original](#animations-with-more-than-24-frames)).
 - **Images:** one well per scale (1x, 2x, 5x, 10x), filled by drag and drop or by
   choosing a file. Images are stored as sRGB PNG. The first image sets the cursor size,
   and later images must match it exactly.

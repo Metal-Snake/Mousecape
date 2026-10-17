@@ -13,6 +13,7 @@ struct LibraryView: View {
             if let cape = model.selectedCape {
                 CapeDetailView(cape: cape,
                                isApplied: cape.identifier == model.library.appliedIdentifier,
+                               problems: model.library.problems[cape.id] ?? [:],
                                onApply: { model.apply(cape) },
                                onEdit: { model.edit(cape) })
             } else if model.library.capes.isEmpty {
@@ -84,7 +85,8 @@ struct LibraryView: View {
     private var sidebar: some View {
         List(selection: $model.selection) {
             ForEach(model.library.capes) { cape in
-                CapeRow(cape: cape, isApplied: cape.identifier == model.library.appliedIdentifier)
+                CapeRow(cape: cape, isApplied: cape.identifier == model.library.appliedIdentifier,
+                        problems: model.library.problems[cape.id] ?? [:])
                     .tag(cape.id)
                     .contextMenu { contextMenu(for: cape) }
             }
@@ -140,6 +142,7 @@ struct LibraryView: View {
 private struct CapeRow: View {
     let cape: Cape
     let isApplied: Bool
+    let problems: [String: [CursorProblem]]
 
     var body: some View {
         HStack(spacing: 10) {
@@ -160,6 +163,10 @@ private struct CapeRow: View {
                 }
             }
             Spacer()
+            if !problems.isEmpty {
+                ProblemBadge(problems: problems.values.flatMap { $0 })
+                    .help(ProblemBadge.summary(cursorCount: problems.count))
+            }
             if isApplied {
                 Image(systemName: "checkmark.circle.fill")
                     .foregroundStyle(.green)

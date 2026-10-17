@@ -110,7 +110,7 @@ struct CapeEditorView: View {
         HStack {
             let problemCount = draft.problems.count
             if problemCount > 0 {
-                Label("\(problemCount) cursors need attention", systemImage: "exclamationmark.triangle.fill")
+                Label(ProblemBadge.summary(cursorCount: problemCount), systemImage: "exclamationmark.triangle.fill")
                     .foregroundStyle(.orange)
                     .font(.callout)
             }

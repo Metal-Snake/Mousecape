@@ -1,4 +1,5 @@
 import AppKit
+import ImageIO
 
 /// Editing support: building capes from images and checking that they will apply.
 
@@ -14,6 +15,42 @@ extension CapeCursor {
         guard frameCount > maximumFrameCount else { return frameCount }
         let step = (frameCount + maximumFrameCount - 1) / maximumFrameCount
         return (frameCount + step - 1) / step
+    }
+
+    /// A copy within the frame limit, the same way the engine reduces it when applying:
+    /// every n-th frame is kept and shown n times as long, so the animation keeps its
+    /// speed. Returns the cursor unchanged when it is within the limit, nil if an image
+    /// can't be decoded.
+    public func reducingFrames() -> CapeCursor? {
+        guard frameCount > Self.maximumFrameCount else { return self }
+        let step = (frameCount + Self.maximumFrameCount - 1) / Self.maximumFrameCount
+        let count = Self.reducedFrameCount(frameCount)
+        guard let sRGB = CGColorSpace(name: CGColorSpace.sRGB) else { return nil }
+
+        var reduced: [Data] = []
+        for data in representations {
+            guard let sheet = NSBitmapImageRep(data: data)?.cgImage else { return nil }
+            let frameHeight = sheet.height / frameCount
+            guard frameHeight > 0,
+                  let context = CGContext(data: nil, width: sheet.width, height: frameHeight * count,
+                                          bitsPerComponent: 8, bytesPerRow: 0, space: sRGB,
+                                          bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else { return nil }
+            for k in 0..<count {
+                // Cropping counts from the top, drawing from the bottom.
+                guard let frame = sheet.cropping(to: CGRect(x: 0, y: k * step * frameHeight,
+                                                            width: sheet.width, height: frameHeight)) else { return nil }
+                context.draw(frame, in: CGRect(x: 0, y: (count - 1 - k) * frameHeight,
+                                               width: sheet.width, height: frameHeight))
+            }
+            guard let image = context.makeImage(),
+                  let png = NSBitmapImageRep(cgImage: image).representation(using: .png, properties: [:]) else { return nil }
+            reduced.append(png)
+        }
+        var copy = self
+        copy.representations = reduced
+        copy.frameCount = count
+        copy.frameDuration *= Double(step)
+        return copy
     }
 
     /// The representation whose width matches `scale` times the point width.
@@ -45,11 +82,10 @@ extension CapeCursor {
             problems.append(.hotSpotOutside)
         }
         for data in representations {
-            guard let rep = NSBitmapImageRep(data: data) else {
+            guard let pixels = Self.pixelSize(of: data) else {
                 problems.append(.unreadableImage)
                 continue
             }
-            let pixels = CGSize(width: rep.pixelsWide, height: rep.pixelsHigh)
             let scale = Double(pixels.width) / size.width
             let expectedHeight = size.height * scale * Double(frameCount)
             if scale.rounded() != scale || !Self.supportedScales.contains(Int(scale)) {
@@ -71,8 +107,17 @@ extension CapeCursor {
         return (png, CGSize(width: rep.pixelsWide, height: rep.pixelsHigh))
     }
 
+    /// Read from the image header, without decoding the pixels.
+    static func pixelSize(of data: Data) -> CGSize? {
+        guard let source = CGImageSourceCreateWithData(data as CFData, nil),
+              let properties = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any],
+              let width = properties[kCGImagePropertyPixelWidth] as? Int,
+              let height = properties[kCGImagePropertyPixelHeight] as? Int else { return nil }
+        return CGSize(width: width, height: height)
+    }
+
     static func pixelWidth(of data: Data) -> Int {
-        NSBitmapImageRep(data: data)?.pixelsWide ?? 0
+        Int(pixelSize(of: data)?.width ?? 0)
     }
 
     static func scale(of data: Data, pointWidth: Double) -> Int? {
@@ -90,6 +135,15 @@ public enum CursorProblem: Equatable, Sendable, CustomStringConvertible {
     case unreadableImage
     case unexpectedWidth(CGSize)
     case heightDoesNotMatchFrames(CGSize, expected: Int)
+
+    /// True when the cursor won't apply or will look wrong; false for things macOS works
+    /// around (a reduced animation, a hot spot off the image).
+    public var isError: Bool {
+        switch self {
+        case .framesWillBeReduced, .hotSpotOutside: false
+        default: true
+        }
+    }
 
     public var description: String {
         switch self {
