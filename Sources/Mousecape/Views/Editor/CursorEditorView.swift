@@ -7,6 +7,7 @@ struct CursorEditorView: View {
     @Binding var cursor: CapeCursor
 
     @State private var importError: String?
+    @State private var choosingFrames = false
 
     private let previewBox: CGFloat = 200
 
@@ -22,6 +23,9 @@ struct CursorEditorView: View {
                 problems
             }
             .padding(20)
+        }
+        .sheet(isPresented: $choosingFrames) {
+            FrameChooserView(cursor: cursor) { cursor = $0 }
         }
         .alert("Cursor not changed", isPresented: Binding(get: { importError != nil },
                                                       set: { if !$0 { importError = nil } })) {
@@ -98,11 +102,19 @@ struct CursorEditorView: View {
                         Text("\(cursor.frameCount)")
                             .monospacedDigit()
                         Button("Reduce to \(CapeCursor.reducedFrameCount(cursor.frameCount))", action: reduceFrames)
+                        Button("Choose…") { choosingFrames = true }
+                            .help("Pick which frames to keep")
                     }
                 } else {
-                    Stepper(value: $cursor.frameCount, in: 1...CapeCursor.maximumFrameCount) {
-                        Text("\(cursor.frameCount)")
-                            .monospacedDigit()
+                    HStack {
+                        Stepper(value: $cursor.frameCount, in: 1...CapeCursor.maximumFrameCount) {
+                            Text("\(cursor.frameCount)")
+                                .monospacedDigit()
+                        }
+                        if cursor.isAnimated && !cursor.representations.isEmpty {
+                            Button("Choose…") { choosingFrames = true }
+                                .help("Pick which frames to keep")
+                        }
                     }
                 }
             }

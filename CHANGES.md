@@ -56,7 +56,8 @@ opened and saved unchanged, and dropping several images set the frame count unch
   applies and the animation keeps its speed (30 frames at 1/60 s become 15 at 1/30 s).
   The cape file is not changed.
 - The editor's frame stepper stops at 24. A cursor over the limit shows its frame count
-  with a **Reduce to N** button, which rewrites its images the same way, for good.
+  with a **Reduce to N** button, which rewrites its images the same way, for good, and
+  **Choose…**, which lets you pick the frames yourself (see the cape editor below).
 - The library marks such capes with an orange badge, and the cape view explains what
   happens when they are applied.
 
@@ -204,6 +205,12 @@ Rebuilt from scratch. It works on a draft and saves explicitly:
 - **Per cursor:** size, hot spot (also set by clicking the preview), frame count (1–24)
   and frame duration. A cursor over 24 frames can be reduced with one click (see
   [Bugs in the original](#animations-with-more-than-24-frames)).
+- **Choose Frames** (**Choose…** next to the frame count, for any animated cursor): a
+  filmstrip of all frames to keep or drop. Presets are every n-th frame, n spread evenly,
+  the first n, or a custom pick. The original and the result play side by side. The frame
+  duration follows the selection so one loop keeps its length, and can be adjusted. A
+  note appears when the kept frames are unevenly spaced, because with one duration for
+  all frames steady motion may then stutter.
 - **Images:** one well per scale (1x, 2x, 5x, 10x), filled by drag and drop or by
   choosing a file. Images are stored as sRGB PNG. The first image sets the cursor size,
   and later images must match it exactly.

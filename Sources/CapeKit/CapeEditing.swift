@@ -23,11 +23,19 @@ extension CapeCursor {
     /// can't be decoded.
     public func reducingFrames() -> CapeCursor? {
         guard frameCount > Self.maximumFrameCount else { return self }
-        let step = (frameCount + Self.maximumFrameCount - 1) / Self.maximumFrameCount
-        let count = Self.reducedFrameCount(frameCount)
-        guard let sRGB = CGColorSpace(name: CGColorSpace.sRGB) else { return nil }
+        let kept = FrameSelection.everyNth(of: frameCount)
+        return keepingFrames(kept, frameDuration: FrameSelection.loopPreservingDuration(
+            frameDuration: frameDuration, frameCount: frameCount, kept: kept.count))
+    }
 
-        var reduced: [Data] = []
+    /// A copy with only the given frames (0-based, in the order given), each shown for
+    /// `frameDuration`. Nil if an index is out of range or an image can't be decoded.
+    public func keepingFrames(_ indices: [Int], frameDuration: Double) -> CapeCursor? {
+        guard !indices.isEmpty, indices.allSatisfy({ (0..<frameCount).contains($0) }),
+              let sRGB = CGColorSpace(name: CGColorSpace.sRGB) else { return nil }
+        let count = indices.count
+
+        var rebuilt: [Data] = []
         for data in representations {
             guard let sheet = NSBitmapImageRep(data: data)?.cgImage else { return nil }
             let frameHeight = sheet.height / frameCount
@@ -35,21 +43,21 @@ extension CapeCursor {
                   let context = CGContext(data: nil, width: sheet.width, height: frameHeight * count,
                                           bitsPerComponent: 8, bytesPerRow: 0, space: sRGB,
                                           bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else { return nil }
-            for k in 0..<count {
+            for (slot, index) in indices.enumerated() {
                 // Cropping counts from the top, drawing from the bottom.
-                guard let frame = sheet.cropping(to: CGRect(x: 0, y: k * step * frameHeight,
+                guard let frame = sheet.cropping(to: CGRect(x: 0, y: index * frameHeight,
                                                             width: sheet.width, height: frameHeight)) else { return nil }
-                context.draw(frame, in: CGRect(x: 0, y: (count - 1 - k) * frameHeight,
+                context.draw(frame, in: CGRect(x: 0, y: (count - 1 - slot) * frameHeight,
                                                width: sheet.width, height: frameHeight))
             }
             guard let image = context.makeImage(),
                   let png = NSBitmapImageRep(cgImage: image).representation(using: .png, properties: [:]) else { return nil }
-            reduced.append(png)
+            rebuilt.append(png)
         }
         var copy = self
-        copy.representations = reduced
+        copy.representations = rebuilt
         copy.frameCount = count
-        copy.frameDuration *= Double(step)
+        copy.frameDuration = frameDuration
         return copy
     }
 
@@ -205,5 +213,42 @@ extension Cape {
             let problems = cursor.problems
             return problems.isEmpty ? nil : (cursor.identifier, problems)
         })
+    }
+}
+
+/// Ways to pick the frames of an animation that has more than macOS shows.
+public enum FrameSelection {
+    /// Every n-th frame, n as small as possible to stay within the limit (what the engine
+    /// does when applying).
+    public static func everyNth(of frameCount: Int, limit: Int = CapeCursor.maximumFrameCount) -> [Int] {
+        let step = max(1, (frameCount + limit - 1) / limit)
+        return Array(stride(from: 0, to: frameCount, by: step))
+    }
+
+    /// `count` frames spread as evenly as possible over the whole animation.
+    public static func spread(of frameCount: Int, count: Int = CapeCursor.maximumFrameCount) -> [Int] {
+        guard count < frameCount else { return Array(0..<frameCount) }
+        return (0..<count).map { Int((Double($0) * Double(frameCount) / Double(count)).rounded(.down)) }
+    }
+
+    /// The first `count` frames.
+    public static func first(of frameCount: Int, count: Int = CapeCursor.maximumFrameCount) -> [Int] {
+        Array(0..<min(count, frameCount))
+    }
+
+    /// Duration per frame that keeps one loop as long as the original.
+    public static func loopPreservingDuration(frameDuration: Double, frameCount: Int, kept: Int) -> Double {
+        guard kept > 0 else { return frameDuration }
+        return frameDuration * Double(frameCount) / Double(kept)
+    }
+
+    /// Whether the kept frames are unevenly spaced (counting the wrap back to the start).
+    /// With one duration for all frames, uneven gaps make steady motion stutter.
+    public static func isUneven(_ indices: [Int], frameCount: Int) -> Bool {
+        let sorted = indices.sorted()
+        guard sorted.count > 1 else { return false }
+        var gaps = zip(sorted, sorted.dropFirst()).map { $1 - $0 }
+        gaps.append(sorted[0] + frameCount - sorted[sorted.count - 1])
+        return Set(gaps).count > 1
     }
 }

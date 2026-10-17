@@ -100,6 +100,46 @@ func cursor(size: CGSize = CGSize(width: 20, height: 24), frames: Int = 1) -> Ca
     #expect(abs(grey(images[14]) - 28.0 / 30) < 0.02)
 }
 
+@Test func selectsFrames() {
+    #expect(FrameSelection.everyNth(of: 30) == Array(stride(from: 0, to: 30, by: 2)))
+    #expect(FrameSelection.everyNth(of: 20) == Array(0..<20))
+    let spread = FrameSelection.spread(of: 30)
+    #expect(spread.count == 24)
+    #expect(spread.first == 0 && spread.last == 28)
+    #expect(Set(spread).count == 24)
+    #expect(FrameSelection.first(of: 30) == Array(0..<24))
+    #expect(abs(FrameSelection.loopPreservingDuration(frameDuration: 0.02, frameCount: 30, kept: 24) - 0.025) < 1e-9)
+    #expect(!FrameSelection.isUneven(FrameSelection.everyNth(of: 30), frameCount: 30))
+    #expect(FrameSelection.isUneven(spread, frameCount: 30))
+    #expect(FrameSelection.isUneven(FrameSelection.first(of: 30), frameCount: 30))   // jump back at the end
+}
+
+@Test func keepsChosenFrames() throws {
+    // 6 frames of 4 × 4 px, frame i filled with grey i/6.
+    let frames = 6, side = 4
+    let rep = NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: side, pixelsHigh: side * frames,
+                               bitsPerSample: 8, samplesPerPixel: 4, hasAlpha: true, isPlanar: false,
+                               colorSpaceName: .deviceRGB, bytesPerRow: 0, bitsPerPixel: 0)!
+    for frame in 0..<frames {
+        for y in 0..<side { for x in 0..<side {
+            let grey = CGFloat(frame) / CGFloat(frames)
+            rep.setColor(NSColor(deviceRed: grey, green: grey, blue: grey, alpha: 1), atX: x, y: frame * side + y)
+        } }
+    }
+    let c = CapeCursor(identifier: "x", frameCount: frames, frameDuration: 0.1,
+                       size: CGSize(width: side, height: side),
+                       representations: [rep.representation(using: .png, properties: [:])!])
+    let kept = try #require(c.keepingFrames([5, 1, 3], frameDuration: 0.2))
+    #expect(kept.frameCount == 3)
+    #expect(kept.frameDuration == 0.2)
+    func grey(_ image: CGImage) -> CGFloat {
+        NSBitmapImageRep(cgImage: image).colorAt(x: 1, y: 1)!.usingColorSpace(.deviceRGB)!.redComponent
+    }
+    #expect(kept.frames().map { (grey($0) * 6).rounded() } == [5, 1, 3])   // order as given
+    #expect(c.keepingFrames([], frameDuration: 0.1) == nil)
+    #expect(c.keepingFrames([6], frameDuration: 0.1) == nil)
+}
+
 @Test func separatesErrorsFromWarnings() {
     #expect(CursorProblem.noImages.isError)
     #expect(!CursorProblem.framesWillBeReduced(from: 30, to: 15).isError)
