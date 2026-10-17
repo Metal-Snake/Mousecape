@@ -50,6 +50,10 @@ void backupAllCursors() {
         backupCursorForIdentifier(key);
         i++;
     }
+    // Extra cursors only when the system has them; otherwise reset removes them.
+    for (i = 0; extraCursors[i] != nil; i++) {
+        backupCursorForIdentifier(extraCursors[i]);
+    }
     // no need to backup core cursors
     
 }

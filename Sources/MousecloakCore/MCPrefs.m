@@ -14,6 +14,7 @@ NSString *MCPreferencesAppliedClickActionKey     = @"MCLibraryClickAction";
 NSString *MCPreferencesCursorScaleKey            = @"MCCursorScale";
 NSString *MCPreferencesDoubleActionKey           = @"MCDoubleAction";
 NSString *MCPreferencesHandednessKey             = @"MCHandedness";
+NSString *MCPreferencesAppliedExtraCursorsKey    = @"MCAppliedExtraCursors";
 NSString *MCSuppressDeleteLibraryConfirmationKey = @"MCSuppressDeleteLibraryConfirmationKey";
 NSString *MCSuppressDeleteCursorConfirmationKey  = @"MCSuppressDeleteCursorConfirmationKey";
 id MCDefaultFor(NSString *key, NSString *user, NSString *host) {

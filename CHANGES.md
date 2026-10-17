@@ -49,6 +49,22 @@ The Objective-C sources of `mousecloak` moved unchanged in substance (history ke
   instead of re-reading the current one: on the macOS 27 beta, display changes reset the
   scale to 1x. The idea comes from the Mousecape-swiftUI fork; the implementation is our
   own, because that fork's licence does not allow its code to be reused.
+- **Long animations.** Animations with more than 24 frames (the window server's limit) used
+  to fail, and the whole apply stopped halfway with part of the cape already on screen.
+  Now every n-th frame is kept, and each is shown n times as long. This also lets the
+  system's own Wait cursor be backed up.
+- **A failing cursor is skipped** instead of aborting the apply. The cape counts as
+  applied, and the app says that some cursors were rejected.
+- **Extra cursor variants.** Some capes bring `com.apple.coregraphics.ArrowS` and
+  `IBeamS`, which the original never backed up or reset, so they stayed after a reset.
+  They are now backed up when the system has them. On reset they are restored, or given
+  the default Arrow/I-beam when the system never had them. The window server only lets
+  the registering process remove a cursor, so removing them is not an option. When a cape
+  without these variants is applied, leftover variants get the cape's Arrow/I-beam.
+  Other cursors outside the standard set are remembered (`MCAppliedExtraCursors`) and
+  handled the same way.
+- **Wait without a backup** (older versions could not back it up) is reset to the
+  system's busy cursor.
 - Still compiled with manual retain/release (`-fno-objc-arc`), as before.
 - Deprecation warnings are silenced for this target (see TODO.md).
 
@@ -94,6 +110,9 @@ New SwiftUI app. Compared with the original:
 - **Settings** cover the login agent, the cursor size (slider from 1 to 4) and left-handed
   mode. The slider shows the current system size until a size is saved. Changing
   left-handed mode re-applies the current cape right away.
+- **Smoother previews.** Cursor images are decoded off the main thread and cached. Each
+  cape gets fresh tiles, so switching capes never shows the previous cape's images.
+  Coming back to the app reads the library again only if the folder changed.
 - **No re-apply at launch.** The original re-applied the current cape every time the app
   launched. The new app leaves that to the agent.
 - **Not ported:** the library click and double-click action preferences

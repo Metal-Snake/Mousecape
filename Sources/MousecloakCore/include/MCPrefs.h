@@ -18,6 +18,7 @@ extern NSString *MCPreferencesAppliedClickActionKey;
 extern NSString *MCPreferencesCursorScaleKey;
 extern NSString *MCPreferencesDoubleActionKey;
 extern NSString *MCPreferencesHandednessKey;
+extern NSString *MCPreferencesAppliedExtraCursorsKey;
 extern NSString *MCSuppressDeleteLibraryConfirmationKey;
 extern NSString *MCSuppressDeleteCursorConfirmationKey;
 extern id MCDefaultFor(NSString *key, NSString *user, NSString *host);

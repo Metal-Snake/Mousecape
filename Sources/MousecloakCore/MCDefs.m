@@ -22,6 +22,11 @@ NSString *defaultCursors[] = {
     @"com.apple.coregraphics.Empty",
     nil };
 
+NSString *extraCursors[] = {
+    @"com.apple.coregraphics.ArrowS",
+    @"com.apple.coregraphics.IBeamS",
+    nil };
+
 NSString *MCErrorDomain = @"com.alexzielenski.mousecape.error";
 
 const CGFloat   MCCursorCreatorVersion               = 2.0;
@@ -141,6 +146,8 @@ extern NSDictionary *cursorMap() {
                           @"Window NE", @"com.apple.cursor.29",
                           @"Busy", @"com.apple.cursor.4",
                           @"Ctx Arrow", @"com.apple.coregraphics.ArrowCtx",
+                          @"Arrow S", @"com.apple.coregraphics.ArrowS",
+                          @"IBeam S", @"com.apple.coregraphics.IBeamS",
                           @"Open", @"com.apple.cursor.12",
                           @"Window N-S", @"com.apple.cursor.32",
                           @"Window SE", @"com.apple.cursor.35",
@@ -214,6 +221,25 @@ CGError MCIsCursorRegistered(CGSConnectionID cid, char *cursorName, bool *regist
     *registered = !((BOOL)err) && size > 0;
     
     return err;
+}
+
+// One of the cursors macOS always has: the core cursors and the default coregraphics set.
+BOOL MCCursorIsStandard(NSString *identifier) {
+    if ([identifier hasPrefix:@"com.apple.cursor."])
+        return YES;
+    for (NSUInteger i = 0; defaultCursors[i] != nil; i++) {
+        if ([defaultCursors[i] isEqualToString:identifier])
+            return YES;
+    }
+    return NO;
+}
+
+// For an extra variant such as ArrowS, the standard cursor it stands in for (Arrow).
+NSString *MCBaseCursorForExtra(NSString *identifier) {
+    if (![identifier hasPrefix:@"com.apple.coregraphics."] || ![identifier hasSuffix:@"S"])
+        return nil;
+    NSString *base = [identifier substringToIndex:identifier.length - 1];
+    return MCCursorIsStandard(base) ? base : nil;
 }
 
 BOOL MCCursorIsPointer(NSString *identifier) {

@@ -28,8 +28,32 @@ final class Library {
 
     var appliedCape: Cape? { capes.first { $0.identifier == appliedIdentifier } }
 
+    /// Names, sizes and dates of the files at the last reload.
+    private var fingerprint: [String] = []
+
+    /// Cheap check used when the app comes to the front: reads the capes again only if the
+    /// folder changed (e.g. in Finder); the applied cape is always refreshed.
+    func reloadIfChanged() {
+        if currentFingerprint() != fingerprint {
+            reload()
+        } else {
+            appliedIdentifier = EnginePreferences.appliedCapeIdentifier
+        }
+    }
+
+    private func currentFingerprint() -> [String] {
+        let keys: [URLResourceKey] = [.contentModificationDateKey, .fileSizeKey]
+        let files = (try? FileManager.default.contentsOfDirectory(
+            at: folder, includingPropertiesForKeys: keys, options: .skipsHiddenFiles)) ?? []
+        return files.map { url in
+            let values = try? url.resourceValues(forKeys: Set(keys))
+            return "\(url.lastPathComponent)|\(values?.fileSize ?? -1)|\(values?.contentModificationDate?.timeIntervalSince1970 ?? 0)"
+        }.sorted()
+    }
+
     func reload() {
         try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        fingerprint = currentFingerprint()
         let files = (try? FileManager.default.contentsOfDirectory(
             at: folder, includingPropertiesForKeys: nil, options: .skipsHiddenFiles)) ?? []
         var loaded: [Cape] = []
@@ -50,8 +74,13 @@ final class Library {
 
     func apply(_ cape: Cape) throws {
         guard let url = cape.fileURL else { throw LibraryError.notInLibrary }
-        guard Engine.apply(url) else { throw LibraryError.applyFailed(cape.name) }
-        appliedIdentifier = cape.identifier
+        let succeeded = Engine.apply(url)
+        // The engine skips cursors it cannot register; the cape still counts as applied.
+        appliedIdentifier = EnginePreferences.appliedCapeIdentifier
+        guard succeeded else {
+            if appliedIdentifier == cape.identifier { throw LibraryError.partiallyApplied(cape.name) }
+            throw LibraryError.applyFailed(cape.name)
+        }
     }
 
     func resetToDefault() {
@@ -172,6 +201,7 @@ final class Library {
 enum LibraryError: LocalizedError {
     case notInLibrary
     case applyFailed(String)
+    case partiallyApplied(String)
     case dumpFailed
     case conversionFailed
     case invalidIdentifier
@@ -185,6 +215,8 @@ enum LibraryError: LocalizedError {
             String(localized: "Another cape in the library already uses the identifier “\(identifier)”.")
         case .notInLibrary: String(localized: "The cape is not saved in the library.")
         case .applyFailed(let name): String(localized: "“\(name)” could not be applied.")
+        case .partiallyApplied(let name):
+            String(localized: "“\(name)” is applied, but some of its cursors were rejected by macOS. Check them in the editor.")
         case .dumpFailed: String(localized: "The current cursors could not be captured.")
         case .conversionFailed: String(localized: "The MightyMouse file could not be converted.")
         }

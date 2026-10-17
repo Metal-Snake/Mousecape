@@ -8,6 +8,8 @@ public enum CursorNames {
         "com.apple.coregraphics.Copy": "Copy",
         "com.apple.coregraphics.Move": "Move",
         "com.apple.coregraphics.ArrowCtx": "Ctx Arrow",
+        "com.apple.coregraphics.ArrowS": "Arrow S",
+        "com.apple.coregraphics.IBeamS": "IBeam S",
         "com.apple.coregraphics.Wait": "Wait",
         "com.apple.coregraphics.Empty": "Empty",
         "com.apple.cursor.2": "Link",

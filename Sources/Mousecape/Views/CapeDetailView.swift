@@ -21,6 +21,9 @@ struct CapeDetailView: View {
                         CursorTile(cursor: cursor, showsHotSpot: showsHotSpots)
                     }
                 }
+                // Fresh tiles per cape: capes share cursor identifiers, and reused tiles
+                // would show the previous cape's images until the new ones are decoded.
+                .id(cape.id)
             }
             .padding(20)
         }

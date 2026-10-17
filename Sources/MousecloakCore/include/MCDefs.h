@@ -28,6 +28,11 @@
 #define BOLD    "\033[1m"
 
 extern NSString *defaultCursors[];
+// Cursors some capes register that macOS does not have by default (newer variants of the
+// arrow and I-beam). Reset removes them again unless the system had them before.
+extern NSString *extraCursors[];
+// The window server refuses animations with more frames than this.
+#define MCMaxFrameCount 24
 extern NSString *MCErrorDomain;
 extern NSDictionary *cursorNameMap;
 
@@ -73,4 +78,6 @@ extern NSString *MMGet(NSString *prompt);
 
 extern CGError MCIsCursorRegistered(CGSConnectionID cid, char *cursorName, bool *registered);
 extern BOOL MCCursorIsPointer(NSString *identifier);
+extern BOOL MCCursorIsStandard(NSString *identifier);
+extern NSString *MCBaseCursorForExtra(NSString *identifier);
 #endif

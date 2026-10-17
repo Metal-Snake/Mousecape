@@ -40,9 +40,22 @@ login items, so they need a person at the Mac.
       `NSAlphaFirstBitmapFormat` in `create.m:191`. Fix them and remove the flag.
 - [ ] **Blocking work on the main thread.**
   - Applying runs there, so a large cape can freeze the UI for a moment.
-  - Library reload decodes every cape fully (often several MB each) whenever the app
-    becomes active. Load the metadata first and the images on demand.
-  - Cursor previews decode PNGs on the main thread.
+  - A library reload parses every cape fully (often several MB each). It now happens only
+    when the folder changed, but a big library will still stall. Load the metadata
+    first and the images on demand.
+- [ ] **Empty tiles while previews decode.** Show a placeholder or the cursor name
+      instead of an empty square.
+- [ ] **Window "hides" on double-clicking a `.cape`** (reported 2026-10-17). Not reproduced
+      as such. What was found and fixed: a double reload, and stale images from the
+      previous cape. Check on the reporting Mac whether the effect is gone.
+- [ ] **What `ArrowS` and `IBeamS` are.** On macOS 15.6 the system doesn't register them,
+      and a registered `ArrowS` does not change the visible arrow. On the reporting Mac it
+      apparently did. Find out which macOS versions use them, and whether capes without
+      them should register them from Arrow/IBeam.
+- [ ] **Backups live for the whole login session.** The window server won't let a later
+      process remove them, so the first backup in a session is the one that counts. If
+      another tool changed the cursors before Mousecape's first apply, that is what reset
+      brings back. Logging out clears it.
 - [ ] **No undo** in the editor, or for deleting a cape. The original had both.
 - [ ] **`mousecloak --create` asks questions on stdin** (`scanf` in `create.m`), so it
       cannot be scripted. Add options such as `--name` and `--author`.
@@ -96,6 +109,9 @@ x86_64 build.
 
 ## Housekeeping
 
+- [ ] **Example capes.** `Default_macOS 15.cape` and `Default_macOS 26.cape` contain
+      Apple's cursor artwork, and `Kiriko.cape` is by ArakiCC under unknown terms. Keep
+      them local (not committed) unless their redistribution is cleared.
 - [ ] **Push.** The `modernize` branch has not been pushed to `Metal-Snake/Mousecape`.
       It stays local until decided otherwise.
 - [ ] **Upstream.** `git fetch upstream` (alexzielenski/Mousecape) now and then. As of

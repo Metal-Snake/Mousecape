@@ -34,7 +34,7 @@ struct CursorPreview: View {
             .frame(width: displaySize.width, height: displaySize.height)
         }
         .task(id: cursor) {     // the whole cursor, so edited images and frame counts show
-            frames = cursor.frames(scale: Int((displayScale * zoom).rounded(.up)))
+            frames = await FrameCache.shared.frames(for: cursor, scale: Int((displayScale * zoom).rounded(.up)))
         }
         .accessibilityLabel(cursor.name)
     }

@@ -77,7 +77,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @MainActor func applicationDidBecomeActive(_ notification: Notification) {
-        model?.library.reload()
+        model?.library.reloadIfChanged()
         model?.loginAgent.refresh()
     }
 

@@ -12,7 +12,7 @@
 #import "MCDefs.h"
 
 extern NSString *restoreStringForIdentifier(NSString *identifier);
-extern void restoreCursorForIdentifier(NSString *ident);
+extern BOOL restoreCursorForIdentifier(NSString *ident);
 extern void resetAllCursors(void);
 
 #endif

@@ -49,7 +49,7 @@ func cursor(size: CGSize = CGSize(width: 20, height: 24), frames: Int = 1) -> Ca
     c.representations = [png(width: 20, height: 24)]
     c.frameCount = 25
     c.hotSpot = CGPoint(x: 30, y: 0)
-    #expect(c.problems.contains(.frameCountOutOfRange))
+    #expect(c.problems.contains(.framesWillBeReduced(from: 25, to: 13)))
     #expect(c.problems.contains(.hotSpotOutside))
 }
 
@@ -60,6 +60,12 @@ func cursor(size: CGSize = CGSize(width: 20, height: 24), frames: Int = 1) -> Ca
     #expect(result.pixelSize == CGSize(width: 8, height: 6))
     #expect(result.png.starts(with: [0x89, 0x50, 0x4E, 0x47]))
     #expect(CapeCursor.normalizedPNG(from: Data("no image".utf8)) == nil)
+}
+
+@Test func reducesLongAnimations() {
+    #expect(CapeCursor.reducedFrameCount(24) == 24)
+    #expect(CapeCursor.reducedFrameCount(30) == 15)     // every 2nd frame
+    #expect(CapeCursor.reducedFrameCount(50) == 17)     // every 3rd frame
 }
 
 @Test func addsAndRemovesCursors() {

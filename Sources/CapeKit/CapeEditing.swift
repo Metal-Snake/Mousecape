@@ -9,6 +9,13 @@ extension CapeCursor {
     /// The window server refuses more frames than this.
     public static let maximumFrameCount = 24
 
+    /// Frames left when applying a longer animation: the engine keeps every n-th frame.
+    public static func reducedFrameCount(_ frameCount: Int) -> Int {
+        guard frameCount > maximumFrameCount else { return frameCount }
+        let step = (frameCount + maximumFrameCount - 1) / maximumFrameCount
+        return (frameCount + step - 1) / step
+    }
+
     /// The representation whose width matches `scale` times the point width.
     public func representation(for scale: Int) -> Data? {
         representations.first { Self.scale(of: $0, pointWidth: size.width) == scale }
@@ -30,7 +37,10 @@ extension CapeCursor {
     public var problems: [CursorProblem] {
         var problems: [CursorProblem] = []
         if representations.isEmpty { problems.append(.noImages) }
-        if !(1...Self.maximumFrameCount).contains(frameCount) { problems.append(.frameCountOutOfRange) }
+        if frameCount < 1 { problems.append(.frameCountOutOfRange) }
+        if frameCount > Self.maximumFrameCount {
+            problems.append(.framesWillBeReduced(from: frameCount, to: Self.reducedFrameCount(frameCount)))
+        }
         if hotSpot.x < 0 || hotSpot.y < 0 || hotSpot.x > size.width || hotSpot.y > size.height {
             problems.append(.hotSpotOutside)
         }
@@ -75,6 +85,7 @@ extension CapeCursor {
 public enum CursorProblem: Equatable, Sendable, CustomStringConvertible {
     case noImages
     case frameCountOutOfRange
+    case framesWillBeReduced(from: Int, to: Int)
     case hotSpotOutside
     case unreadableImage
     case unexpectedWidth(CGSize)
@@ -85,7 +96,9 @@ public enum CursorProblem: Equatable, Sendable, CustomStringConvertible {
         case .noImages:
             String(localized: "No images yet.")
         case .frameCountOutOfRange:
-            String(localized: "Frames must be between 1 and \(CapeCursor.maximumFrameCount).")
+            String(localized: "A cursor needs at least one frame.")
+        case .framesWillBeReduced(let from, let to):
+            String(localized: "macOS shows at most \(CapeCursor.maximumFrameCount) frames; the \(from) frames are reduced to \(to) when applied.")
         case .hotSpotOutside:
             String(localized: "The hot spot lies outside the cursor.")
         case .unreadableImage:
