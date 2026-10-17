@@ -1,4 +1,5 @@
 import AppKit
+import CapeKit
 import MousecloakCore
 
 // mousecloak: the command line front end of the cursor engine. Same options as the
@@ -19,12 +20,13 @@ MISCELLANEOUS
   -o, --output <path>     Output for --create, --convert and --export
   -s, --scale [value]     Get, or set, the cursor scale
       --listen            Stay alive and re-apply the current cape on login and display changes
+      --list              Show which cursors are registered, and their backups (for bug reports)
   -h, --help              Show this help
 """
 
 enum Command {
     case apply(String), reset, create(String), convert(String), dump(String)
-    case export(String), scale(Float?), listen, help
+    case export(String), scale(Float?), listen, list, help
 }
 
 func fail(_ message: String) -> Never {
@@ -60,6 +62,7 @@ func parse(_ args: [String]) -> (Command, output: String?) {
                 commands.append(.scale(nil))
             }
         case "--listen": commands.append(.listen)
+        case "--list": commands.append(.list)
         case "-h", "-?", "--help": commands.append(.help)
         case "--suppressCopyright": break   // accepted for compatibility with older agents
         default: fail("unknown option \(arg), try --help")
@@ -105,10 +108,59 @@ case .scale(let value):
     } else {
         print(cursorScale())
     }
+case .list:
+    listRegisteredCursors()
 case .listen:
     // mousecloak lives inside Mousecape.app, so once the engine loads Cocoa the system
     // takes the agent for the app itself: a Dock icon that bounces forever. Declare it a
     // background process first.
     NSApplication.shared.setActivationPolicy(.prohibited)
     listener()
+}
+
+// MARK: - --list
+
+/// What the window server has registered under a cursor name.
+func registration(of name: String) -> (size: CGSize, frames: Int, pixels: [CGSize])? {
+    name.withCString { cName in
+        let cursorName = UnsafeMutablePointer(mutating: cName)
+        var registered = false
+        MCIsCursorRegistered(CGSMainConnectionID(), cursorName, &registered)
+        guard registered else { return nil }
+        var size = CGSize.zero, hotSpot = CGPoint.zero, duration: CGFloat = 0
+        var frames: UInt = 0
+        var images: Unmanaged<CFArray>?
+        guard CGSCopyRegisteredCursorImages(CGSMainConnectionID(), cursorName, &size, &hotSpot,
+                                            &frames, &duration, &images) == .success else {
+            return (.zero, 0, [])
+        }
+        let array = images?.takeRetainedValue() as? [CGImage] ?? []
+        return (size, Int(frames), array.map { CGSize(width: $0.width, height: $0.height) })
+    }
+}
+
+func listRegisteredCursors() {
+    let applied = (CFPreferencesCopyAppValue("MCAppliedCursor" as CFString,
+                                             "com.alexzielenski.Mousecape" as CFString) as? String) ?? "none"
+    let extras = (CFPreferencesCopyAppValue("MCAppliedExtraCursors" as CFString,
+                                            "com.alexzielenski.Mousecape" as CFString) as? [String]) ?? []
+    print("macOS \(ProcessInfo.processInfo.operatingSystemVersionString)")
+    print("Applied cape: \(applied)")
+    print("Cursor scale: \(cursorScale())")
+    print("")
+    let names = Set(CursorNames.all.keys).union(extras)
+        .filter { !$0.hasPrefix("com.apple.cursor.") }       // core cursors live elsewhere
+        .sorted()
+    func describe(_ info: (size: CGSize, frames: Int, pixels: [CGSize])?) -> String {
+        guard let info else { return "-" }
+        let pixels = info.pixels.map { "\(Int($0.width))x\(Int($0.height))" }.joined(separator: " ")
+        return "\(Int(info.size.width))x\(Int(info.size.height)) pt, \(info.frames) fr [\(pixels)]"
+    }
+    let width = names.map(\.count).max() ?? 30
+    print("\("cursor".padding(toLength: width, withPad: " ", startingAt: 0))  registered | backup")
+    for name in names {
+        let current = describe(registration(of: name))
+        let backup = describe(registration(of: "com.alexzielenski.mousecape." + name))
+        print("\(name.padding(toLength: width, withPad: " ", startingAt: 0))  \(current) | \(backup)")
+    }
 }

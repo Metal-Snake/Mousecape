@@ -29,7 +29,7 @@ let package = Package(
         // re-applies the cape at login and on display changes.
         .executableTarget(
             name: "mousecloak",
-            dependencies: ["MousecloakCore"]
+            dependencies: ["MousecloakCore", "CapeKit"]
         ),
         // SwiftUI app.
         .executableTarget(

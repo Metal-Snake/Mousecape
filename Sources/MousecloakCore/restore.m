@@ -37,8 +37,8 @@ BOOL restoreCursorForIdentifier(NSString *ident) {
 static void removeExtraCursor(NSString *ident) {
     bool hasBackup = false;
     MCIsCursorRegistered(CGSMainConnectionID(), (char *)backupStringForIdentifier(ident).UTF8String, &hasBackup);
-    if (hasBackup) {
-        restoreCursorForIdentifier(backupStringForIdentifier(ident));
+    if (hasBackup && restoreCursorForIdentifier(backupStringForIdentifier(ident))) {
+        MMLog("Restored %s from its backup", ident.UTF8String);
         return;
     }
     bool registered = false;
@@ -49,10 +49,14 @@ static void removeExtraCursor(NSString *ident) {
     // The window server only lets the process that registered a cursor remove it, and
     // that process is usually gone. A variant like ArrowS then gets the restored
     // standard cursor instead, so it looks like the default wherever macOS uses it.
-    if (CGSRemoveRegisteredCursor(CGSMainConnectionID(), (char *)ident.UTF8String, false) == kCGErrorSuccess) {
+    // A removal that reports success is checked too: it must actually be gone.
+    CGError removal = CGSRemoveRegisteredCursor(CGSMainConnectionID(), (char *)ident.UTF8String, false);
+    MCIsCursorRegistered(CGSMainConnectionID(), (char *)ident.UTF8String, &registered);
+    if (!registered) {
         MMLog("Removed %s", ident.UTF8String);
         return;
     }
+    MMLog("Could not remove %s (error %d)", ident.UTF8String, removal);
     NSString *base = MCBaseCursorForExtra(ident);
     NSDictionary *standard = base ? capeWithIdentifier(base) : nil;
     if (standard) {

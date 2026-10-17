@@ -145,6 +145,9 @@ The Objective-C sources of `mousecloak` moved unchanged in substance (history ke
   and ignored.
 - Exits with a non-zero status when a command fails. The original always exited 0.
 - Errors go to stderr. The coloured copyright banner is gone.
+- New `--list`: shows, for every standard and extra cursor, what the window server has
+  registered (size, frames, pixel sizes) and whether a backup exists, together with the
+  macOS version, applied cape and cursor scale. Meant for bug reports.
 - Lives inside the app bundle at `Contents/MacOS/mousecloak` and is also the background
   agent.
 

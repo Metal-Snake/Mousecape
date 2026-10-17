@@ -69,8 +69,11 @@ login items, so they need a person at the Mac.
       registered (checked by setting `NSCursor.arrow` in a test window). On macOS 27.0.1
       `ArrowS` apparently replaces the arrow. To check on another macOS version, apply
       `Examples/ArrowS-Test.cape`: it replaces only `ArrowS` with a magenta arrow marked
-      "S". Then reset, which should bring the normal arrow back. If macOS 27 uses
-      `ArrowS`, capes without it should probably register it from their `Arrow`.
+      "S". Then reset, which should bring the normal arrow back.
+      **macOS 27.0.1 (2026-10-17):** the magenta arrow shows, so 27 uses `ArrowS`.
+      Switching to Svanslös replaces it, but reset kept it. Diagnosis pending:
+      `mousecape-diagnose.sh` runs the test with `mousecloak --list` at each step. Capes
+      without `ArrowS` should probably register it from their `Arrow` on macOS 27.
 - [ ] **Backups live for the whole login session.** The window server won't let a later
       process remove them, so the first backup in a session is the one that counts. If
       another tool changed the cursors before Mousecape's first apply, that is what reset
