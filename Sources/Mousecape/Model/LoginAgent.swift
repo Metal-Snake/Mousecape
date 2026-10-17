@@ -1,5 +1,6 @@
 import Foundation
 import Observation
+import Security
 import ServiceManagement
 
 /// The background agent (`mousecloak --listen`) that re-applies the cape at login, on user
@@ -8,6 +9,8 @@ import ServiceManagement
 @MainActor @Observable
 final class LoginAgent {
     static let plistName = "io.github.metal-snake.Mousecape.agent.plist"
+    /// Code hash of the agent binary at the last registration.
+    private static let registeredHashKey = "agentRegisteredCodeHash"
 
     private let service = SMAppService.agent(plistName: plistName)
     private(set) var status: SMAppService.Status
@@ -25,8 +28,10 @@ final class LoginAgent {
         do {
             if enabled {
                 try service.register()
+                UserDefaults.standard.set(Self.agentCodeHash(), forKey: Self.registeredHashKey)
             } else {
                 try service.unregister()
+                UserDefaults.standard.removeObject(forKey: Self.registeredHashKey)
             }
         } catch {
             lastError = error.localizedDescription
@@ -38,7 +43,35 @@ final class LoginAgent {
         status = service.status
     }
 
+    /// An ad-hoc signed agent is pinned to its exact code hash: after a new build or an
+    /// update, launchd refuses to start it ("needs LWCR update", exit 78) until it is
+    /// registered again. Registering once more is not enough; it has to be unregistered
+    /// first. Done at launch, and only when the agent binary actually changed.
+    func renewRegistrationIfNeeded() {
+        guard service.status == .enabled, let hash = Self.agentCodeHash(),
+              UserDefaults.standard.string(forKey: Self.registeredHashKey) != hash else { return }
+        do {
+            try service.unregister()
+            try service.register()
+            UserDefaults.standard.set(hash, forKey: Self.registeredHashKey)
+        } catch {
+            lastError = error.localizedDescription
+        }
+        refresh()
+    }
+
     func openLoginItemsSettings() {
         SMAppService.openSystemSettingsLoginItems()
+    }
+
+    /// The code directory hash of Contents/MacOS/mousecloak, as hex.
+    private static func agentCodeHash() -> String? {
+        let url = Bundle.main.bundleURL.appending(path: "Contents/MacOS/mousecloak")
+        var code: SecStaticCode?
+        guard SecStaticCodeCreateWithPath(url as CFURL, [], &code) == errSecSuccess, let code else { return nil }
+        var info: CFDictionary?
+        guard SecCodeCopySigningInformation(code, SecCSFlags(), &info) == errSecSuccess,
+              let hash = (info as? [String: Any])?[kSecCodeInfoUnique as String] as? Data else { return nil }
+        return hash.map { String(format: "%02x", $0) }.joined()
     }
 }

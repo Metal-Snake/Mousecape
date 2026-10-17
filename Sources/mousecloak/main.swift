@@ -1,4 +1,4 @@
-import Foundation
+import AppKit
 import MousecloakCore
 
 // mousecloak: the command line front end of the cursor engine. Same options as the
@@ -106,5 +106,9 @@ case .scale(let value):
         print(cursorScale())
     }
 case .listen:
+    // mousecloak lives inside Mousecape.app, so once the engine loads Cocoa the system
+    // takes the agent for the app itself: a Dock icon that bounces forever. Declare it a
+    // background process first.
+    NSApplication.shared.setActivationPolicy(.prohibited)
     listener()
 }

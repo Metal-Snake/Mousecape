@@ -18,6 +18,10 @@ final class AppModel {
 
     var selectedCape: Cape? { library.capes.first { $0.id == selection } }
 
+    init() {
+        loginAgent.renewRegistrationIfNeeded()
+    }
+
     static let capeType = UTType(filenameExtension: "cape") ?? .propertyList
     static let mightyMouseType = UTType(filenameExtension: "MightyMouse") ?? .propertyList
 
