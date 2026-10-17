@@ -45,9 +45,18 @@ login items, so they need a person at the Mac.
     first and the images on demand.
 - [ ] **Empty tiles while previews decode.** Show a placeholder or the cursor name
       instead of an empty square.
-- [ ] **Window "hides" on double-clicking a `.cape`** (reported 2026-10-17). Not reproduced
-      as such. What was found and fixed: a double reload, and stale images from the
-      previous cape. Check on the reporting Mac whether the effect is gone.
+- [ ] **Window closing and reopening on double-clicking a `.cape`** (macOS 27.0.1). A
+      screen recording showed SwiftUI closing the window and creating a new one for the
+      open event. The `Window` scene now ignores external events, and the app delegate
+      handles them. Confirm on macOS 27; macOS 15 never showed it.
+- [ ] **Wait without a backup falls back to the Busy cursor**, which is the arrow with a
+      beach ball, not the beach ball alone. This only happens in login sessions whose
+      backups were made by a version that could not back up Wait (more than 24 frames).
+      A new login fixes it for good.
+- [ ] **How frames are dropped.** Over 24 frames, every n-th frame is kept: 30 → 15 at
+      double the duration. Picking 24 of the 30 frames would keep more of them, but with
+      uneven steps, since a cursor has a single frame duration. Compare both on the
+      beach ball.
 - [ ] **What `ArrowS` and `IBeamS` are.** On macOS 15.6 the system doesn't register them,
       and a registered `ArrowS` does not change the visible arrow. On the reporting Mac it
       apparently did. Find out which macOS versions use them, and whether capes without

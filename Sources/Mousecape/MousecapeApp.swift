@@ -12,6 +12,9 @@ struct MousecapeApp: App {
                 .onAppear { appDelegate.model = model }
         }
         .defaultSize(width: 1000, height: 680)
+        // Opened files go to AppDelegate.application(_:open:). Left to SwiftUI, the
+        // open event closes this window and creates a new one (seen on macOS 27).
+        .handlesExternalEvents(matching: [])
         .commands {
             CommandGroup(replacing: .newItem) {
                 Button("New Cape") { model.newCape() }
