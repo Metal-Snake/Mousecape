@@ -17,7 +17,7 @@ bundled third-party libraries are gone.
 | Background helper | Login item app (`mousecloakHelper`, `SMLoginItemSetEnabled`) | Launch agent (`mousecloak --listen`, `SMAppService`) |
 | Updates | Sparkle | None |
 | Bundle identifier | `com.alexzielenski.Mousecape` | `io.github.metal-snake.Mousecape` |
-| Architectures | Universal (arm64, x86_64) | arm64 only (for now) |
+| Architectures | Universal (arm64, x86_64) | Apple silicon only |
 | Tests | None | Swift Testing (`swift test`) |
 
 ## What stays compatible
@@ -42,6 +42,13 @@ The Objective-C sources of `mousecloak` moved unchanged in substance (history ke
 - An umbrella header and module map make the engine callable from Swift.
 - Of the vendored `CGSInternal` headers, only the three in use are kept
   (`CGSCursor.h`, `CGSConnection.h`, `CGSAccessibility.h`).
+- **Cursor scale.** The engine used to force 1x at every login when no size was saved in
+  Mousecape, overriding the Accessibility pointer size. It now restores a size only when
+  one was saved, and otherwise keeps the current one.
+- **Display changes.** On a display change, the agent now restores the preferred size
+  instead of re-reading the current one: on the macOS 27 beta, display changes reset the
+  scale to 1x. The idea comes from the Mousecape-swiftUI fork; the implementation is our
+  own, because that fork's licence does not allow its code to be reused.
 - Still compiled with manual retain/release (`-fno-objc-arc`), as before.
 - Deprecation warnings are silenced for this target (see TODO.md).
 
@@ -65,7 +72,10 @@ The Objective-C sources of `mousecloak` moved unchanged in substance (history ke
   `SMLoginItemSetEnabled`.
 - Turned on and off in **Settings → Apply cape at login** instead of the
   **Install Helper Tool** menu item. When macOS asks for approval, Settings links to
-  System Settings → Login Items.
+  System Settings → Login Items, where it appears under "Allow in the Background".
+- Runs as a background-only process, so it shows no Dock icon.
+- Ad-hoc signing pins the agent to the exact build. When the agent binary has changed, the
+  app registers it again at launch; otherwise launchd would refuse to start it.
 
 ## App (`Sources/Mousecape`)
 
@@ -82,7 +92,8 @@ New SwiftUI app. Compared with the original:
 - **Capture Current Cursors** (the original's dump) imports the cursors on screen as a new
   cape.
 - **Settings** cover the login agent, the cursor size (slider from 1 to 4) and left-handed
-  mode. Changing left-handed mode re-applies the current cape right away.
+  mode. The slider shows the current system size until a size is saved. Changing
+  left-handed mode re-applies the current cape right away.
 - **No re-apply at launch.** The original re-applied the current cape every time the app
   launched. The new app leaves that to the agent.
 - **Not ported:** the library click and double-click action preferences

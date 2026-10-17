@@ -9,10 +9,15 @@ login items, so they need a person at the Mac.
 
 - [ ] **Apply and reset** a cape from the app. Reset is ⇧⌘R, and `mousecloak --reset`
       also works from Terminal.
-- [ ] **Login agent.** Turn it on in Settings, approve it in System Settings → Login Items,
-      log out and back in, and check that the cape comes back. Also check that a display
-      change keeps it. Open question: does `SMAppService.agent` accept an **ad-hoc signed**
-      app, or does it need a real signing identity?
+- [ ] **Login agent across a real login.** Registering, approval and running as a
+      background process work with the ad-hoc signed app (checked 2026-10-17). Still to do:
+      log out and back in and check that the cape comes back, and that a display change
+      (plugging in a monitor) keeps both cape and cursor size.
+- [ ] **Agent after an update without launching the app.** The agent is pinned to the code
+      hash of `mousecloak`; the app re-registers it at launch when the hash changed. Until
+      the app has been opened once after an update, the agent will not start. Consider a
+      stable signing identity (a self-signed certificate keeps the requirement stable
+      across builds) or a note in the release notes.
 - [ ] **Cursor size slider** and **left-handed mode**, including that the agent restores
       both at login.
 - [ ] **Capture Current Cursors.** While capturing, the engine hides the cursor and scales
@@ -21,11 +26,11 @@ login items, so they need a person at the Mac.
 - [ ] **Finder integration.** Double-clicking a `.cape` opens it. Check what happens when
       the original Mousecape is installed too, since both claim
       `com.alexzielenski.mousecape.cape`.
-- [ ] **Cape editor.** Its layout has never been seen on screen. Check the image wells,
-      drag and drop, hot spot clicks, frame counts and saving.
-- [ ] **Newer macOS.** Test on macOS 15 and 26. The engine relies on private CGS/CoreCursor
-      calls that Apple can change at any time; another fork needed a fix for the
-      macOS 27 beta.
+- [ ] **Cape editor.** The layout has been checked on screen. Still to do: dropping images,
+      setting the hot spot by click, changing frame counts and saving.
+- [ ] **Newer macOS.** Test on macOS 26 and 27. The engine relies on private CGS/CoreCursor
+      calls that Apple can change at any time. The known macOS 27 beta issue (cursor scale
+      reset on display changes) is handled; see CHANGES.md.
 
 ## Known issues
 
@@ -53,9 +58,9 @@ login items, so they need a person at the Mac.
 
 ## Build and release
 
-- [ ] **Universal binary.** `build-app.sh` builds arm64 only. Build each architecture with
-      `--triple` and merge the binaries with `lipo`. The Command Line Tools cannot run
-      `swift build --arch arm64 --arch x86_64`, because that needs Xcode's build system.
+Apple silicon only, on purpose: macOS 27 no longer runs on Intel Macs, so there is no
+x86_64 build.
+
 - [ ] **CI.** A GitHub Actions workflow running `swift test` and `Scripts/build-app.sh` on
       a macOS runner.
 - [ ] **Releases.** Tag, zip and upload a GitHub release. Notarization needs a paid
@@ -79,8 +84,9 @@ login items, so they need a person at the Mac.
       images look worse.
 - [ ] **Windows cursors.** Import `.cur` and `.ani` files.
 - [ ] **Menu bar extra** for switching capes quickly.
-- [ ] **Accessibility pointer size.** Keep the cursor size in step with
-      System Settings → Accessibility → Display → Pointer size.
+- [ ] **Accessibility pointer size.** Mousecape's size and the system's pointer size
+      (System Settings → Accessibility → Display → Pointer size) are the same setting
+      underneath. Show that in Settings, or drop Mousecape's own slider.
 - [ ] **Library search and sorting** for big libraries.
 - [ ] **Hot spot fine-tuning** with the arrow keys in the editor preview.
 - [ ] **Quick Look preview and thumbnail** for `.cape` files in Finder. These are app
@@ -92,8 +98,6 @@ login items, so they need a person at the Mac.
 
 - [ ] **Push.** The `modernize` branch has not been pushed to `Metal-Snake/Mousecape`.
       It stays local until decided otherwise.
-- [ ] **`.vscode/`** is untracked. Either add it to `.gitignore` or commit the parts worth
-      sharing.
 - [ ] **Upstream.** `git fetch upstream` (alexzielenski/Mousecape) now and then. As of
       2026-10-17 it has no commits after `184f87b`.
 - [ ] **Licence.** Keep the non-commercial clause and Alex Zielenski's notice in every
