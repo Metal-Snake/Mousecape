@@ -100,7 +100,9 @@ struct CursorEditorView: View {
             LabeledContent("Frame duration") {
                 HStack {
                     TextField("Seconds", value: $cursor.frameDuration, format: .number.precision(.fractionLength(0...3)))
+                        .labelsHidden()
                         .frame(width: 70)
+                        .multilineTextAlignment(.trailing)
                     Text("s")
                 }
             }
@@ -112,7 +114,8 @@ struct CursorEditorView: View {
     private func numberField(_ title: LocalizedStringKey, value: Binding<CGFloat>) -> some View {
         let double = Binding<Double>(get: { Double(value.wrappedValue) }, set: { value.wrappedValue = CGFloat($0) })
         return TextField(title, value: double, format: .number.precision(.fractionLength(0...1)))
-            .frame(width: 56)
+            .labelsHidden()
+            .frame(width: 60)
             .multilineTextAlignment(.trailing)
     }
 
@@ -129,6 +132,7 @@ struct CursorEditorView: View {
                 ForEach(CapeCursor.supportedScales, id: \.self) { scale in
                     ImageWell(scale: scale,
                               image: cursor.representation(for: scale),
+                              frameCount: cursor.frameCount,
                               expected: cursor.expectedPixelSize(for: scale),
                               onDrop: { url in addImage(from: url, scale: scale) },
                               onChoose: { chooseImage(scale: scale) },
@@ -185,6 +189,7 @@ struct CursorEditorView: View {
 private struct ImageWell: View {
     let scale: Int
     let image: Data?
+    let frameCount: Int
     let expected: CGSize
     let onDrop: (URL) -> Void
     let onChoose: () -> Void
@@ -195,13 +200,22 @@ private struct ImageWell: View {
     var body: some View {
         VStack(spacing: 6) {
             ZStack {
-                if let image, let nsImage = NSImage(data: image) {
+                if let firstFrame {
                     CheckerboardBackground()
-                    Image(nsImage: nsImage)
+                    Image(decorative: firstFrame, scale: 1)
                         .resizable()
                         .interpolation(.high)
                         .scaledToFit()
                         .padding(6)
+                    if frameCount > 1 {
+                        Text("\(frameCount) frames")
+                            .font(.caption2.weight(.medium))
+                            .padding(.horizontal, 5)
+                            .padding(.vertical, 2)
+                            .background(.regularMaterial, in: Capsule())
+                            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
+                            .padding(5)
+                    }
                 } else {
                     Image(systemName: "photo.badge.plus")
                         .font(.title2)
@@ -230,11 +244,18 @@ private struct ImageWell: View {
 
             Text("\(scale)x")
                 .font(.callout.weight(.medium))
-            Text("\(Int(expected.width)) × \(Int(expected.height)) px")
+            Text(verbatim: "\(Int(expected.width)) × \(Int(expected.height)) px")
                 .font(.caption.monospacedDigit())
                 .foregroundStyle(.secondary)
         }
         .help("Drop an image, double-click to choose one, right-click to remove")
+    }
+
+    /// The top frame of the sheet, so tall animated sheets don't shrink to a sliver.
+    private var firstFrame: CGImage? {
+        guard let image, let sheet = NSBitmapImageRep(data: image)?.cgImage else { return nil }
+        let height = sheet.height / max(frameCount, 1)
+        return sheet.cropping(to: CGRect(x: 0, y: 0, width: sheet.width, height: max(height, 1))) ?? sheet
     }
 }
 

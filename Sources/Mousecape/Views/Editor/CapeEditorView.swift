@@ -38,7 +38,7 @@ struct CapeEditorView: View {
             Divider()
             footer
         }
-        .frame(minWidth: 860, idealWidth: 920, minHeight: 600, idealHeight: 640)
+        .frame(minWidth: 860, idealWidth: 920, minHeight: 540, idealHeight: 600)
         .interactiveDismissDisabled(hasChanges)
         .confirmationDialog("Discard your changes to “\(draft.name)”?", isPresented: $confirmDiscard) {
             Button("Discard Changes", role: .destructive) { dismiss() }
@@ -192,11 +192,16 @@ private struct CapeInfoForm: View {
                 Toggle("Includes HiDPI images", isOn: $cape.isHiDPI)
             }
             Section {
-                TextField("Identifier", text: $cape.identifier)
-                    .font(.body.monospaced())
+                LabeledContent("Identifier") {
+                    TextField("Identifier", text: $cape.identifier)
+                        .labelsHidden()
+                        .font(.body.monospaced())
+                        .multilineTextAlignment(.trailing)
+                }
             } footer: {
                 Text("Unique reverse-DNS name, e.g. com.yourname.capename. It is the file name in the library; importing a cape with the same identifier replaces this one.")
                     .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
             }
             Section {
                 LabeledContent("Cursors", value: "\(cape.cursors.count)")

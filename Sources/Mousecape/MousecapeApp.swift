@@ -8,9 +8,10 @@ struct MousecapeApp: App {
     var body: some Scene {
         Window("Mousecape", id: "library") {
             LibraryView(model: model)
-                .frame(minWidth: 700, minHeight: 440)
+                .frame(minWidth: 900, minHeight: 620)   // room for the editor sheet
                 .onAppear { appDelegate.model = model }
         }
+        .defaultSize(width: 1000, height: 680)
         .commands {
             CommandGroup(replacing: .newItem) {
                 Button("New Cape") { model.newCape() }
