@@ -104,6 +104,22 @@ x86_64 build.
       names like `일반선택.ani` (Normal Select). Add keywords in more languages.
 - [ ] **Frame chooser follow-ups.** Drag across the filmstrip to select ranges; show the
       gap pattern of the kept frames; open it straight from the library's problem banner.
+- [ ] **Left-handed capes.** Some themes are already drawn for the left hand (e.g. Bibata's
+      `-Right` Windows packages); Mousecape's left-handed mode mirrors them back the wrong
+      way. Add a flag that says which hand the cape is drawn for:
+      - Stored **only in the cape file** (a new top-level key, e.g. `Handedness` = `right`
+        (default when missing) / `left`), never in user settings, so it travels with the
+        cape. Set in the editor's cape details; when importing a Windows pack, suggest it
+        from names like `-Right` or `Left`.
+      - Applying: mirror only when the cape's hand differs from the user's left-handed
+        setting. A left-drawn cape in right-handed mode is mirrored to the right.
+      - Optional per-cursor left-handed artwork: a cursor can carry its own left-handed
+        representations and hot spot (e.g. `LeftHandedRepresentations`, `LeftHandedHotSpotX/Y`),
+        used instead of mirroring. Useful where mirroring looks wrong (text, a hand, a
+        shadow cast to one side). Cursors without it fall back to mirroring. The editor
+        needs a "Left-handed" image slot per cursor, alongside the scales.
+      - Compatibility: keep `MinimumVersion` at 2.0 so the original Mousecape still opens
+        such capes; check that it ignores the unknown keys.
 - [ ] **Generate missing scales**, e.g. 1x from 2x, with a clear warning that resampled
       images look worse.
 - [ ] **Discover cursor variants instead of listing them.** `CGSCursorNameForSystemCursor(i)`
