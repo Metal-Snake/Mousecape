@@ -25,6 +25,7 @@ struct SettingsView: View {
             } footer: {
                 Text("macOS forgets custom cursors when you log out. A small background agent applies your cape again at login and when displays change.")
                     .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.leading)
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
 

@@ -52,7 +52,8 @@ struct FrameChooserView: View {
             footer
         }
         .padding(20)
-        .frame(minWidth: 720, idealWidth: 760, minHeight: 500, idealHeight: 540)
+        .frame(minWidth: 720, idealWidth: 760, maxWidth: .infinity, minHeight: 500, idealHeight: 540, maxHeight: .infinity)
+        .resizableSheet(minWidth: 720, minHeight: 500, sizeKey: "frameChooser")
         .task { frames = await FrameCache.shared.frames(for: cursor, scale: 2) }
         .onChange(of: preset) { _, newValue in applyPreset(newValue) }
         .onChange(of: kept) { _, _ in

@@ -237,6 +237,9 @@ Rebuilt from scratch. It works on a draft and saves explicitly:
   choosing a file. Images are stored as sRGB PNG. The first image sets the cursor size,
   and later images must match it exactly.
 - **Validation:** cursors that would not apply, or would look wrong, are flagged.
+- **Resizable sheets.** The editor and the Choose Frames sheet can be resized from
+  their edges and corners (SwiftUI sheets can't by themselves), and reopen at the last
+  size used.
 - **No undo** within the editor. The original had undo.
 
 ## New code

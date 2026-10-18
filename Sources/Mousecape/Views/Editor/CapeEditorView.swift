@@ -38,7 +38,8 @@ struct CapeEditorView: View {
             Divider()
             footer
         }
-        .frame(minWidth: 860, idealWidth: 920, minHeight: 540, idealHeight: 600)
+        .frame(minWidth: 860, idealWidth: 920, maxWidth: .infinity, minHeight: 540, idealHeight: 600, maxHeight: .infinity)
+        .resizableSheet(minWidth: 860, minHeight: 540, sizeKey: "capeEditor")
         .interactiveDismissDisabled(hasChanges)
         .confirmationDialog("Discard your changes to “\(draft.name)”?", isPresented: $confirmDiscard) {
             Button("Discard Changes", role: .destructive) { dismiss() }
@@ -201,6 +202,7 @@ private struct CapeInfoForm: View {
             } footer: {
                 Text("Unique reverse-DNS name, e.g. com.yourname.capename. It is the file name in the library; importing a cape with the same identifier replaces this one.")
                     .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.leading)
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
             Section {
