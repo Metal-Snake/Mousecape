@@ -44,7 +44,16 @@ final class AppModel {
 
     /// Imports `.cape` and `.MightyMouse` files (from the open panel, Finder or drag and drop).
     func importFiles(_ urls: [URL]) {
-        for url in urls {
+        // Loose .cur/.ani files dropped together make one cape.
+        let looseCursors = urls.filter { WindowsImport.cursorExtensions.contains($0.pathExtension.lowercased()) }
+        if !looseCursors.isEmpty {
+            importWindows { try WindowsImport.theme(files: looseCursors) }
+        }
+        for url in urls where !looseCursors.contains(url) {
+            if WindowsImport.handles(url) {
+                importWindows { try WindowsImport.theme(at: url) }
+                continue
+            }
             if url.pathExtension.lowercased() == "mightymouse" {
                 importMightyMouse(url)
                 continue
@@ -75,11 +84,34 @@ final class AppModel {
 
     func showImportPanel() {
         let panel = NSOpenPanel()
-        panel.allowedContentTypes = [Self.capeType, Self.mightyMouseType]
+        panel.allowedContentTypes = [Self.capeType, Self.mightyMouseType] + WindowsImport.contentTypes
+        panel.canChooseDirectories = true
         panel.allowsMultipleSelection = true
-        panel.message = String(localized: "Choose capes or MightyMouse files to add to the library")
+        panel.message = String(localized: "Choose capes, MightyMouse files, or Windows cursors (a theme folder, .zip, .inf, .cur or .ani)")
         panel.prompt = String(localized: "Import")
         if panel.runModal() == .OK { importFiles(panel.urls) }
+    }
+
+    /// Converts a Windows cursor theme into a new cape and says which Windows cursors had
+    /// no macOS counterpart.
+    private func importWindows(_ load: () throws -> WindowsCursorTheme) {
+        perform {
+            let theme = try load()
+            var (cape, skipped) = try theme.makeCape(author: String(localized: "Windows cursor theme"))
+            // Two themes of the same name ("kiriko" animated and static) shouldn't look alike.
+            let names = Set(library.capes.map(\.name))
+            if names.contains(cape.name) {
+                let base = cape.name
+                var number = 2
+                while names.contains("\(base) \(number)") { number += 1 }
+                cape.name = "\(base) \(number)"
+            }
+            let added = try library.add(propertyList: cape.propertyList)
+            selection = added.id
+            if !skipped.isEmpty {
+                errorMessage = String(localized: "Imported “\(added.name)”. Left out, as macOS has no matching cursor or the file couldn't be read: \(skipped.joined(separator: ", ")).")
+            }
+        }
     }
 
     private func importMightyMouse(_ url: URL) {

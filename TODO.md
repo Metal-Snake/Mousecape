@@ -11,6 +11,8 @@ and what has been tested.
       times. A real logout and login with an applied cape hasn't been done yet.
 - [ ] **Images in the editor:** drop a PNG from Finder into a scale well, and use
       "Choose Image…". Hot spot clicks, frame choosing and saving are checked.
+- [ ] **Windows cursors in the editor:** dropping a `.cur`/`.ani` on an image well. The
+      import itself is checked with a real theme (zip, folder, single file).
 - [ ] **MightyMouse import** with a real `.MightyMouse` file (none at hand).
 - [ ] **Left-handed mode with the macOS cursors on macOS 27.** Mirroring a cape works
       there (confirmed 2026-10-18). Mirroring the macOS cursors without a cape is checked
@@ -35,6 +37,7 @@ and what has been tested.
   - A library reload parses every cape fully (often several MB each). It happens only
     when the folder changed, but a big library still stalls. Load the metadata first and
     the images on demand.
+- [ ] **Sidebar jumps after an import:** the list scrolls so that the top row is cut off.
 - [ ] **Empty tiles while previews decode.** Show a placeholder or the cursor name
       instead of an empty square.
 - [ ] **Backups live for the whole login session.** The window server won't let a later
@@ -99,7 +102,6 @@ x86_64 build.
       `IBeamS`. At backup time, look for registered `<standard cursor>S` names (or ask the
       window server for every registered name, if a call for that exists) and treat what
       turns up like `ArrowS`.
-- [ ] **Windows cursors.** Import `.cur` and `.ani` files.
 - [ ] **Menu bar extra** for switching capes quickly.
 - [ ] **Accessibility pointer size.** Mousecape's size and the system's pointer size
       (System Settings → Accessibility → Display → Pointer size) are the same setting

@@ -274,10 +274,36 @@ Rebuilt from scratch. It works on a draft and saves explicitly:
   size used.
 - **No undo** within the editor. The original had undo.
 
+## Windows cursors
+
+New: Windows cursor themes import as capes.
+
+- **What can be imported:** a theme folder, its `install.inf`, a `.zip` of the theme, or
+  loose `.cur`/`.ani` files. Use File → Import, drag and drop, or Finder's "Open With" for
+  `.cur`/`.ani`.
+- **Roles:** taken from the registry lines in `install.inf` (or its scheme line); without
+  a usable `.inf`, guessed from the file names. Each Windows role fills every matching
+  macOS cursor; Vertical Resize, for example, fills all six vertical resize cursors.
+  Handwriting, Alternate Select, Location Select and Person Select have no macOS
+  counterpart; the import says which roles it left out. A single loose file whose role
+  has no counterpart becomes the arrow.
+- **Files:** `.cur`/`.ico` images as PNG or as 1, 4, 8, 16, 24 or 32-bit bitmaps with
+  transparency mask. Pixels the mask marks as "invert" are drawn black, since macOS
+  cursors can't invert. `.ani` animations with their own frame order and per-step
+  durations; uneven durations are repeated in units of their common divisor, within the
+  frame limit.
+- **Size:** Windows shows cursors at 32 × 32 pixels at the default pointer size, whatever
+  the file's resolution, so cursors become 32 × 32 points. Images are resampled to 1x and
+  2x, and to 5x when the source is large enough. Hot spots are scaled to match.
+- **Editor:** dropping a `.cur` or `.ani` on a cursor's image well replaces the whole
+  cursor (images, size, hot spot, frames).
+- Written from the published file formats; no code from other projects.
+
 ## New code
 
 - **`Sources/CapeKit`:** reads and writes `.cape` files, splits sprite sheets into frames,
-  and holds the editing model and validation. Pure Swift with no private API.
+  holds the editing model and validation, and reads Windows cursors. Pure Swift with no
+  private API.
 - **Tests:** `Tests/CapeKitTests` cover the cape format, frames, scales and validation.
   `Tests/MousecapeTests` cover saving, renaming and duplicating in a throwaway library.
 - **`MOUSECAPE_LIBRARY`:** this environment variable points the app at another library
@@ -308,6 +334,8 @@ On macOS 15.6:
   after a display change (simulated by switching the resolution).
 - Capture Current Cursors: the capture has no problems and applies.
 - The editor: setting the hot spot by click, Choose Frames, saving; resizable sheets.
+- Windows cursors: a theme `.zip`, a theme folder and a single `.cur` import; the
+  converted animated theme applies.
 
 Not yet: a real logout/login with a cape applied, dropping images into the editor,
 MightyMouse import, macOS 26.

@@ -20,7 +20,7 @@ struct LibraryView: View {
                 ContentUnavailableView {
                     Label("No Capes", systemImage: "cursorarrow.rays")
                 } description: {
-                    Text("Drop .cape files here, or choose File → Import.")
+                    Text("Drop .cape files or Windows cursors here, or choose File → Import.")
                 } actions: {
                     Button("Import…") { model.showImportPanel() }
                     Button("New Cape") { model.newCape() }
@@ -49,7 +49,7 @@ struct LibraryView: View {
             }
         }
         .dropDestination(for: URL.self) { urls, _ in
-            let files = urls.filter { ["cape", "mightymouse"].contains($0.pathExtension.lowercased()) }
+            let files = urls.filter { ["cape", "mightymouse"].contains($0.pathExtension.lowercased()) || WindowsImport.handles($0) }
             model.importFiles(files)
             return !files.isEmpty
         }

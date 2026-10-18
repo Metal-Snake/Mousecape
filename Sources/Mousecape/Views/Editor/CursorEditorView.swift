@@ -146,7 +146,7 @@ struct CursorEditorView: View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Images")
                 .font(.headline)
-            Text("Drop a PNG per pixel density. Animated cursors stack all frames vertically, first frame on top.")
+            Text("Drop a PNG per pixel density. Animated cursors stack all frames vertically, first frame on top. A Windows .cur or .ani replaces the whole cursor.")
                 .font(.callout)
                 .foregroundStyle(.secondary)
             HStack(alignment: .top, spacing: 12) {
@@ -188,7 +188,7 @@ struct CursorEditorView: View {
 
     private func chooseImage(scale: Int) {
         let panel = NSOpenPanel()
-        panel.allowedContentTypes = [.image]
+        panel.allowedContentTypes = [.image] + ["cur", "ani"].compactMap { UTType(filenameExtension: $0) }
         panel.message = String(localized: "Choose the \(scale)x image for \(cursor.name)")
         if panel.runModal() == .OK, let url = panel.url {
             addImage(from: url, scale: scale)
@@ -196,6 +196,15 @@ struct CursorEditorView: View {
     }
 
     private func addImage(from url: URL, scale: Int) {
+        // A Windows cursor replaces the whole cursor: images, size, hot spot and frames.
+        if WindowsImport.cursorExtensions.contains(url.pathExtension.lowercased()) {
+            do {
+                cursor = try WindowsCursor.capeCursor(from: Data(contentsOf: url), identifier: cursor.identifier)
+            } catch {
+                importError = "“\(url.lastPathComponent)”: \(error.localizedDescription)"
+            }
+            return
+        }
         guard let data = try? Data(contentsOf: url),
               let (png, pixels) = CapeCursor.normalizedPNG(from: data) else {
             importError = String(localized: "“\(url.lastPathComponent)” is not an image Mousecape can read.")

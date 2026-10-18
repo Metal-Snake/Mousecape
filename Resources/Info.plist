@@ -58,6 +58,19 @@
                 <string>com.alexzielenski.mightymouse</string>
             </array>
         </dict>
+        <dict>
+            <key>CFBundleTypeName</key>
+            <string>Windows Cursor</string>
+            <key>CFBundleTypeRole</key>
+            <string>Viewer</string>
+            <key>LSHandlerRank</key>
+            <string>Alternate</string>
+            <key>LSItemContentTypes</key>
+            <array>
+                <string>com.microsoft.cur</string>
+                <string>com.microsoft.ani</string>
+            </array>
+        </dict>
     </array>
     <!-- Same type identifier as the original app, so existing .cape files keep working. -->
     <key>UTExportedTypeDeclarations</key>
@@ -97,6 +110,41 @@
                 <key>public.filename-extension</key>
                 <array>
                     <string>MightyMouse</string>
+                </array>
+            </dict>
+        </dict>
+        <!-- macOS has no types for Windows cursors; declared here for "Open With". -->
+        <dict>
+            <key>UTTypeIdentifier</key>
+            <string>com.microsoft.cur</string>
+            <key>UTTypeDescription</key>
+            <string>Windows Cursor</string>
+            <key>UTTypeConformsTo</key>
+            <array>
+                <string>public.data</string>
+            </array>
+            <key>UTTypeTagSpecification</key>
+            <dict>
+                <key>public.filename-extension</key>
+                <array>
+                    <string>cur</string>
+                </array>
+            </dict>
+        </dict>
+        <dict>
+            <key>UTTypeIdentifier</key>
+            <string>com.microsoft.ani</string>
+            <key>UTTypeDescription</key>
+            <string>Windows Animated Cursor</string>
+            <key>UTTypeConformsTo</key>
+            <array>
+                <string>public.data</string>
+            </array>
+            <key>UTTypeTagSpecification</key>
+            <dict>
+                <key>public.filename-extension</key>
+                <array>
+                    <string>ani</string>
                 </array>
             </dict>
         </dict>
