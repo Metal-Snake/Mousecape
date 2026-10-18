@@ -222,7 +222,9 @@ The Objective-C sources of `mousecloak` moved unchanged in substance (history ke
 - Turned on and off in **Settings → Apply cape at login** instead of the **Install Helper
   Tool** menu item. If it is switched off under System Settings → Login Items, Settings
   links there. macOS lists it as "mousecloak".
-- At launch the app makes sure the plist points at the app's current location.
+- At launch the app makes sure the plist points at the app's current location. The label
+  follows the bundle identifier, so a copy under another identifier (a test build) gets
+  an agent of its own instead of taking this one over.
 - Runs as a background-only process, so it shows no Dock icon.
 - Logs to `~/Library/Logs/Mousecape/agent.log`.
 

@@ -12,7 +12,9 @@ import ServiceManagement
 /// pinned, so updates just work.
 @MainActor @Observable
 final class LoginAgent {
-    nonisolated static let label = "io.github.metal-snake.Mousecape.listener"
+    /// Per bundle identifier, so a second copy under another identifier (a test build) has an
+    /// agent of its own instead of pointing this one at itself.
+    nonisolated static let label = "\(Bundle.main.bundleIdentifier ?? "io.github.metal-snake.Mousecape").listener"
     /// SMAppService agents of earlier versions, unregistered when found. Their plists stay
     /// in the app bundle because SMAppService can only unregister with the plist present.
     private static let smAppServicePlists = [
