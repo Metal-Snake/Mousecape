@@ -1,63 +1,38 @@
 # TODO
 
-Open work, known issues and ideas for this fork. CHANGES.md records what is already done.
+Open work, known issues and ideas for this fork. CHANGES.md records what is already done
+and what has been tested.
 
-## Verify first (built, never run for real)
+## Still to verify
 
-None of these have been tried on a live system. They change the real cursors or the
-login items, so they need a person at the Mac.
-
-- [ ] **Apply and reset** a cape from the app. Reset is ⇧⌘R, and `mousecloak --reset`
-      also works from Terminal.
-- [ ] **Login agent across a real login.** Registering, approval and running as a
-      background process work with the ad-hoc signed app (checked 2026-10-17). Still to do:
-      log out and back in and check that the cape comes back, and that a display change
-      (plugging in a monitor) keeps both cape and cursor size.
-- [ ] **Agent after an update without launching the app.** The agent is pinned to the build
-      (app bundle and `mousecloak`); the app re-registers it at launch when either hash
-      changed. Until
-      the app has been opened once after an update, the agent will not start. Consider a
-      stable signing identity (a self-signed certificate keeps the requirement stable
-      across builds) or a note in the release notes.
-- [ ] **Cursor size slider** and **left-handed mode**, including that the agent restores
-      both at login.
-- [ ] **Capture Current Cursors.** While capturing, the engine hides the cursor and scales
-      it to 16× for a moment.
-- [ ] **MightyMouse import**, using a real `.MightyMouse` file.
-- [ ] **Finder integration.** Double-clicking a `.cape` opens it. Check what happens when
-      the original Mousecape is installed too, since both claim
-      `com.alexzielenski.mousecape.cape`.
-- [ ] **Cape editor.** The layout has been checked on screen. Still to do: dropping images,
-      setting the hot spot by click, changing frame counts and saving.
-- [ ] **Newer macOS.** Test on macOS 26 and 27. The engine relies on private CGS/CoreCursor
-      calls that Apple can change at any time. The known macOS 27 beta issue (cursor scale
-      reset on display changes) is handled; see CHANGES.md.
+- [ ] **A real login with a cape applied**, ideally on macOS 27. The agent's part is
+      checked on macOS 15.6 by restarting it (as at login) and by switching the display
+      resolution (as when plugging in a monitor): cape and cursor size come back both
+      times. A real logout and login with an applied cape hasn't been done yet.
+- [ ] **Images in the editor:** drop a PNG from Finder into a scale well, and use
+      "Choose Image…". Hot spot clicks, frame choosing and saving are checked.
+- [ ] **MightyMouse import** with a real `.MightyMouse` file (none at hand).
+- [ ] **macOS 26.** Tested on 15.6 and 27.0.1 only. The engine relies on private
+      CGS/CoreCursor calls that any macOS version can change.
 
 ## Known issues
 
+- [ ] **The agent stops after an update until the app is opened once.** Ad-hoc signing
+      pins the registered agent to the exact build (app bundle and `mousecloak`); the app
+      registers it again at launch when the build changed. A stable signing identity (a
+      self-signed certificate, or a Developer ID) would keep the requirement the same
+      across builds. Until then, release notes should say to open the app after updating.
 - [ ] **Hidden deprecation warnings.** The engine builds with
       `-Wno-deprecated-declarations`, which hides three warnings:
       `kUTTypePNG` in `MCDefs.m:73` and `MCDefs.m:94` (use `UTTypePNG`), and
       `NSAlphaFirstBitmapFormat` in `create.m:191`. Fix them and remove the flag.
 - [ ] **Blocking work on the main thread.**
   - Applying runs there, so a large cape can freeze the UI for a moment.
-  - A library reload parses every cape fully (often several MB each). It now happens only
-    when the folder changed, but a big library will still stall. Load the metadata
-    first and the images on demand.
+  - A library reload parses every cape fully (often several MB each). It happens only
+    when the folder changed, but a big library still stalls. Load the metadata first and
+    the images on demand.
 - [ ] **Empty tiles while previews decode.** Show a placeholder or the cursor name
       instead of an empty square.
-- [ ] **Wait without a backup falls back to the Busy cursor**, which is the arrow with a
-      beach ball, not the beach ball alone. This only happens in login sessions whose
-      backups were made by a version that could not back up Wait (more than 24 frames).
-      A new login fixes it for good.
-- [ ] **Frame chooser follow-ups.** The chooser is in (2026-10-17). Ideas: drag across the
-      filmstrip to select ranges; show the gap pattern of the kept frames; offer it from
-      the library's problem banner directly.
-- [ ] **More cursor variants in future macOS versions.** macOS 27 added `ArrowS` and
-      `IBeamS`. A later version may add more, which capes and reset wouldn't know about.
-      Idea: at backup time, look for registered `<standard cursor>S` names (or ask the
-      window server for every registered name, if a call for that exists) and treat
-      what turns up like `ArrowS`.
 - [ ] **Backups live for the whole login session.** The window server won't let a later
       process remove them, so the first backup in a session is the one that counts. If
       another tool changed the cursors before Mousecape's first apply, that is what reset
@@ -65,15 +40,21 @@ login items, so they need a person at the Mac.
 - [ ] **No undo** in the editor, or for deleting a cape. The original had both.
 - [ ] **`mousecloak --create` asks questions on stdin** (`scanf` in `create.m`), so it
       cannot be scripted. Add options such as `--name` and `--author`.
-- [ ] **The agent's output goes nowhere.** The engine prints to stdout with ANSI colours.
-      Switch to `os_log`, or set `StandardOutPath` in the agent plist.
-- [ ] **No re-apply at launch.** The app no longer re-applies the cape when it starts,
-      unlike the original. Decide whether that should come back, for example only when the
-      agent is off.
-- [ ] **Closing the window quits the app** (single `Window` scene). Decide whether that is
-      what we want.
-- [ ] **No preferences for library clicks.** The original's click and double-click actions
-      were not ported.
+- [ ] **The agent's output goes nowhere.** The engine prints to stdout with ANSI colours
+      and the agent plist has no `StandardOutPath`. Switch to `os_log`, or log to a file
+      under `~/Library/Logs`.
+- [ ] **Original Mousecape installed alongside.** Both apps claim the
+      `com.alexzielenski.mousecape.cape` type. The original's last release (1813) is
+      Intel-only, so this only matters on Macs with Rosetta, where it's untested which app
+      opens `.cape` files.
+
+## Decisions
+
+- [ ] **Re-apply at launch?** The original re-applied the cape whenever the app started;
+      this fork leaves that to the agent. Maybe bring it back when the agent is off.
+- [ ] **Closing the window quits the app** (single `Window` scene). Keep it or not?
+- [ ] **Library click preferences.** The original's click and double-click actions were
+      not ported. Port them or drop them for good.
 
 ## Build and release
 
@@ -86,8 +67,15 @@ x86_64 build.
       Developer ID; until then, document right-click → Open.
 - [ ] **Version scheme.** `build-app.sh` says 2.0.0; the last upstream release was
       build 1813. Decide on a scheme and keep the version in one place.
-- [ ] **Update checks.** Sparkle is gone, so there are none. If wanted, add an opt-in check
-      of the GitHub releases API that only links to the release page.
+- [ ] **Updates.** None at the moment. The original's Sparkle setup was dropped: it was an
+      old submodule that needs Xcode to build, and its feed pointed to the original's
+      appcast, so it would have offered the original's Intel-only builds. Options, from
+      least to most work:
+      1. An opt-in check of the GitHub releases API that only links to the release page.
+      2. A Homebrew tap with a cask (`brew upgrade`).
+      3. Sparkle 2 as a Swift package, embedded by `build-app.sh`, with our own EdDSA key
+         and an appcast published with each release. Check first how Sparkle treats an
+         ad-hoc signed app, whose code signature changes with every build.
 
 ## Features and ideas
 
@@ -99,8 +87,14 @@ x86_64 build.
       cape out of the window to share it.
 - [ ] **Easier animated cursors.** Build the sprite sheet from several single-frame images
       or a GIF, so nobody has to stack frames by hand.
+- [ ] **Frame chooser follow-ups.** Drag across the filmstrip to select ranges; show the
+      gap pattern of the kept frames; open it straight from the library's problem banner.
 - [ ] **Generate missing scales**, e.g. 1x from 2x, with a clear warning that resampled
       images look worse.
+- [ ] **More cursor variants in future macOS versions.** macOS 27 added `ArrowS` and
+      `IBeamS`. At backup time, look for registered `<standard cursor>S` names (or ask the
+      window server for every registered name, if a call for that exists) and treat what
+      turns up like `ArrowS`.
 - [ ] **Windows cursors.** Import `.cur` and `.ani` files.
 - [ ] **Menu bar extra** for switching capes quickly.
 - [ ] **Accessibility pointer size.** Mousecape's size and the system's pointer size
@@ -121,6 +115,7 @@ x86_64 build.
 - [ ] **Push.** The `modernize` branch has not been pushed to `Metal-Snake/Mousecape`.
       It stays local until decided otherwise.
 - [ ] **Upstream.** `git fetch upstream` (alexzielenski/Mousecape) now and then. As of
-      2026-10-17 it has no commits after `184f87b`.
-- [ ] **Licence.** Keep the non-commercial clause and Alex Zielenski's notice in every
-      distribution. No paid builds, no donations tied to downloads.
+      2026-10-18 it has no commits after `184f87b`.
+
+Standing rule: keep the original licence's non-commercial clause and Alex Zielenski's
+notice in every distribution. No paid builds, no donations tied to downloads.

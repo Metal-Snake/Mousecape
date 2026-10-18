@@ -264,6 +264,22 @@ Rebuilt from scratch. It works on a draft and saves explicitly:
 - The app icon from the asset catalog to `Resources/AppIcon.iconset`. The artwork is
   unchanged.
 
+## Tested
+
+On macOS 15.6 (Apple silicon) and 27.0.1:
+- Applying and resetting capes, from the app and with `mousecloak`, including capes with
+  more than 24 frames and with `ArrowS`/`IBeamS`.
+- Opening `.cape` files from Finder (the window stays open on macOS 27).
+
+On macOS 15.6:
+- The login agent re-applies the cape and cursor size when it starts (as at login) and
+  after a display change (simulated by switching the resolution).
+- Capture Current Cursors: the capture has no problems and applies.
+- The editor: setting the hot spot by click, Choose Frames, saving; resizable sheets.
+
+Not yet: a real logout/login with a cape applied, dropping images into the editor,
+MightyMouse import, macOS 26.
+
 ## Licence
 
 Unchanged. The original licence forbids commercial use, so this fork stays free and
