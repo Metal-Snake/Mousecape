@@ -247,8 +247,11 @@ BOOL MCCursorIsPointer(NSString *identifier) {
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
         NSDictionary *c = cursorMap();
-        pointers = [@[ [c allKeysForObject:@"Alias"][0], [c allKeysForObject:@"Arrow"][0], [c allKeysForObject:@"Busy"][0], [c allKeysForObject:@"Closed"][0], [c allKeysForObject:@"Copy Drag"][0], [c allKeysForObject:@"Counting Down"][0], [c allKeysForObject:@"Counting Up"][0], [c allKeysForObject:@"Counting Up/Down"][0], [c allKeysForObject:@"Ctx Menu"][0], [c allKeysForObject:@"Forbidden"][0], [c allKeysForObject:@"Link"][0], [c allKeysForObject:@"Move"][0], [c allKeysForObject:@"Open"][0], [c allKeysForObject:@"Pointing"][0], [c allKeysForObject:@"Poof"][0], [c allKeysForObject:@"Wait"][0], [c allKeysForObject:@"Zoom In"][0], [c allKeysForObject:@"Zoom Out"] ] retain];
+        pointers = [@[ [c allKeysForObject:@"Alias"][0], [c allKeysForObject:@"Arrow"][0], [c allKeysForObject:@"Busy"][0], [c allKeysForObject:@"Closed"][0], [c allKeysForObject:@"Copy Drag"][0], [c allKeysForObject:@"Counting Down"][0], [c allKeysForObject:@"Counting Up"][0], [c allKeysForObject:@"Counting Up/Down"][0], [c allKeysForObject:@"Ctx Menu"][0], [c allKeysForObject:@"Forbidden"][0], [c allKeysForObject:@"Link"][0], [c allKeysForObject:@"Move"][0], [c allKeysForObject:@"Open"][0], [c allKeysForObject:@"Pointing"][0], [c allKeysForObject:@"Poof"][0], [c allKeysForObject:@"Wait"][0], [c allKeysForObject:@"Zoom In"][0], [c allKeysForObject:@"Zoom Out"][0] ] retain];
     });
 
-    return [pointers containsObject:identifier];
+    // A variant such as ArrowS is a pointer when its base is: on macOS 27 ArrowS is the
+    // arrow people see, so left-handed mode has to mirror it too.
+    NSString *base = MCBaseCursorForExtra(identifier);
+    return [pointers containsObject:identifier] || (base && [pointers containsObject:base]);
 }

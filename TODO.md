@@ -12,6 +12,9 @@ and what has been tested.
 - [ ] **Images in the editor:** drop a PNG from Finder into a scale well, and use
       "Choose Image…". Hot spot clicks, frame choosing and saving are checked.
 - [ ] **MightyMouse import** with a real `.MightyMouse` file (none at hand).
+- [ ] **Left-handed mode on macOS 27.** Fixed after a report (2026-10-18): `ArrowS` was
+      not mirrored. Checked on macOS 15.6 via the hot spot in `mousecloak --list`; still
+      to confirm on screen on macOS 27.
 - [ ] **macOS 26.** Tested on 15.6 and 27.0.1 only. The engine relies on private
       CGS/CoreCursor calls that any macOS version can change.
 
@@ -53,6 +56,8 @@ and what has been tested.
 - [ ] **Re-apply at launch?** The original re-applied the cape whenever the app started;
       this fork leaves that to the agent. Maybe bring it back when the agent is off.
 - [ ] **Closing the window quits the app** (single `Window` scene). Keep it or not?
+- [ ] **Left-handed mode without a cape.** It only mirrors the cursors of an applied cape;
+      with the macOS cursors it does nothing. Mirror the default cursors too?
 - [ ] **Library click preferences.** The original's click and double-click actions were
       not ported. Port them or drop them for good.
 

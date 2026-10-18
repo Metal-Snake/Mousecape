@@ -121,7 +121,7 @@ case .listen:
 // MARK: - --list
 
 /// What the window server has registered under a cursor name.
-func registration(of name: String) -> (size: CGSize, frames: Int, pixels: [CGSize])? {
+func registration(of name: String) -> (size: CGSize, frames: Int, pixels: [CGSize], hotSpot: CGPoint)? {
     name.withCString { cName in
         let cursorName = UnsafeMutablePointer(mutating: cName)
         var registered = false
@@ -132,10 +132,10 @@ func registration(of name: String) -> (size: CGSize, frames: Int, pixels: [CGSiz
         var images: Unmanaged<CFArray>?
         guard CGSCopyRegisteredCursorImages(CGSMainConnectionID(), cursorName, &size, &hotSpot,
                                             &frames, &duration, &images) == .success else {
-            return (.zero, 0, [])
+            return (.zero, 0, [], .zero)
         }
         let array = images?.takeRetainedValue() as? [CGImage] ?? []
-        return (size, Int(frames), array.map { CGSize(width: $0.width, height: $0.height) })
+        return (size, Int(frames), array.map { CGSize(width: $0.width, height: $0.height) }, hotSpot)
     }
 }
 
@@ -147,14 +147,18 @@ func listRegisteredCursors() {
     print("macOS \(ProcessInfo.processInfo.operatingSystemVersionString)")
     print("Applied cape: \(applied)")
     print("Cursor scale: \(cursorScale())")
+    let leftHanded = (CFPreferencesCopyAppValue("MCHandedness" as CFString,
+                                                "com.alexzielenski.Mousecape" as CFString) as? Bool) ?? false
+    print("Left-handed: \(leftHanded ? "on" : "off")")
     print("")
     let names = Set(CursorNames.all.keys).union(extras)
         .filter { !$0.hasPrefix("com.apple.cursor.") }       // core cursors live elsewhere
         .sorted()
-    func describe(_ info: (size: CGSize, frames: Int, pixels: [CGSize])?) -> String {
+    func describe(_ info: (size: CGSize, frames: Int, pixels: [CGSize], hotSpot: CGPoint)?) -> String {
         guard let info else { return "-" }
         let pixels = info.pixels.map { "\(Int($0.width))x\(Int($0.height))" }.joined(separator: " ")
-        return "\(Int(info.size.width))x\(Int(info.size.height)) pt, \(info.frames) fr [\(pixels)]"
+        let hot = "@\(info.hotSpot.x.formatted()),\(info.hotSpot.y.formatted())"
+        return "\(Int(info.size.width))x\(Int(info.size.height)) pt \(hot), \(info.frames) fr [\(pixels)]"
     }
     let width = names.map(\.count).max() ?? 30
     print("\("cursor".padding(toLength: width, withPad: " ", startingAt: 0))  registered | backup")

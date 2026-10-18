@@ -134,6 +134,15 @@ frames into the new cape, so the original couldn't apply its own capture.
 
 **This fork:** such captures apply, with the Wait animation reduced.
 
+### Left-handed mode missed cursors
+
+**Original:** the list of pointers that left-handed mode mirrors had a typo: its last
+entry, Zoom Out, was an array instead of a name, so Zoom Out was never mirrored.
+
+**This fork:** fixed. Variants such as `ArrowS` count as pointers when their base cursor
+does; otherwise left-handed mode would not mirror the arrow on macOS 27, where `ArrowS`
+is the arrow people see.
+
 ### Cursor size forced to 1x at login
 
 **Original:** with no size saved in Mousecape, the helper set the cursor scale to 1x at
@@ -168,8 +177,9 @@ The Objective-C sources of `mousecloak` moved unchanged in substance (history ke
 - Exits with a non-zero status when a command fails. The original always exited 0.
 - Errors go to stderr. The coloured copyright banner is gone.
 - New `--list`: shows, for every standard and extra cursor, what the window server has
-  registered (size, frames, pixel sizes) and whether a backup exists, together with the
-  macOS version, applied cape and cursor scale. Meant for bug reports.
+  registered (size, hot spot, frames, pixel sizes) and whether a backup exists, together
+  with the macOS version, applied cape, cursor scale and left-handed mode. Meant for bug
+  reports.
 - Lives inside the app bundle at `Contents/MacOS/mousecloak` and is also the background
   agent.
 
