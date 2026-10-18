@@ -94,7 +94,8 @@ stayed on screen after a reset, and after applying another cape.
 **This fork:** these variants are backed up when the system has them. On reset they are
 handled first, before the standard cursors: they are restored, or given the default
 arrow/I-beam from the standard cursor's backup when the system never had them. They can't
-take the current Arrow, because on macOS 27 that would read back the variant itself. Applying a
+take the current Arrow, because on macOS 27 that would read back the variant itself.
+Confirmed on macOS 27.0.1: reset brings back the standard arrow and I-beam. Applying a
 cape without them gives leftover variants the cape's own arrow/I-beam. Any other cursor
 outside the standard set is remembered when applied (`MCAppliedExtraCursors`) and
 handled the same way.

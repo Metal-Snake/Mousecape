@@ -35,13 +35,6 @@ login items, so they need a person at the Mac.
 
 ## Known issues
 
-- [ ] **Confirm the macOS 27 reset fix.** Diagnosis 2 (2026-10-18) ruled out other
-      processes: nothing else was running, yet restoring Arrow and IBeam "succeeded"
-      without effect. The cause: on macOS 27 a registered `ArrowS` shadows `Arrow`, even
-      when reading it (applying only ArrowS made Arrow read back magenta), and the same
-      for `IBeamS`/`IBeam`. Reset gave ArrowS "the default Arrow" by reading Arrow, which
-      returned ArrowS itself. Now variants are reset first, from the base cursor's backup.
-      Needs a run of `mousecape-diagnose.sh` on macOS 27.
 - [ ] **Hidden deprecation warnings.** The engine builds with
       `-Wno-deprecated-declarations`, which hides three warnings:
       `kUTTypePNG` in `MCDefs.m:73` and `MCDefs.m:94` (use `UTTypePNG`), and
@@ -70,8 +63,9 @@ login items, so they need a person at the Mac.
       `ArrowS` apparently replaces the arrow. To check on another macOS version, apply
       `Examples/ArrowS-Test.cape`: it replaces only `ArrowS` with a magenta arrow marked
       "S". Then reset, which should bring the normal arrow back.
-      **macOS 27.0.1:** a registered `ArrowS` shadows `Arrow` entirely (see the reset
-      item above). Applying a cape without `ArrowS` already gives a registered `ArrowS`
+      **macOS 27.0.1:** a registered `ArrowS` shadows `Arrow` entirely, even when reading
+      it; resetting variants first, from the base cursor's backup, fixed reset there
+      (confirmed 2026-10-18). Applying a cape without `ArrowS` already gives a registered `ArrowS`
       the cape's arrow. Open: whether macOS 27 registers `ArrowS` itself in a fresh
       session, and so whether capes without it work before any reset ran.
 - [ ] **Backups live for the whole login session.** The window server won't let a later
