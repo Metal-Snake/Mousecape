@@ -84,9 +84,12 @@ busy cursor (an arrow with a beach ball, so close but not identical; see TODO.md
 ### Cursors outside the standard set stayed after a reset
 
 Some capes register cursors the original doesn't know, such as
-`com.apple.coregraphics.ArrowS` and `IBeamS`. On macOS 15 they don't change what is shown.
-On macOS 27 a registered `ArrowS` shadows `Arrow` completely, even when the arrow is read
-back, and `IBeamS` does the same to `IBeam`.
+`com.apple.coregraphics.ArrowS` and `IBeamS`.
+- **macOS 15:** the system doesn't register them, and they don't change what is shown.
+- **macOS 27:** the system registers them itself at login, with the same images as
+  `Arrow` and `IBeam`. A registered `ArrowS` shadows `Arrow` completely, even when the
+  arrow is read back, and `IBeamS` does the same to `IBeam`. A cape that only replaces
+  `Arrow` would therefore not show on macOS 27 at all.
 
 **Original:** they were never backed up or reset. On macOS 27 the arrow of such a cape
 stayed on screen after a reset, and after applying another cape.
@@ -95,7 +98,10 @@ stayed on screen after a reset, and after applying another cape.
 handled first, before the standard cursors: they are restored, or given the default
 arrow/I-beam from the standard cursor's backup when the system never had them. They can't
 take the current Arrow, because on macOS 27 that would read back the variant itself.
-Confirmed on macOS 27.0.1: reset brings back the standard arrow and I-beam. Applying a
+On macOS 27 the system's own `ArrowS`/`IBeamS` are backed up at the first apply of a
+login session, and a cape without them gives them its `Arrow`/`IBeam`, so such capes
+show from the start. Confirmed on macOS 27.0.1: reset brings back the standard arrow and
+I-beam. Applying a
 cape without them gives leftover variants the cape's own arrow/I-beam. Any other cursor
 outside the standard set is remembered when applied (`MCAppliedExtraCursors`) and
 handled the same way.

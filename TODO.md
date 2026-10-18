@@ -46,10 +46,6 @@ login items, so they need a person at the Mac.
     first and the images on demand.
 - [ ] **Empty tiles while previews decode.** Show a placeholder or the cursor name
       instead of an empty square.
-- [ ] **Window closing and reopening on double-clicking a `.cape`** (macOS 27.0.1). A
-      screen recording showed SwiftUI closing the window and creating a new one for the
-      open event. The `Window` scene now ignores external events, and the app delegate
-      handles them. Confirm on macOS 27; macOS 15 never showed it.
 - [ ] **Wait without a backup falls back to the Busy cursor**, which is the arrow with a
       beach ball, not the beach ball alone. This only happens in login sessions whose
       backups were made by a version that could not back up Wait (more than 24 frames).
@@ -57,17 +53,11 @@ login items, so they need a person at the Mac.
 - [ ] **Frame chooser follow-ups.** The chooser is in (2026-10-17). Ideas: drag across the
       filmstrip to select ranges; show the gap pattern of the kept frames; offer it from
       the library's problem banner directly.
-- [ ] **What `ArrowS` and `IBeamS` are.** On macOS 15.6 the system doesn't register them,
-      and an app setting the standard arrow still gets `Arrow` even when `ArrowS` is
-      registered (checked by setting `NSCursor.arrow` in a test window). On macOS 27.0.1
-      `ArrowS` apparently replaces the arrow. To check on another macOS version, apply
-      `Examples/ArrowS-Test.cape`: it replaces only `ArrowS` with a magenta arrow marked
-      "S". Then reset, which should bring the normal arrow back.
-      **macOS 27.0.1:** a registered `ArrowS` shadows `Arrow` entirely, even when reading
-      it; resetting variants first, from the base cursor's backup, fixed reset there
-      (confirmed 2026-10-18). Applying a cape without `ArrowS` already gives a registered `ArrowS`
-      the cape's arrow. Open: whether macOS 27 registers `ArrowS` itself in a fresh
-      session, and so whether capes without it work before any reset ran.
+- [ ] **More cursor variants in future macOS versions.** macOS 27 added `ArrowS` and
+      `IBeamS`. A later version may add more, which capes and reset wouldn't know about.
+      Idea: at backup time, look for registered `<standard cursor>S` names (or ask the
+      window server for every registered name, if a call for that exists) and treat
+      what turns up like `ArrowS`.
 - [ ] **Backups live for the whole login session.** The window server won't let a later
       process remove them, so the first backup in a session is the one that counts. If
       another tool changed the cursors before Mousecape's first apply, that is what reset
