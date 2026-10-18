@@ -47,6 +47,36 @@ final class LibraryTests {
         #expect(files() == ["test.a.cape", "test.b.cape"])
     }
 
+    @Test func renamesStrayFileToIdentifier() throws {
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        let cape = Cape(identifier: "test.stray", name: "Stray", author: "")
+        try cape.propertyListData().write(to: folder.appending(path: "Some Name.cape"))
+        let library = Library(folder: folder)
+        #expect(files() == ["test.stray.cape"])
+        #expect(library.capes.first?.fileURL?.lastPathComponent == "test.stray.cape")
+    }
+
+    @Test func listsDuplicateIdentifiersSeparately() throws {
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        let cape = Cape(identifier: "test.twice", name: "Twice", author: "")
+        try cape.propertyListData().write(to: folder.appending(path: "test.twice.cape"))
+        try cape.propertyListData().write(to: folder.appending(path: "Copy of Twice.cape"))
+        let library = Library(folder: folder)
+        #expect(library.capes.count == 1)
+        #expect(library.capes.first?.fileURL?.lastPathComponent == "test.twice.cape")
+        #expect(library.duplicates.map(\.lastPathComponent) == ["Copy of Twice.cape"])
+    }
+
+    @Test func savingKeepsOneFilePerCape() throws {
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        let library = Library(folder: folder)
+        var cape = try library.save(Cape(identifier: "test.edit", name: "Before", author: ""), originalIdentifier: nil)
+        cape.name = "After"
+        try library.save(cape, originalIdentifier: "test.edit")
+        #expect(files() == ["test.edit.cape"])
+        #expect(library.capes.map(\.name) == ["After"])
+    }
+
     @Test func duplicatesUnderNewIdentifier() throws {
         let library = Library(folder: folder)
         let cape = try library.save(Cape(identifier: "test.orig", name: "Orig", author: ""), originalIdentifier: nil)

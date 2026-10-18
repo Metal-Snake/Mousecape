@@ -48,11 +48,15 @@ final class LoginAgent {
     /// again. That requirement covers the app bundle too, not just the agent binary, so
     /// both hashes are compared. Registering once more is not enough; it has to be
     /// unregistered first. Done at launch, and only when the build changed.
+    ///
+    /// Whether the user turned the agent on is told by the stored hash (removed when they
+    /// turn it off), not by `status`: with a stale registration macOS doesn't report the
+    /// agent as enabled.
     func renewRegistrationIfNeeded() {
-        guard service.status == .enabled, let hash = Self.agentCodeHash(),
-              UserDefaults.standard.string(forKey: Self.registeredHashKey) != hash else { return }
+        guard let stored = UserDefaults.standard.string(forKey: Self.registeredHashKey),
+              let hash = Self.agentCodeHash(), stored != hash else { return }
         do {
-            try service.unregister()
+            try? service.unregister()
             try service.register()
             UserDefaults.standard.set(hash, forKey: Self.registeredHashKey)
         } catch {

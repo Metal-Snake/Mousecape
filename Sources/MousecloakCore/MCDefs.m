@@ -242,16 +242,30 @@ NSString *MCBaseCursorForExtra(NSString *identifier) {
     return MCCursorIsStandard(base) ? base : nil;
 }
 
-BOOL MCCursorIsPointer(NSString *identifier) {
+// The cursors left-handed mode mirrors: everything that points with its tip. Arrow comes
+// first, so variants registered later in a session are mirrored from the right images.
+NSArray *MCPointerCursorIdentifiers() {
     static NSArray *pointers = nil;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
         NSDictionary *c = cursorMap();
-        pointers = [@[ [c allKeysForObject:@"Alias"][0], [c allKeysForObject:@"Arrow"][0], [c allKeysForObject:@"Busy"][0], [c allKeysForObject:@"Closed"][0], [c allKeysForObject:@"Copy Drag"][0], [c allKeysForObject:@"Counting Down"][0], [c allKeysForObject:@"Counting Up"][0], [c allKeysForObject:@"Counting Up/Down"][0], [c allKeysForObject:@"Ctx Menu"][0], [c allKeysForObject:@"Forbidden"][0], [c allKeysForObject:@"Link"][0], [c allKeysForObject:@"Move"][0], [c allKeysForObject:@"Open"][0], [c allKeysForObject:@"Pointing"][0], [c allKeysForObject:@"Poof"][0], [c allKeysForObject:@"Wait"][0], [c allKeysForObject:@"Zoom In"][0], [c allKeysForObject:@"Zoom Out"][0] ] retain];
+        NSMutableArray *list = [NSMutableArray array];
+        for (NSString *name in @[@"Arrow", @"Alias", @"Busy", @"Closed", @"Copy Drag", @"Counting Down",
+                                 @"Counting Up", @"Counting Up/Down", @"Ctx Menu", @"Forbidden", @"Link",
+                                 @"Move", @"Open", @"Pointing", @"Poof", @"Wait", @"Zoom In", @"Zoom Out"]) {
+            NSString *identifier = [c allKeysForObject:name].firstObject;
+            if (identifier)
+                [list addObject:identifier];
+        }
+        pointers = [list copy];
     });
+    return pointers;
+}
 
+BOOL MCCursorIsPointer(NSString *identifier) {
     // A variant such as ArrowS is a pointer when its base is: on macOS 27 ArrowS is the
     // arrow people see, so left-handed mode has to mirror it too.
     NSString *base = MCBaseCursorForExtra(identifier);
-    return [pointers containsObject:identifier] || (base && [pointers containsObject:base]);
+    return [MCPointerCursorIdentifiers() containsObject:identifier]
+        || (base && [MCPointerCursorIdentifiers() containsObject:base]);
 }

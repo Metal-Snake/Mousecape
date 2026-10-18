@@ -15,5 +15,8 @@ extern BOOL applyCursorForIdentifier(NSUInteger frameCount, CGFloat frameDuratio
 extern BOOL applyCapeForIdentifier(NSDictionary *cursor, NSString *identifier, BOOL restore);
 extern BOOL applyCape(NSDictionary *dictionary);
 extern BOOL applyCapeAtPath(NSString *path);
+// Back to the macOS cursors; in left-handed mode, mirrored. Returns NO if some cursor
+// could not be reset or mirrored.
+extern BOOL applyDefaultCursors(void);
 
 #endif

@@ -10,7 +10,7 @@ mousecloak — apply and manage Mousecape cursors
 
 APPLYING CAPES
   -a, --apply <cape>      Apply a cape
-  -r, --reset             Reset to the default macOS cursors
+  -r, --reset             Reset to the default macOS cursors (mirrored in left-handed mode)
 CREATING CAPES
   -c, --create <dir>      Create a cape from a folder of <cursor identifier>/<n>.png
   -d, --dump <file>       Dump the currently applied cursors to a cape file
@@ -81,7 +81,8 @@ case .help:
 case .apply(let path):
     if !applyCapeAtPath(path) { exit(EXIT_FAILURE) }
 case .reset:
-    if !resetAllCursors() { exit(EXIT_FAILURE) }
+    // The macOS cursors, mirrored when left-handed mode is on.
+    if !applyDefaultCursors() { exit(EXIT_FAILURE) }
 case .create(let input), .convert(let input):
     var isConvert = false
     if case .convert = command { isConvert = true }

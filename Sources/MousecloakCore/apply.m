@@ -227,3 +227,32 @@ BOOL applyCapeAtPath(NSString *path) {
     MMLog(BOLD RED "Could not find valid file at %s to apply" RESET, path.UTF8String);
     return NO;
 }
+
+BOOL applyDefaultCursors(void) {
+    BOOL reset = resetAllCursors();
+    if (!MCFlag(MCPreferencesHandednessKey))
+        return reset;
+
+    // Left-handed: register mirrored copies of the system's pointers, taken from what the
+    // reset just put back. The backups keep the unmirrored ones for the next reset.
+    backupAllCursors();
+    NSMutableArray *identifiers = [MCPointerCursorIdentifiers() mutableCopy];
+    for (NSUInteger i = 0; extraCursors[i] != nil; i++) {
+        bool registered = false;
+        MCIsCursorRegistered(CGSMainConnectionID(), (char *)extraCursors[i].UTF8String, &registered);
+        if (registered && MCCursorIsPointer(extraCursors[i]))
+            [identifiers addObject:extraCursors[i]];
+    }
+    NSUInteger failed = 0;
+    for (NSString *identifier in identifiers) {
+        NSDictionary *cursor = capeWithIdentifier(identifier);
+        if (!cursor)
+            continue;
+        MMLog("Mirroring %s", identifier.UTF8String);
+        if (!applyCapeForIdentifier(cursor, identifier, NO))
+            failed++;
+    }
+    if (failed)
+        MMLog(BOLD RED "Could not mirror %lu cursors" RESET, (unsigned long)failed);
+    return reset && failed == 0;
+}

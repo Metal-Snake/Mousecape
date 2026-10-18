@@ -11,9 +11,10 @@ enum Engine {
         applyCapeAtPath(url.path)
     }
 
-    /// Back to the macOS cursors. False when some cursor could not be put back.
+    /// Back to the macOS cursors, mirrored in left-handed mode. False when some cursor
+    /// could not be put back.
     static func reset() -> Bool {
-        resetAllCursors()
+        applyDefaultCursors()
     }
 
     static var scale: Float {

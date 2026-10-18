@@ -12,6 +12,8 @@ final class Library {
     private(set) var problems: [Cape.ID: [String: [CursorProblem]]] = [:]
     /// Files in the folder that could not be read, shown so they don't vanish silently.
     private(set) var unreadable: [URL] = []
+    /// Files whose cape has the same identifier as one already in the library.
+    private(set) var duplicates: [URL] = []
 
     let folder: URL
 
@@ -53,22 +55,50 @@ final class Library {
         }.sorted()
     }
 
+    /// Reads every cape in the folder. Each cape belongs in `<identifier>.cape`, because
+    /// that is where the agent looks for the applied one at login: a cape under another
+    /// name is renamed when that name is free, and counts as a duplicate when it isn't.
     func reload() {
         try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-        fingerprint = currentFingerprint()
         let files = (try? FileManager.default.contentsOfDirectory(
             at: folder, includingPropertiesForKeys: nil, options: .skipsHiddenFiles)) ?? []
-        var loaded: [Cape] = []
+        var parsed: [Cape] = []
         var failed: [URL] = []
         for url in files where url.pathExtension.lowercased() == "cape" {
             if let cape = try? Cape(contentsOf: url) {
-                loaded.append(cape)
+                parsed.append(cape)
             } else {
                 failed.append(url)
             }
         }
-        capes = loaded.sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
+
+        var byIdentifier: [String: Cape] = [:]
+        var extra: [URL] = []
+        // Files already named after their identifier first, so they win over stray copies.
+        let ordered = parsed.sorted { a, b in
+            let aCanonical = a.fileURL?.lastPathComponent == fileURL(for: a.identifier).lastPathComponent
+            let bCanonical = b.fileURL?.lastPathComponent == fileURL(for: b.identifier).lastPathComponent
+            if aCanonical != bCanonical { return aCanonical }
+            return (a.fileURL?.lastPathComponent ?? "") < (b.fileURL?.lastPathComponent ?? "")
+        }
+        for var cape in ordered {
+            if byIdentifier[cape.identifier] != nil {
+                if let url = cape.fileURL { extra.append(url) }
+                continue
+            }
+            let canonical = fileURL(for: cape.identifier)
+            if let url = cape.fileURL, url.lastPathComponent != canonical.lastPathComponent,
+               !cape.identifier.contains("/"), !FileManager.default.fileExists(atPath: canonical.path),
+               (try? FileManager.default.moveItem(at: url, to: canonical)) != nil {
+                cape.fileURL = canonical
+            }
+            byIdentifier[cape.identifier] = cape
+        }
+        fingerprint = currentFingerprint()
+
+        capes = byIdentifier.values.sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
         unreadable = failed
+        duplicates = extra.sorted { $0.lastPathComponent < $1.lastPathComponent }
         problems = Dictionary(uniqueKeysWithValues: capes.compactMap { cape in
             let found = cape.problems
             return found.isEmpty ? nil : (cape.id, found)
@@ -96,10 +126,14 @@ final class Library {
         if !succeeded { throw LibraryError.resetIncomplete }
     }
 
-    /// Re-applies the current cape, e.g. after the left-handed setting changed.
-    func reapply() {
-        guard let cape = appliedCape else { return }
-        try? apply(cape)
+    /// Applies the current setup again, e.g. after the left-handed setting changed: the
+    /// applied cape, or else the macOS cursors (mirrored in left-handed mode).
+    func reapply() throws {
+        if let cape = appliedCape {
+            try apply(cape)
+        } else {
+            try resetToDefault()
+        }
     }
 
     // MARK: - Adding and removing
@@ -151,11 +185,14 @@ final class Library {
         }
         var saved = cape
         saved.identifier = identifier
-        try saved.propertyListData().write(to: fileURL(for: identifier), options: .atomic)
+        let destination = fileURL(for: identifier)
+        try saved.propertyListData().write(to: destination, options: .atomic)
 
         let wasApplied = originalIdentifier != nil && originalIdentifier == appliedIdentifier
-        if let originalIdentifier, originalIdentifier != identifier {
-            try? FileManager.default.removeItem(at: fileURL(for: originalIdentifier))
+        // The file the cape came from goes away when it was a different one: after a new
+        // identifier, or when it wasn't named after its identifier.
+        if let previous = cape.fileURL, previous.standardizedFileURL != destination.standardizedFileURL {
+            try? FileManager.default.removeItem(at: previous)
         }
         reload()
         let result = capes.first { $0.identifier == identifier } ?? saved

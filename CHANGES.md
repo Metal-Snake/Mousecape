@@ -143,6 +143,26 @@ entry, Zoom Out, was an array instead of a name, so Zoom Out was never mirrored.
 does; otherwise left-handed mode would not mirror the arrow on macOS 27, where `ArrowS`
 is the arrow people see.
 
+### Left-handed mode only worked with a cape
+
+**Original:** left-handed mode mirrored the cursors of an applied cape. With the macOS
+cursors it did nothing.
+
+**This fork:** with no cape applied, left-handed mode mirrors the macOS cursors too:
+reset, the Settings switch and the login agent all register mirrored copies of the
+system's pointers. Reset in right-handed mode brings back the plain macOS cursors.
+
+### Capes under other file names were lost at login
+
+**Original:** the login agent looks for the applied cape at `<identifier>.cape`. A cape
+copied into the library folder under another name could be applied from the app, but not
+restored at login.
+
+**This fork:** the library renames such files to `<identifier>.cape` when that name is free.
+Files whose identifier is already taken are listed under "Duplicate identifiers" instead of
+appearing twice. Saving from the editor writes to `<identifier>.cape` and removes the file
+the cape came from if that was a different one.
+
 ### Cursor size forced to 1x at login
 
 **Original:** with no size saved in Mousecape, the helper set the cursor scale to 1x at
@@ -196,7 +216,9 @@ The Objective-C sources of `mousecloak` moved unchanged in substance (history ke
 - Runs as a background-only process, so it shows no Dock icon.
 - Ad-hoc signing pins the agent to the exact build, app bundle included. When the build
   has changed, the app registers the agent again at launch; otherwise launchd would refuse
-  to start it.
+  to start it. Whether the user turned the agent on comes from the app's own record, not
+  from the agent's status, which macOS doesn't report as enabled for a stale
+  registration. macOS shows a "Background items added" notification each time.
 
 ## App (`Sources/Mousecape`)
 

@@ -78,6 +78,7 @@ extern NSString *MMGet(NSString *prompt);
 
 extern CGError MCIsCursorRegistered(CGSConnectionID cid, char *cursorName, bool *registered);
 extern BOOL MCCursorIsPointer(NSString *identifier);
+extern NSArray *MCPointerCursorIdentifiers(void);
 extern BOOL MCCursorIsStandard(NSString *identifier);
 extern NSString *MCBaseCursorForExtra(NSString *identifier);
 #endif

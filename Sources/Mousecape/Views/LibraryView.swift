@@ -90,6 +90,18 @@ struct LibraryView: View {
                     .tag(cape.id)
                     .contextMenu { contextMenu(for: cape) }
             }
+            if !model.library.duplicates.isEmpty {
+                Section("Duplicate identifiers") {
+                    ForEach(model.library.duplicates, id: \.self) { url in
+                        Label(url.lastPathComponent, systemImage: "doc.on.doc")
+                            .foregroundStyle(.secondary)
+                            .help("Another cape in the library has the same identifier. Remove this file or change its identifier.")
+                            .contextMenu {
+                                Button("Show in Finder") { NSWorkspace.shared.activateFileViewerSelecting([url]) }
+                            }
+                    }
+                }
+            }
             if !model.library.unreadable.isEmpty {
                 Section("Unreadable") {
                     ForEach(model.library.unreadable, id: \.self) { url in

@@ -35,6 +35,11 @@ final class AppModel {
         perform { try library.resetToDefault() }
     }
 
+    /// The applied cape again, or the macOS cursors; used when left-handed mode changes.
+    func reapply() {
+        perform { try library.reapply() }
+    }
+
     // MARK: - Importing
 
     /// Imports `.cape` and `.MightyMouse` files (from the open panel, Finder or drag and drop).
@@ -64,7 +69,7 @@ final class AppModel {
         perform {
             let cape = try library.importCape(at: url)
             selection = cape.id
-            if cape.identifier == library.appliedIdentifier { library.reapply() }
+            if cape.identifier == library.appliedIdentifier { try library.reapply() }
         }
     }
 

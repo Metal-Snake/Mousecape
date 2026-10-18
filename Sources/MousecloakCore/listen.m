@@ -18,8 +18,21 @@
 NSString *appliedCapePathForUser(NSString *user) {
     NSString *home = NSHomeDirectoryForUser(user);
     NSString *ident =     MCDefaultFor(@"MCAppliedCursor", user, (NSString *)kCFPreferencesCurrentHost);
+    if (!ident)
+        return nil;
     NSString *appSupport = [home stringByAppendingPathComponent:@"Library/Application Support"];
     return [[[appSupport stringByAppendingPathComponent:@"Mousecape/capes"] stringByAppendingPathComponent:ident] stringByAppendingPathExtension:@"cape"];
+}
+
+// What the user set up: the applied cape, or with none, the macOS cursors (mirrored in
+// left-handed mode; untouched otherwise).
+static BOOL applySetupForUser(NSString *user) {
+    NSString *path = appliedCapePathForUser(user);
+    if (path)
+        return applyCapeAtPath(path);
+    if (MCFlag(MCPreferencesHandednessKey))
+        return applyDefaultCursors();
+    return YES;
 }
 
 static void UserSpaceChanged(SCDynamicStoreRef	store, CFArrayRef changedKeys, void *info) {
@@ -31,9 +44,8 @@ static void UserSpaceChanged(SCDynamicStoreRef	store, CFArrayRef changedKeys, vo
         return;
     }
     
-    NSString *appliedPath = appliedCapePathForUser((NSString *)currentConsoleUser);
     MMLog(BOLD GREEN "User Space Changed to %s, applying cape..." RESET, [(__bridge NSString *)currentConsoleUser UTF8String]);
-    if (!applyCapeAtPath(appliedPath)) {
+    if (!applySetupForUser((__bridge NSString *)currentConsoleUser)) {
         MMLog(BOLD RED "Application of cape failed" RESET);
     }
     
@@ -46,7 +58,7 @@ void reconfigurationCallback(CGDirectDisplayID display,
     	CGDisplayChangeSummaryFlags flags,
     	void *userInfo) {
     MMLog("Reconfigure user space");
-    applyCapeAtPath(appliedCapePathForUser(NSUserName()));
+    applySetupForUser(NSUserName());
     // Restore the preferred scale instead of re-reading the current one: newer macOS
     // versions (seen on the macOS 27 beta) reset the scale to 1x on display changes.
     // Setting another value first makes the window server redraw the cursor.
@@ -78,7 +90,7 @@ void listener(void) {
     MMLog(BOLD CYAN "Listening for User changes" RESET);
     
     // Apply the cape for the user on load
-    applyCapeAtPath(appliedCapePathForUser(NSUserName()));
+    applySetupForUser(NSUserName());
     setCursorScale(preferredCursorScale());
     
     CFRunLoopAddSource(CFRunLoopGetCurrent(), rls, kCFRunLoopDefaultMode);

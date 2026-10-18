@@ -50,7 +50,7 @@ struct SettingsView: View {
         }
         .onChange(of: leftHanded) { _, newValue in
             EnginePreferences.leftHanded = newValue
-            model.library.reapply()
+            model.reapply()
         }
         .onAppear { model.loginAgent.refresh() }
     }
