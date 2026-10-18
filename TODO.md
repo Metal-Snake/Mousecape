@@ -27,14 +27,21 @@ and what has been tested.
 
 ## Known issues
 
-- [ ] **The agent stops after an update until the app is opened once.** Ad-hoc signing
-      pins the registered agent to the exact build (app bundle and `mousecloak`); the app
-      registers it again at launch when the build changed. A stable signing identity (a
-      self-signed certificate, or a Developer ID) would keep the requirement the same
-      across builds. Another option, from Cursie: a plain plist in `~/Library/LaunchAgents`
-      that starts the agent through `/usr/bin/open -b <bundle id>`, which launchd doesn't
-      pin to a build. Check how macOS lists such an agent under Login Items, and keep the
-      display-change listener (Cursie's agent only runs once at login).
+- [ ] **The agent can stay dead after an update, for good.** Ad-hoc signing pins the
+      registered agent to the exact `mousecloak` build ("needs LWCR update", exit 78). The
+      app re-registers it at launch, which works sometimes. Tested on 2026-10-18: after a
+      real change to `mousecloak`, neither re-registering (also with a wait for launchd)
+      nor switching the agent off and on in Settings helped. launchd briefly has the new
+      build, then the old requirement comes back, apparently from the Background Task
+      Management records. Ways out:
+      1. **A stable signing identity.** A self-signed code-signing certificate (or a
+         Developer ID) gives every build the same designated requirement, so the
+         registered requirement keeps matching. Needs a certificate in the builder's
+         keychain (and in CI).
+      2. **A plain plist in `~/Library/LaunchAgents`** that starts the agent through
+         Apple-signed `/usr/bin/open -b <bundle id> --args --agent` (Cursie's way), so
+         nothing of ours is pinned. The app would need an agent mode that runs the
+         listener without UI.
 - [ ] **Hidden deprecation warnings.** The engine builds with
       `-Wno-deprecated-declarations`, which hides three warnings:
       `kUTTypePNG` in `MCDefs.m:73` and `MCDefs.m:94` (use `UTTypePNG`), and
