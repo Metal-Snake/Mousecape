@@ -116,6 +116,11 @@ static BOOL removeExtraCursor(NSString *ident) {
 }
 
 BOOL resetAllCursors() {
+    // Back up first. Without backups nothing has been applied in this login session yet,
+    // so the cursors on screen are the system's own; backing them up only afterwards would
+    // capture what this reset puts in place of missing backups (the Wait fallback below).
+    backupAllCursors();
+
     MMLog("Restoring cursors...");
     NSMutableArray *failed = [NSMutableArray array];
     

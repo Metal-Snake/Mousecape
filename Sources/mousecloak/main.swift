@@ -165,7 +165,9 @@ func listRegisteredCursors() {
     func describe(_ info: (size: CGSize, frames: Int, pixels: [CGSize], hotSpot: CGPoint)?) -> String {
         guard let info else { return "-" }
         let pixels = info.pixels.map { "\(Int($0.width))x\(Int($0.height))" }.joined(separator: " ")
-        let hot = "@\(info.hotSpot.x.formatted()),\(info.hotSpot.y.formatted())"
+        // Locale-independent: "4,5" for 4.5 would make "@4,5,4" unreadable.
+        let hot = String(format: "@(%g, %g)", locale: Locale(identifier: "en_US_POSIX"),
+                         Double(info.hotSpot.x), Double(info.hotSpot.y))
         return "\(Int(info.size.width))x\(Int(info.size.height)) pt \(hot), \(info.frames) fr [\(pixels)]"
     }
     let width = names.map(\.count).max() ?? 30

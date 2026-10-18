@@ -18,6 +18,10 @@ and what has been tested.
       there (confirmed 2026-10-18). Mirroring the macOS cursors without a cape is checked
       on macOS 15.6 (reset, Settings switch, agent at start and on display changes), not
       yet on macOS 27.
+- [ ] **Wait backup in a fresh session.** Reset now backs up before restoring, so the first
+      apply after a login should save the real beach ball. After the next login on macOS 27,
+      apply a cape and check `mousecloak --list`: the Wait backup should read 24x24 pt,
+      15 fr (the 30-frame system cursor, reduced), not 28x40.
 - [ ] **macOS 26.** Tested on 15.6 and 27.0.1 only. The engine relies on private
       CGS/CoreCursor calls that any macOS version can change.
 
@@ -111,12 +115,11 @@ x86_64 build.
 - [ ] **Generate missing scales**, e.g. 1x from 2x, with a clear warning that resampled
       images look worse.
 - [ ] **Discover cursor variants instead of listing them.** `CGSCursorNameForSystemCursor(i)`
-      returns the window server's names of its own cursors (learnt from Cursie). On macOS
-      15.6 that's the 9 standard ones. Run it on macOS 27 to see whether `ArrowS`,
-      `IBeamS` and the names Cursie knows (`CopyDrag`, `LinkDrag`, `DisappearingItem`,
-      `ResizeUp/Down/Left/Right`, `IBeamForVerticalLayout`) show up there; then back up,
-      reset and sync every arrow and I-beam variant it reports, and offer the new cursors
-      in the editor.
+      returns the window server's names of its own cursors (learnt from Cursie; shown by
+      `mousecloak --list`). macOS 15.6: the 9 standard ones. macOS 27.0.1: the same plus
+      `ArrowS` and `IBeamS`, which is exactly what the fork handles today; the extra
+      names Cursie lists (`CopyDrag`, `ResizeUp`, …) don't exist there. When a future
+      macOS adds more, use this list for backup, reset and syncing instead of the fixed one.
 - [ ] **Menu bar extra** for switching capes quickly.
 - [ ] **Accessibility pointer size.** Mousecape's size and the system's pointer size
       (System Settings → Accessibility → Display → Pointer size) are the same setting

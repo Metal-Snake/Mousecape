@@ -77,9 +77,12 @@ registering copies of them. The system's Wait cursor has 30 frames, so its copy 
 and the failure was ignored. Reset then had nothing to restore it from: the Wait cursor
 of the last cape stayed until logout.
 
-**This fork:** the backup is reduced like any long animation, so it succeeds. In a login
-session whose backups were made by an older version, reset falls back to the system's
-busy cursor (an arrow with a beach ball, so close but not identical; see TODO.md).
+**This fork:** the backup is reduced like any long animation, so it succeeds. Reset backs
+up before it restores: without backups nothing has been applied in the session yet, so
+the cursors on screen are still the system's. (Backing up afterwards, as at first, saved
+the stand-in described next instead of the real beach ball.) In a login session whose
+backups were made by an older version, reset falls back to the system's busy cursor, an
+arrow with a beach ball: close, but not identical.
 
 ### Cursors outside the standard set stayed after a reset
 
@@ -198,8 +201,8 @@ The Objective-C sources of `mousecloak` moved unchanged in substance (history ke
 - Errors go to stderr. The coloured copyright banner is gone.
 - New `--list`: shows, for every standard and extra cursor, what the window server has
   registered (size, hot spot, frames, pixel sizes) and whether a backup exists, together
-  with the macOS version, applied cape, cursor scale and left-handed mode. Meant for bug
-  reports.
+  with the macOS version, applied cape, cursor scale, left-handed mode and the window
+  server's own cursor names. Meant for bug reports.
 - Lives inside the app bundle at `Contents/MacOS/mousecloak` and is also the background
   agent.
 
@@ -347,8 +350,9 @@ MightyMouse import, macOS 26.
 - **Cursie** (kwd421): its licence matches Mousecape's (non-commercial, keep the notice).
   No code was taken; ideas recorded in TODO.md (cursor name discovery, time-based frame
   reduction, localised file names, agent through `open -b`). Tested its advice to reset
-  through System Settings → Accessibility → Pointer → Reset Colors: on macOS 15.6 that
-  restores only the arrow and the I-beam, so Mousecape's own reset stays the way back.
+  through System Settings → Accessibility → Pointer → Reset Colors: on macOS 15.6 and
+  27.0.1 alike it restores only the arrow and the I-beam (and their `S` variants), so
+  Mousecape's own reset stays the way back.
 
 ## Licence
 
