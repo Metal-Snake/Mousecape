@@ -151,8 +151,15 @@ func listRegisteredCursors() {
     let leftHanded = (CFPreferencesCopyAppValue("MCHandedness" as CFString,
                                                 "com.alexzielenski.Mousecape" as CFString) as? Bool) ?? false
     print("Left-handed: \(leftHanded ? "on" : "off")")
+    // The window server's own names for its cursors; newer macOS versions add variants.
+    let systemNames = (0..<128).compactMap { index -> String? in
+        guard let name = CGSCursorNameForSystemCursor(CGSCursorID(index)) else { return nil }
+        let string = String(cString: name)
+        return string.isEmpty ? nil : string
+    }
+    print("System cursors: \(systemNames.map { $0.replacingOccurrences(of: "com.apple.coregraphics.", with: "") }.joined(separator: ", "))")
     print("")
-    let names = Set(CursorNames.all.keys).union(extras)
+    let names = Set(CursorNames.all.keys).union(extras).union(systemNames)
         .filter { !$0.hasPrefix("com.apple.cursor.") }       // core cursors live elsewhere
         .sorted()
     func describe(_ info: (size: CGSize, frames: Int, pixels: [CGSize], hotSpot: CGPoint)?) -> String {
