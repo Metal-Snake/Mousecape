@@ -153,7 +153,7 @@ func cursor(size: CGSize = CGSize(width: 20, height: 24), frames: Int = 1) -> Ca
 
     cape.addCursor(identifier: "com.apple.cursor.13")
     cape.addCursor(identifier: "com.apple.coregraphics.Arrow")
-    #expect(cape.cursors.map(\.name) == ["Arrow", "Pointing"])
+    #expect(cape.cursors.map(\.name) == ["Arrow", "Pointing Hand"])
     #expect(!cape.missingCursorIdentifiers.contains("com.apple.coregraphics.Arrow"))
     #expect(cape.problems.keys.sorted() == ["com.apple.coregraphics.Arrow", "com.apple.cursor.13"])
 

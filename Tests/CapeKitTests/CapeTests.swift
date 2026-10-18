@@ -19,7 +19,7 @@ let sampleURL = URL(fileURLWithPath: #filePath)
 
 @Test func ordersProminentCursorsFirst() throws {
     let cape = try Cape(contentsOf: sampleURL)
-    #expect(cape.cursors.map(\.name) == ["Arrow", "Wait", "Copy Drag", "Forbidden"])
+    #expect(cape.cursors.map(\.name) == ["Arrow", "Wait", "Copy", "Not Allowed"])
 }
 
 @Test func splitsAnimatedSheetIntoFrames() throws {

@@ -251,6 +251,12 @@ New SwiftUI app. Compared with the original:
   Coming back to the app reads the library again only if the folder changed.
 - **No re-apply at launch.** The original re-applied the current cape every time the app
   launched. The new app leaves that to the agent.
+- **Cursor names** follow the names macOS gives the cursor resources (HIServices,
+  SkyLight). Several of the original's names were misleading: "Camera" is the
+  screenshot window cursor, "Link" is Make Alias, "Busy" is Busy but Clickable,
+  "IBeam H." is the vertical I-beam, and the window resize cursors are Resize North,
+  Resize Southeast and so on. The small coregraphics placeholders macOS keeps next to the real
+  cursors are marked "(Legacy)". Identifiers and the cape format are unchanged.
 - **Not ported:** the library click and double-click action preferences
   (`MCLibraryClickAction`, `MCDoubleAction`).
 
@@ -356,6 +362,8 @@ MightyMouse import, macOS 26.
   through System Settings → Accessibility → Pointer → Reset Colors: on macOS 15.6 and
   27.0.1 alike it restores only the arrow and the I-beam (and their `S` variants), so
   Mousecape's own reset stays the way back.
+- **macOS27-Cursors** (Juwan-Hwang): a cape of Apple's own macOS 27 cursors, so not
+  taken. Its name mapping (docs/MAPPING.md) is where the cursor names above come from.
 
 ## Licence
 
