@@ -89,9 +89,11 @@ final class Library {
         }
     }
 
-    func resetToDefault() {
-        Engine.reset()
+    /// Throws when some cursors kept the cape's look (the engine logs which).
+    func resetToDefault() throws {
+        let succeeded = Engine.reset()
         appliedIdentifier = nil
+        if !succeeded { throw LibraryError.resetIncomplete }
     }
 
     /// Re-applies the current cape, e.g. after the left-handed setting changed.
@@ -173,7 +175,7 @@ final class Library {
 
     /// Moves the cape file to the Trash; resets the cursors first if it is applied.
     func delete(_ cape: Cape) throws {
-        if cape.identifier == appliedIdentifier { resetToDefault() }
+        if cape.identifier == appliedIdentifier { try resetToDefault() }
         if let url = cape.fileURL {
             try FileManager.default.trashItem(at: url, resultingItemURL: nil)
         }
@@ -211,10 +213,13 @@ enum LibraryError: LocalizedError {
     case dumpFailed
     case conversionFailed
     case invalidIdentifier
+    case resetIncomplete
     case identifierTaken(String)
 
     var errorDescription: String? {
         switch self {
+        case .resetIncomplete:
+            String(localized: "Some cursors could not be reset and still show the previous cape. Logging out and back in restores them.")
         case .invalidIdentifier:
             String(localized: "The identifier must not be empty, contain “/” or start with a dot.")
         case .identifierTaken(let identifier):

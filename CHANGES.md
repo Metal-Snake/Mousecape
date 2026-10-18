@@ -66,7 +66,8 @@ opened and saved unchanged, and dropping several images set the frame count unch
 **Original:** whatever made a cursor fail (frame count, an unreadable image), the apply
 stopped there, leaving a mix of the old and the new cape on screen.
 
-**This fork:** a failing cursor is skipped and the rest is applied. The app says that some
+**This fork:** a failing cursor is skipped and the rest is applied. Registration errors
+are logged with their error code. The app says that some
 cursors were rejected. If none applies, the cursors are reset to the macOS defaults.
 
 ### Reset could not bring back the Wait cursor
@@ -105,6 +106,16 @@ is the one that counts.
 
 **This fork:** nothing relies on unregistering; cursors are overwritten instead. The
 session-long backups are documented in TODO.md.
+
+### Reset claimed success when nothing changed
+
+**Original:** reset never checked its own work. Failed restores were ignored, the cape
+was marked as no longer applied, and the app looked as if the cursors were back to
+normal.
+
+**This fork:** every restored cursor is compared with its backup (point size, frame
+count, pixel sizes). Reset reports the cursors it could not put back; the app shows an
+error, and `mousecloak --reset` exits non-zero.
 
 ### Captured cursors could not be applied
 
@@ -163,8 +174,9 @@ The Objective-C sources of `mousecloak` moved unchanged in substance (history ke
   **Install Helper Tool** menu item. When macOS asks for approval, Settings links to
   System Settings → Login Items, where it appears under "Allow in the Background".
 - Runs as a background-only process, so it shows no Dock icon.
-- Ad-hoc signing pins the agent to the exact build. When the agent binary has changed, the
-  app registers it again at launch; otherwise launchd would refuse to start it.
+- Ad-hoc signing pins the agent to the exact build, app bundle included. When the build
+  has changed, the app registers the agent again at launch; otherwise launchd would refuse
+  to start it.
 
 ## App (`Sources/Mousecape`)
 

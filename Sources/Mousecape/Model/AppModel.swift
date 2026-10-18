@@ -32,7 +32,7 @@ final class AppModel {
     }
 
     func resetToDefault() {
-        library.resetToDefault()
+        perform { try library.resetToDefault() }
     }
 
     // MARK: - Importing

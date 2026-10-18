@@ -81,7 +81,7 @@ case .help:
 case .apply(let path):
     if !applyCapeAtPath(path) { exit(EXIT_FAILURE) }
 case .reset:
-    resetAllCursors()
+    if !resetAllCursors() { exit(EXIT_FAILURE) }
 case .create(let input), .convert(let input):
     var isConvert = false
     if case .convert = command { isConvert = true }

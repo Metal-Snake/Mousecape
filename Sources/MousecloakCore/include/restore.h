@@ -13,6 +13,7 @@
 
 extern NSString *restoreStringForIdentifier(NSString *identifier);
 extern BOOL restoreCursorForIdentifier(NSString *ident);
-extern void resetAllCursors(void);
+// Returns NO when some cursor could not be put back (the log says which).
+extern BOOL resetAllCursors(void);
 
 #endif

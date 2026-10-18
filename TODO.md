@@ -13,8 +13,9 @@ login items, so they need a person at the Mac.
       background process work with the ad-hoc signed app (checked 2026-10-17). Still to do:
       log out and back in and check that the cape comes back, and that a display change
       (plugging in a monitor) keeps both cape and cursor size.
-- [ ] **Agent after an update without launching the app.** The agent is pinned to the code
-      hash of `mousecloak`; the app re-registers it at launch when the hash changed. Until
+- [ ] **Agent after an update without launching the app.** The agent is pinned to the build
+      (app bundle and `mousecloak`); the app re-registers it at launch when either hash
+      changed. Until
       the app has been opened once after an update, the agent will not start. Consider a
       stable signing identity (a self-signed certificate keeps the requirement stable
       across builds) or a note in the release notes.
@@ -33,6 +34,15 @@ login items, so they need a person at the Mac.
       reset on display changes) is handled; see CHANGES.md.
 
 ## Known issues
+
+- [ ] **Reset has no effect on macOS 27.0.1** (2026-10-18, diagnosis file from the user).
+      Every restore was attempted and none changed anything: Arrow stayed Svanslös, IBeam
+      stayed Kiriko (that is the Kiriko I-beam that flashes when selecting text). macOS
+      15.6 restores fine, also with a cursor scale of 1.17. Suspicion: macOS 27 doesn't
+      let one process overwrite a cursor that a still-running process (the app or the
+      agent) registered. Reset now verifies each restore and reports failures, and
+      `mousecape-diagnose.sh` v2 resets once with app and agent running and once with
+      both stopped, to confirm or rule this out.
 
 - [ ] **Hidden deprecation warnings.** The engine builds with
       `-Wno-deprecated-declarations`, which hides three warnings:

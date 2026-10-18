@@ -75,6 +75,8 @@ BOOL applyCursorForIdentifier(NSUInteger frameCount, CGFloat frameDuration, CGPo
                                               (__bridge CFArrayRef)images,
                                               &seed);
     
+    if (err != kCGErrorSuccess)
+        MMLog(BOLD RED "Registering %s failed (error %d)" RESET, ident.UTF8String, err);
     return (err == kCGErrorSuccess);
 }
 

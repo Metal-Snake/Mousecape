@@ -11,8 +11,8 @@ enum Engine {
         applyCapeAtPath(url.path)
     }
 
-    /// Back to the macOS cursors.
-    static func reset() {
+    /// Back to the macOS cursors. False when some cursor could not be put back.
+    static func reset() -> Bool {
         resetAllCursors()
     }
 

@@ -9,7 +9,7 @@ import ServiceManagement
 @MainActor @Observable
 final class LoginAgent {
     static let plistName = "io.github.metal-snake.Mousecape.agent.plist"
-    /// Code hash of the agent binary at the last registration.
+    /// Code hashes of the app and the agent binary at the last registration.
     private static let registeredHashKey = "agentRegisteredCodeHash"
 
     private let service = SMAppService.agent(plistName: plistName)
@@ -43,10 +43,11 @@ final class LoginAgent {
         status = service.status
     }
 
-    /// An ad-hoc signed agent is pinned to its exact code hash: after a new build or an
-    /// update, launchd refuses to start it ("needs LWCR update", exit 78) until it is
-    /// registered again. Registering once more is not enough; it has to be unregistered
-    /// first. Done at launch, and only when the agent binary actually changed.
+    /// An ad-hoc signed agent is pinned to the exact build: after a new build or an update,
+    /// launchd refuses to start it ("needs LWCR update", exit 78) until it is registered
+    /// again. That requirement covers the app bundle too, not just the agent binary, so
+    /// both hashes are compared. Registering once more is not enough; it has to be
+    /// unregistered first. Done at launch, and only when the build changed.
     func renewRegistrationIfNeeded() {
         guard service.status == .enabled, let hash = Self.agentCodeHash(),
               UserDefaults.standard.string(forKey: Self.registeredHashKey) != hash else { return }
@@ -64,9 +65,14 @@ final class LoginAgent {
         SMAppService.openSystemSettingsLoginItems()
     }
 
-    /// The code directory hash of Contents/MacOS/mousecloak, as hex.
+    /// The code directory hashes of the app bundle and of Contents/MacOS/mousecloak, as hex.
     private static func agentCodeHash() -> String? {
-        let url = Bundle.main.bundleURL.appending(path: "Contents/MacOS/mousecloak")
+        guard let app = codeHash(of: Bundle.main.bundleURL),
+              let agent = codeHash(of: Bundle.main.bundleURL.appending(path: "Contents/MacOS/mousecloak")) else { return nil }
+        return app + "+" + agent
+    }
+
+    private static func codeHash(of url: URL) -> String? {
         var code: SecStaticCode?
         guard SecStaticCodeCreateWithPath(url as CFURL, [], &code) == errSecSuccess, let code else { return nil }
         var info: CFDictionary?
