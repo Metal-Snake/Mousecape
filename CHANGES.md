@@ -340,6 +340,16 @@ On macOS 15.6:
 Not yet: a real logout/login with a cape applied, dropping images into the editor,
 MightyMouse import, macOS 26.
 
+## Other projects looked at
+
+- **Mousecape-swiftUI** (sdmj76): source of the macOS 27 cursor-scale idea; its licence
+  forbids reusing its code, so nothing was taken.
+- **Cursie** (kwd421): its licence matches Mousecape's (non-commercial, keep the notice).
+  No code was taken; ideas recorded in TODO.md (cursor name discovery, time-based frame
+  reduction, localised file names, agent through `open -b`). Tested its advice to reset
+  through System Settings → Accessibility → Pointer → Reset Colors: on macOS 15.6 that
+  restores only the arrow and the I-beam, so Mousecape's own reset stays the way back.
+
 ## Licence
 
 Unchanged. The original licence forbids commercial use, so this fork stays free and

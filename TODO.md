@@ -27,7 +27,10 @@ and what has been tested.
       pins the registered agent to the exact build (app bundle and `mousecloak`); the app
       registers it again at launch when the build changed. A stable signing identity (a
       self-signed certificate, or a Developer ID) would keep the requirement the same
-      across builds. Until then, release notes should say to open the app after updating.
+      across builds. Another option, from Cursie: a plain plist in `~/Library/LaunchAgents`
+      that starts the agent through `/usr/bin/open -b <bundle id>`, which launchd doesn't
+      pin to a build. Check how macOS lists such an agent under Login Items, and keep the
+      display-change listener (Cursie's agent only runs once at login).
 - [ ] **Hidden deprecation warnings.** The engine builds with
       `-Wno-deprecated-declarations`, which hides three warnings:
       `kUTTypePNG` in `MCDefs.m:73` and `MCDefs.m:94` (use `UTTypePNG`), and
@@ -82,7 +85,9 @@ x86_64 build.
       2. A Homebrew tap with a cask (`brew upgrade`).
       3. Sparkle 2 as a Swift package, embedded by `build-app.sh`, with our own EdDSA key
          and an appcast published with each release. Check first how Sparkle treats an
-         ad-hoc signed app, whose code signature changes with every build.
+         ad-hoc signed app, whose code signature changes with every build. Cursie's
+         `scripts/build-notarized-release.sh` shows how to embed and sign Sparkle's
+         framework, XPC services and updater in a SwiftPM build (with a Developer ID).
 
 ## Features and ideas
 
@@ -94,14 +99,24 @@ x86_64 build.
       cape out of the window to share it.
 - [ ] **Easier animated cursors.** Build the sprite sheet from several single-frame images
       or a GIF, so nobody has to stack frames by hand.
+- [ ] **Time-based reduction for uneven animations.** For a Windows `.ani` whose steps have
+      different durations and too many frames for the gcd approach, sample the whole loop
+      at 24 evenly spaced moments and keep the frame shown at each (Cursie does this),
+      instead of averaging the durations.
+- [ ] **Localised file names in Windows packs.** Without an `install.inf`, roles are
+      guessed from English file names only. Packs from Korea, Japan or China often use
+      names like `일반선택.ani` (Normal Select). Add keywords in more languages.
 - [ ] **Frame chooser follow-ups.** Drag across the filmstrip to select ranges; show the
       gap pattern of the kept frames; open it straight from the library's problem banner.
 - [ ] **Generate missing scales**, e.g. 1x from 2x, with a clear warning that resampled
       images look worse.
-- [ ] **More cursor variants in future macOS versions.** macOS 27 added `ArrowS` and
-      `IBeamS`. At backup time, look for registered `<standard cursor>S` names (or ask the
-      window server for every registered name, if a call for that exists) and treat what
-      turns up like `ArrowS`.
+- [ ] **Discover cursor variants instead of listing them.** `CGSCursorNameForSystemCursor(i)`
+      returns the window server's names of its own cursors (learnt from Cursie). On macOS
+      15.6 that's the 9 standard ones. Run it on macOS 27 to see whether `ArrowS`,
+      `IBeamS` and the names Cursie knows (`CopyDrag`, `LinkDrag`, `DisappearingItem`,
+      `ResizeUp/Down/Left/Right`, `IBeamForVerticalLayout`) show up there; then back up,
+      reset and sync every arrow and I-beam variant it reports, and offer the new cursors
+      in the editor.
 - [ ] **Menu bar extra** for switching capes quickly.
 - [ ] **Accessibility pointer size.** Mousecape's size and the system's pointer size
       (System Settings → Accessibility → Display → Pointer size) are the same setting
