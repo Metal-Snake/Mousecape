@@ -35,15 +35,13 @@ login items, so they need a person at the Mac.
 
 ## Known issues
 
-- [ ] **Reset has no effect on macOS 27.0.1** (2026-10-18, diagnosis file from the user).
-      Every restore was attempted and none changed anything: Arrow stayed Svanslös, IBeam
-      stayed Kiriko (that is the Kiriko I-beam that flashes when selecting text). macOS
-      15.6 restores fine, also with a cursor scale of 1.17. Suspicion: macOS 27 doesn't
-      let one process overwrite a cursor that a still-running process (the app or the
-      agent) registered. Reset now verifies each restore and reports failures, and
-      `mousecape-diagnose.sh` v2 resets once with app and agent running and once with
-      both stopped, to confirm or rule this out.
-
+- [ ] **Confirm the macOS 27 reset fix.** Diagnosis 2 (2026-10-18) ruled out other
+      processes: nothing else was running, yet restoring Arrow and IBeam "succeeded"
+      without effect. The cause: on macOS 27 a registered `ArrowS` shadows `Arrow`, even
+      when reading it (applying only ArrowS made Arrow read back magenta), and the same
+      for `IBeamS`/`IBeam`. Reset gave ArrowS "the default Arrow" by reading Arrow, which
+      returned ArrowS itself. Now variants are reset first, from the base cursor's backup.
+      Needs a run of `mousecape-diagnose.sh` on macOS 27.
 - [ ] **Hidden deprecation warnings.** The engine builds with
       `-Wno-deprecated-declarations`, which hides three warnings:
       `kUTTypePNG` in `MCDefs.m:73` and `MCDefs.m:94` (use `UTTypePNG`), and
@@ -72,10 +70,10 @@ login items, so they need a person at the Mac.
       `ArrowS` apparently replaces the arrow. To check on another macOS version, apply
       `Examples/ArrowS-Test.cape`: it replaces only `ArrowS` with a magenta arrow marked
       "S". Then reset, which should bring the normal arrow back.
-      **macOS 27.0.1 (2026-10-17):** the magenta arrow shows, so 27 uses `ArrowS`.
-      Switching to Svanslös replaces it, but reset kept it. Diagnosis pending:
-      `mousecape-diagnose.sh` runs the test with `mousecloak --list` at each step. Capes
-      without `ArrowS` should probably register it from their `Arrow` on macOS 27.
+      **macOS 27.0.1:** a registered `ArrowS` shadows `Arrow` entirely (see the reset
+      item above). Applying a cape without `ArrowS` already gives a registered `ArrowS`
+      the cape's arrow. Open: whether macOS 27 registers `ArrowS` itself in a fresh
+      session, and so whether capes without it work before any reset ran.
 - [ ] **Backups live for the whole login session.** The window server won't let a later
       process remove them, so the first backup in a session is the one that counts. If
       another tool changed the cursors before Mousecape's first apply, that is what reset

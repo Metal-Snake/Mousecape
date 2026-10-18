@@ -93,8 +93,17 @@ static BOOL removeExtraCursor(NSString *ident) {
         return YES;
     }
     MMLog("Could not remove %s (error %d)", ident.UTF8String, removal);
+    // The default comes from the base cursor's backup. On macOS 27 a registered variant
+    // shadows its base, even when reading it: asking for Arrow returns ArrowS. So the
+    // base itself would hand back the cape's image, and the variant would be "reset" to
+    // what it already shows.
     NSString *base = MCBaseCursorForExtra(ident);
-    NSDictionary *standard = base ? capeWithIdentifier(base) : nil;
+    NSDictionary *standard = nil;
+    if (base) {
+        bool baseBackedUp = false;
+        MCIsCursorRegistered(CGSMainConnectionID(), (char *)backupStringForIdentifier(base).UTF8String, &baseBackedUp);
+        standard = baseBackedUp ? capeWithIdentifier(backupStringForIdentifier(base)) : capeWithIdentifier(base);
+    }
     if (standard) {
         MMLog("Resetting %s to the default %s", ident.UTF8String, base.UTF8String);
         if (applyCapeForIdentifier(standard, ident, YES) && registrationMatches(ident, standard))
@@ -110,7 +119,20 @@ BOOL resetAllCursors() {
     MMLog("Restoring cursors...");
     NSMutableArray *failed = [NSMutableArray array];
     
-    // Backup main cursors first
+    // Cursors outside the standard set first: put back what the system had, remove the rest.
+    // On macOS 27 a variant like ArrowS shadows its base, so Arrow can only be restored
+    // and checked once ArrowS shows the default again.
+    NSMutableSet *extras = [NSMutableSet setWithArray:MCDefault(MCPreferencesAppliedExtraCursorsKey) ?: @[]];
+    for (NSUInteger i = 0; extraCursors[i] != nil; i++) {
+        [extras addObject:extraCursors[i]];
+    }
+    for (NSString *extra in extras) {
+        if (!removeExtraCursor(extra))
+            [failed addObject:extra];
+    }
+    MCSetDefault(NULL, MCPreferencesAppliedExtraCursorsKey);
+
+    // Then the standard cursors, from their backups
     NSUInteger i = 0;
     NSString *key = nil;
     BOOL waitRestored = YES;
@@ -124,17 +146,6 @@ BOOL resetAllCursors() {
             [failed addObject:key];
         i++;
     }
-
-    // Cursors outside the standard set: put back what the system had, remove the rest.
-    NSMutableSet *extras = [NSMutableSet setWithArray:MCDefault(MCPreferencesAppliedExtraCursorsKey) ?: @[]];
-    for (i = 0; extraCursors[i] != nil; i++) {
-        [extras addObject:extraCursors[i]];
-    }
-    for (NSString *extra in extras) {
-        if (!removeExtraCursor(extra))
-            [failed addObject:extra];
-    }
-    MCSetDefault(NULL, MCPreferencesAppliedExtraCursorsKey);
 
     // Backup auxiliary cursors
     MMLog("Restoring core cursors...");

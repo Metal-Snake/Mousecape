@@ -84,14 +84,17 @@ busy cursor (an arrow with a beach ball, so close but not identical; see TODO.md
 ### Cursors outside the standard set stayed after a reset
 
 Some capes register cursors the original doesn't know, such as
-`com.apple.coregraphics.ArrowS` and `IBeamS`. On macOS 15 they don't change what is shown;
-on macOS 27 they apparently replace the arrow (that is how the bug showed up there).
+`com.apple.coregraphics.ArrowS` and `IBeamS`. On macOS 15 they don't change what is shown.
+On macOS 27 a registered `ArrowS` shadows `Arrow` completely, even when the arrow is read
+back, and `IBeamS` does the same to `IBeam`.
 
 **Original:** they were never backed up or reset. On macOS 27 the arrow of such a cape
 stayed on screen after a reset, and after applying another cape.
 
 **This fork:** these variants are backed up when the system has them. On reset they are
-restored, or given the default arrow/I-beam when the system never had them. Applying a
+handled first, before the standard cursors: they are restored, or given the default
+arrow/I-beam from the standard cursor's backup when the system never had them. They can't
+take the current Arrow, because on macOS 27 that would read back the variant itself. Applying a
 cape without them gives leftover variants the cape's own arrow/I-beam. Any other cursor
 outside the standard set is remembered when applied (`MCAppliedExtraCursors`) and
 handled the same way.
