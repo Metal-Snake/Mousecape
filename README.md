@@ -67,8 +67,10 @@ Scripts/build-app.sh             # → dist/Mousecape.app (ad-hoc signed)
 Scripts/build-app.sh --zip       # → also dist/Mousecape.app.zip
 ```
 
-The app is ad-hoc signed, not notarized: on first launch, right-click it and choose
-**Open**.
+`build-app.sh` signs with a "Mousecape Code Signing" certificate from your keychain when
+there is one (`Scripts/make-signing-certificate.sh` creates it), so every build keeps the
+same identity; otherwise it signs ad-hoc. Either way the app isn't notarized: on first
+launch, right-click it and choose **Open**.
 
 ### Layout
 
@@ -78,7 +80,7 @@ The app is ad-hoc signed, not notarized: on first launch, right-click it and cho
 | `Sources/mousecloak` | Command line tool and background agent |
 | `Sources/CapeKit` | Reading and writing `.cape` files, cursor frames (pure Swift, tested) |
 | `Sources/Mousecape` | The SwiftUI app |
-| `Resources` | Info.plist, launch agent plist, app icon |
+| `Resources` | Info.plist, app icon, plists of earlier login agents (for unregistering) |
 
 ## LICENSE
 

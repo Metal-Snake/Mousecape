@@ -19,7 +19,7 @@ final class AppModel {
     var selectedCape: Cape? { library.capes.first { $0.id == selection } }
 
     init() {
-        loginAgent.renewRegistrationIfNeeded()
+        loginAgent.repairIfNeeded()
     }
 
     static let capeType = UTType(filenameExtension: "cape") ?? .propertyList

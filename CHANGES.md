@@ -14,7 +14,7 @@ bundled third-party libraries are gone.
 | Minimum macOS | 10.13 | 14 Sonoma |
 | App | Objective-C, XIB, AppKit | SwiftUI |
 | Build | Xcode project | SwiftPM + `Scripts/build-app.sh`, Command Line Tools only |
-| Background helper | Login item app (`mousecloakHelper`, `SMLoginItemSetEnabled`) | Launch agent (`mousecloak --listen`, `SMAppService`) |
+| Background helper | Login item app (`mousecloakHelper`, `SMLoginItemSetEnabled`) | Launch agent (`mousecloak --listen` in `~/Library/LaunchAgents`) |
 | Updates | Sparkle | None |
 | Bundle identifier | `com.alexzielenski.Mousecape` | `io.github.metal-snake.Mousecape` |
 | Architectures | Universal (arm64, x86_64) | Apple silicon only |
@@ -208,20 +208,23 @@ The Objective-C sources of `mousecloak` moved unchanged in substance (history ke
 
 ## Background agent
 
-- The `mousecloakHelper` login item app is replaced by a launch agent that runs
-  `mousecloak --listen`. Its label is `io.github.metal-snake.Mousecape.agent` and its
-  plist is in `Contents/Library/LaunchAgents`.
-- Registered through `SMAppService` (macOS 13+) instead of the deprecated
-  `SMLoginItemSetEnabled`.
-- Turned on and off in **Settings → Apply cape at login** instead of the
-  **Install Helper Tool** menu item. When macOS asks for approval, Settings links to
-  System Settings → Login Items, where it appears under "Allow in the Background".
+- The `mousecloakHelper` login item app is replaced by `mousecloak --listen`, the command
+  line tool in agent mode, which re-applies the cape at login, on user switches and on
+  display changes.
+- It is a plain launch agent: the app writes
+  `~/Library/LaunchAgents/io.github.metal-snake.Mousecape.listener.plist` (pointing at
+  `mousecloak` in the app bundle) and loads it with `launchctl`. An earlier version of this
+  fork registered it through `SMAppService`; for an app without an Apple team ID (ad-hoc or
+  self-signed), launchd pinned that registration to the exact build and refused the agent
+  after every update ("needs LWCR update"), and re-registering didn't help. A plain agent
+  isn't pinned, so updates just work. Old `SMAppService` registrations are moved over at
+  launch.
+- Turned on and off in **Settings → Apply cape at login** instead of the **Install Helper
+  Tool** menu item. If it is switched off under System Settings → Login Items, Settings
+  links there. macOS lists it as "mousecloak".
+- At launch the app makes sure the plist points at the app's current location.
 - Runs as a background-only process, so it shows no Dock icon.
-- Ad-hoc signing pins the agent to the exact build, app bundle included. When the build
-  has changed, the app registers the agent again at launch; otherwise launchd would refuse
-  to start it. Whether the user turned the agent on comes from the app's own record, not
-  from the agent's status, which macOS doesn't report as enabled for a stale
-  registration. macOS shows a "Background items added" notification each time.
+- Logs to `~/Library/Logs/Mousecape/agent.log`.
 
 ## App (`Sources/Mousecape`)
 

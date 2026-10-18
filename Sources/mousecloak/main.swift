@@ -116,6 +116,10 @@ case .listen:
     // takes the agent for the app itself: a Dock icon that bounces forever. Declare it a
     // background process first.
     NSApplication.shared.setActivationPolicy(.prohibited)
+    // The agent's output goes to a log file; write it line by line instead of when the
+    // (never-ending) process exits.
+    setvbuf(stdout, nil, _IOLBF, 0)
+    print("mousecloak agent started \(Date())")
     listener()
 }
 

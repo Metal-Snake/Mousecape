@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<!-- Background agent, registered by the app through SMAppService.agent(plistName:).
-     Re-applies the current cape at login, on user switches and on display changes. -->
+<!-- The agent of earlier versions (SMAppService). Kept only so the app can unregister such
+     registrations: SMAppService needs the plist in the bundle for that. Never registered
+     again; the current agent is a plain launch agent in ~/Library/LaunchAgents. -->
 <plist version="1.0">
 <dict>
     <key>Label</key>

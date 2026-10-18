@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- Briefly the agent's name (SMAppService). Kept only so the app can unregister such
+     registrations: SMAppService needs the plist in the bundle for that. Never registered
+     again; the current agent is a plain launch agent in ~/Library/LaunchAgents. -->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>io.github.metal-snake.Mousecape.cursor-agent</string>
+    <key>BundleProgram</key>
+    <string>Contents/MacOS/mousecloak</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>mousecloak</string>
+        <string>--listen</string>
+    </array>
+    <key>AssociatedBundleIdentifiers</key>
+    <array>
+        <string>io.github.metal-snake.Mousecape</string>
+    </array>
+    <key>LimitLoadToSessionType</key>
+    <string>Aqua</string>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>KeepAlive</key>
+    <dict>
+        <key>SuccessfulExit</key>
+        <false/>
+    </dict>
+    <key>ProcessType</key>
+    <string>Interactive</string>
+</dict>
+</plist>

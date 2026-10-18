@@ -27,21 +27,6 @@ and what has been tested.
 
 ## Known issues
 
-- [ ] **The agent can stay dead after an update, for good.** Ad-hoc signing pins the
-      registered agent to the exact `mousecloak` build ("needs LWCR update", exit 78). The
-      app re-registers it at launch, which works sometimes. Tested on 2026-10-18: after a
-      real change to `mousecloak`, neither re-registering (also with a wait for launchd)
-      nor switching the agent off and on in Settings helped. launchd briefly has the new
-      build, then the old requirement comes back, apparently from the Background Task
-      Management records. Ways out:
-      1. **A stable signing identity.** A self-signed code-signing certificate (or a
-         Developer ID) gives every build the same designated requirement, so the
-         registered requirement keeps matching. Needs a certificate in the builder's
-         keychain (and in CI).
-      2. **A plain plist in `~/Library/LaunchAgents`** that starts the agent through
-         Apple-signed `/usr/bin/open -b <bundle id> --args --agent` (Cursie's way), so
-         nothing of ours is pinned. The app would need an agent mode that runs the
-         listener without UI.
 - [ ] **Hidden deprecation warnings.** The engine builds with
       `-Wno-deprecated-declarations`, which hides three warnings:
       `kUTTypePNG` in `MCDefs.m:73` and `MCDefs.m:94` (use `UTTypePNG`), and
@@ -61,9 +46,9 @@ and what has been tested.
 - [ ] **No undo** in the editor, or for deleting a cape. The original had both.
 - [ ] **`mousecloak --create` asks questions on stdin** (`scanf` in `create.m`), so it
       cannot be scripted. Add options such as `--name` and `--author`.
-- [ ] **The agent's output goes nowhere.** The engine prints to stdout with ANSI colours
-      and the agent plist has no `StandardOutPath`. Switch to `os_log`, or log to a file
-      under `~/Library/Logs`.
+- [ ] **Login Items shows the agent as "mousecloak"**, not Mousecape: for a plain launch
+      agent macOS names the program, and `AssociatedBundleIdentifiers` only counts for
+      apps with an Apple team ID. Cosmetic; a Developer ID would fix it.
 - [ ] **Original Mousecape installed alongside.** Both apps claim the
       `com.alexzielenski.mousecape.cape` type. The original's last release (1813) is
       Intel-only, so this only matters on Macs with Rosetta, where it's untested which app
