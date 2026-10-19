@@ -95,10 +95,10 @@ x86_64 build.
       cape out of the window to share it.
 - [ ] **Easier animated cursors.** Build the sprite sheet from several single-frame images
       or a GIF, so nobody has to stack frames by hand.
-- [ ] **Time-based reduction for uneven animations.** For a Windows `.ani` whose steps have
-      different durations and too many frames for the gcd approach, sample the whole loop
-      at 24 evenly spaced moments and keep the frame shown at each (Cursie does this),
-      instead of averaging the durations.
+- [ ] **Time-based reduction when applying.** Choose Frames → By Time keeps an uneven
+      animation's timing, but only when the user picks it; applying a cape with
+      `FrameDurations` still keeps every n-th frame at the average duration. The engine
+      could sample by time itself when the key is there.
 - [ ] **Localised file names in Windows packs.** Without an `install.inf`, roles are
       guessed from English file names only. Packs from Korea, Japan or China often use
       names like `일반선택.ani` (Normal Select). Add keywords in more languages.

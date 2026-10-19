@@ -7,21 +7,23 @@ enum CursorSheet {
     /// Frames in display order and one duration for all of them. Other formats can give
     /// each step its own duration (`durations`, in multiples of `unit` seconds); here steps
     /// are repeated in units of the common divisor of their durations, as long as that stays
-    /// within the frame limit, and otherwise they get the average duration.
-    static func timeline(steps: [Int], durations: [Int], unit: Double) -> (frames: [Int], duration: Double) {
-        guard let first = durations.first else { return (steps, unit) }
+    /// within the frame limit. Otherwise every step stays one frame with the average
+    /// duration, and `stepDurations` keeps each step's own (for choosing frames by time).
+    static func timeline(steps: [Int], durations: [Int], unit: Double)
+        -> (frames: [Int], duration: Double, stepDurations: [Double]?) {
+        guard let first = durations.first else { return (steps, unit, nil) }
         if durations.allSatisfy({ $0 == first }) {
-            return (steps, Double(first) * unit)
+            return (steps, Double(first) * unit, nil)
         }
         let divisor = durations.reduce(0, gcd)
         let expanded = zip(steps, durations).flatMap { step, duration in
             Array(repeating: step, count: duration / divisor)
         }
         if divisor > 0, expanded.count <= CapeCursor.maximumFrameCount {
-            return (expanded, Double(divisor) * unit)
+            return (expanded, Double(divisor) * unit, nil)
         }
         let average = Double(durations.reduce(0, +)) / Double(durations.count)
-        return (steps, average * unit)
+        return (steps, average * unit, durations.map { Double($0) * unit })
     }
 
     private static func gcd(_ a: Int, _ b: Int) -> Int {

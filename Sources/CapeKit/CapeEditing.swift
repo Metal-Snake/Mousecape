@@ -55,6 +55,7 @@ extension CapeCursor {
             rebuilt.append(png)
         }
         var copy = self
+        copy.frameDurations = nil                               // the frames are new
         copy.representations = rebuilt
         copy.frameCount = count
         copy.frameDuration = frameDuration
@@ -171,6 +172,7 @@ extension CapeCursor {
         if frameCount > Self.maximumFrameCount {
             problems.append(.framesWillBeReduced(from: frameCount, to: Self.reducedFrameCount(frameCount)))
         }
+        if frameDurations != nil { problems.append(.unevenTiming) }
         if hotSpot.x < 0 || hotSpot.y < 0 || hotSpot.x > size.width || hotSpot.y > size.height {
             problems.append(.hotSpotOutside)
         }
@@ -224,6 +226,7 @@ public enum CursorProblem: Equatable, Sendable, CustomStringConvertible {
     case noImages
     case frameCountOutOfRange
     case framesWillBeReduced(from: Int, to: Int)
+    case unevenTiming
     case hotSpotOutside
     case unreadableImage
     case unexpectedWidth(CGSize)
@@ -233,7 +236,7 @@ public enum CursorProblem: Equatable, Sendable, CustomStringConvertible {
     /// around (a reduced animation, a hot spot off the image).
     public var isError: Bool {
         switch self {
-        case .framesWillBeReduced, .hotSpotOutside: false
+        case .framesWillBeReduced, .unevenTiming, .hotSpotOutside: false
         default: true
         }
     }
@@ -246,6 +249,8 @@ public enum CursorProblem: Equatable, Sendable, CustomStringConvertible {
             String(localized: "A cursor needs at least one frame.")
         case .framesWillBeReduced(let from, let to):
             String(localized: "macOS shows at most \(CapeCursor.maximumFrameCount) frames; the \(from) frames are reduced to \(to) when applied.")
+        case .unevenTiming:
+            String(localized: "The frames have different durations, but macOS shows every frame equally long. Frames → Choose… → By Time keeps the timing.")
         case .hotSpotOutside:
             String(localized: "The hot spot lies outside the cursor.")
         case .unreadableImage:
@@ -319,6 +324,41 @@ public enum FrameSelection {
     /// The first `count` frames.
     public static func first(of frameCount: Int, count: Int = CapeCursor.maximumFrameCount) -> [Int] {
         Array(0..<min(count, frameCount))
+    }
+
+    /// For frames with their own durations: the frames to show, one duration for all, so the
+    /// animation keeps its timing. Repeats each frame in units of the durations' common
+    /// divisor when that fits in `count` frames (exact); otherwise samples the loop at
+    /// `count` evenly spaced moments (the middle of each slot) and keeps the frame shown
+    /// then. Frames may repeat; short ones may be left out.
+    public static func byTime(durations: [Double], count: Int = CapeCursor.maximumFrameCount) -> (frames: [Int], duration: Double) {
+        guard !durations.isEmpty, count > 0 else { return ([], 1) }
+        let total = durations.reduce(0, +)
+        // Exactly, in the unit the durations came in: jiffies (Windows) or milliseconds.
+        for unit in [1.0 / 60, 0.001] {
+            let ticks = durations.map { $0 / unit }
+            guard ticks.allSatisfy({ abs($0 - $0.rounded()) < 0.01 && $0.rounded() >= 1 }) else { continue }
+            let whole = ticks.map { Int($0.rounded()) }
+            let divisor = whole.reduce(0) { gcd($0, $1) }
+            let expanded = whole.enumerated().flatMap { index, n in Array(repeating: index, count: n / divisor) }
+            if expanded.count <= count {
+                return (expanded, Double(divisor) * unit)
+            }
+            break
+        }
+        var ends: [Double] = []
+        var elapsed = 0.0
+        for duration in durations { elapsed += duration; ends.append(elapsed) }
+        let slot = total / Double(count)
+        let frames = (0..<count).map { k -> Int in
+            let moment = (Double(k) + 0.5) * slot
+            return ends.firstIndex { moment < $0 } ?? durations.count - 1
+        }
+        return (frames, slot)
+    }
+
+    private static func gcd(_ a: Int, _ b: Int) -> Int {
+        b == 0 ? a : gcd(b, a % b)
     }
 
     /// Duration per frame that keeps one loop as long as the original.

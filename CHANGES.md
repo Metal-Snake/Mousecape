@@ -24,7 +24,11 @@ bundled third-party libraries are gone.
 ## What stays compatible
 
 - **Cape format.** `.cape` files are read and written in the same format (version 2.0),
-  under the same type identifier `com.alexzielenski.mousecape.cape`.
+  under the same type identifier `com.alexzielenski.mousecape.cape`. One optional key is
+  new: `FrameDurations` in a cursor, each frame's own duration in seconds, written only
+  for imported animations whose frames last differently long. `FrameDuration` still
+  holds their average, so the original Mousecape (which ignores the new key) and the
+  engine play them as before. The original's editor drops the key when it saves.
 - **Library.** `~/Library/Application Support/Mousecape/capes`, the same folder.
 - **Preferences.** The engine and the app keep using the `com.alexzielenski.Mousecape`
   preferences domain (applied cape, cursor scale, left-handed mode), so an existing setup
@@ -276,7 +280,12 @@ Rebuilt from scratch. It works on a draft and saves explicitly:
   [Bugs in the original](#animations-with-more-than-24-frames)).
 - **Choose Frames** (**Choose…** next to the frame count, for any animated cursor): a
   filmstrip of all frames to keep or drop. Presets are every n-th frame, n spread evenly,
-  the first n, or a custom pick. The original and the result play side by side. The frame
+  the first n, or a custom pick, and **By Time** for frames with their own durations
+  (preselected for those): it samples the loop at 24 evenly spaced moments, the middle of
+  each slot, and keeps the frame shown then, so a long frame fills several slots and very
+  short ones may drop out. The result is 24 equally long frames with the original's
+  timing, shown with the number of different frames used. When the durations fit
+  exactly in 24 slots (their common divisor), it repeats frames instead of sampling. The original and the result play side by side. The frame
   duration follows the selection so one loop keeps its length, and can be adjusted. A
   note appears when the kept frames are unevenly spaced, because with one duration for
   all frames steady motion may then stutter.
@@ -308,7 +317,9 @@ New: Windows cursor themes import as capes.
   transparency mask. Pixels the mask marks as "invert" are drawn black, since macOS
   cursors can't invert. `.ani` animations with their own frame order and per-step
   durations; uneven durations are repeated in units of their common divisor, within the
-  frame limit.
+  frame limit. Beyond it, each step stays one frame and keeps its duration
+  (`FrameDurations`); the cursor is then flagged, and Choose Frames → By Time turns it into
+  24 frames with the right timing.
 - **Size:** Windows shows cursors at 32 × 32 pixels at the default pointer size, whatever
   the file's resolution, so cursors become 32 × 32 points. Images are resampled to 1x and
   2x, and to 5x when the source is large enough. Hot spots are scaled to match.
@@ -350,7 +361,7 @@ BSDs), import as capes.
   it has them (Xcursor files usually carry 16 to 96 pixels), else larger ones scaled down;
   a theme with only one size gets 1x only.
 - **Animation:** frames with their own delays (in milliseconds), handled like `.ani`
-  steps. Typical themes have 40 to 60 frames, which the engine reduces to at most 24.
+  steps, By Time included. Typical themes have 40 to 60 frames, which the engine reduces to at most 24.
 - **Safety:** links that point outside the theme folder are ignored.
 - Written from the format description in `man Xcursor`; no code from other projects.
 

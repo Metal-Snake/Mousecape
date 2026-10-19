@@ -159,15 +159,18 @@ private func pixel(_ image: CGImage, _ x: Int, _ y: Int) -> NSColor {
 
 @Test func timesUnevenSteps() {
     // Equal rates: one frame per step.
-    #expect(WindowsCursor.timeline(steps: [0, 1], rates: [6, 6]) == ([0, 1], 0.1))
+    let even = WindowsCursor.timeline(steps: [0, 1], rates: [6, 6])
+    #expect(even.frames == [0, 1] && even.duration == 0.1 && even.stepDurations == nil)
     // Uneven: repeated in units of the common divisor.
     let uneven = WindowsCursor.timeline(steps: [0, 2, 1], rates: [2, 4, 2])
     #expect(uneven.frames == [0, 2, 2, 1])
     #expect(abs(uneven.duration - 2.0 / 60) < 1e-9)
-    // Too many repeats for the frame limit: average duration instead.
+    #expect(uneven.stepDurations == nil)
+    // Too many repeats for the frame limit: average duration, and each step's own kept.
     let long = WindowsCursor.timeline(steps: [0, 1], rates: [1, 40])
     #expect(long.frames == [0, 1])
     #expect(abs(long.duration - 20.5 / 60) < 1e-9)
+    #expect(long.stepDurations?.map { ($0 * 60).rounded() } == [1, 40])
 }
 
 // MARK: - Converting

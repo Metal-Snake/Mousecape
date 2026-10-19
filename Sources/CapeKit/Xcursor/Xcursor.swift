@@ -148,7 +148,7 @@ public enum Xcursor {
         }
         let cursor = CapeCursor(identifier: identifier, frameCount: timing.frames.count,
                                 frameDuration: base.count > 1 ? timing.duration : 1,
-                                hotSpot: reference.hotSpot, size: CGSize(width: pointWidth, height: pointHeight),
+                                frameDurations: timing.stepDurations, hotSpot: reference.hotSpot, size: CGSize(width: pointWidth, height: pointHeight),
                                 representations: representations)
         return cursor.trimmingTransparentMargins() ?? cursor
     }

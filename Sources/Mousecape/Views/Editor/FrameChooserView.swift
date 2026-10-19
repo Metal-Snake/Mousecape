@@ -10,6 +10,8 @@ struct FrameChooserView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var preset: Preset
     @State private var kept: Set<Int>
+    /// For "By Time": the frames in display order, repeats included.
+    @State private var timeSequence: [Int] = []
     @State private var frameDuration: Double
     /// Once the duration is typed in, selection changes no longer recompute it.
     @State private var durationEdited = false
@@ -19,28 +21,44 @@ struct FrameChooserView: View {
     private let limit = CapeCursor.maximumFrameCount
 
     enum Preset: Hashable {
-        case everyNth, spread, first, custom
+        case byTime, everyNth, spread, first, custom
     }
 
     init(cursor: CapeCursor, onApply: @escaping (CapeCursor) -> Void) {
         self.cursor = cursor
         self.onApply = onApply
-        let initial = FrameSelection.everyNth(of: cursor.frameCount)
-        _preset = State(initialValue: .everyNth)
-        _kept = State(initialValue: Set(initial))
-        _frameDuration = State(initialValue: FrameSelection.loopPreservingDuration(
-            frameDuration: cursor.frameDuration, frameCount: cursor.frameCount, kept: initial.count))
+        // Frames with their own durations start out chosen by time, which keeps the timing.
+        if let durations = cursor.frameDurations {
+            let timing = FrameSelection.byTime(durations: durations)
+            _preset = State(initialValue: .byTime)
+            _timeSequence = State(initialValue: timing.frames)
+            _kept = State(initialValue: Set(timing.frames))
+            _frameDuration = State(initialValue: timing.duration)
+        } else {
+            let initial = FrameSelection.everyNth(of: cursor.frameCount)
+            _preset = State(initialValue: .everyNth)
+            _kept = State(initialValue: Set(initial))
+            _frameDuration = State(initialValue: FrameSelection.loopPreservingDuration(
+                frameDuration: cursor.frameDuration, frameCount: cursor.frameCount, kept: initial.count))
+        }
     }
 
-    private var keptInOrder: [Int] { kept.sorted() }
-    private var isValid: Bool { (1...limit).contains(kept.count) }
-    private var isUneven: Bool { FrameSelection.isUneven(keptInOrder, frameCount: cursor.frameCount) }
+    /// The frames of the result in display order: by time with repeats, otherwise the kept
+    /// frames in their original order.
+    private var sequence: [Int] { preset == .byTime ? timeSequence : kept.sorted() }
+    private var isValid: Bool { (1...limit).contains(sequence.count) }
+    private var isUneven: Bool {
+        preset != .byTime && FrameSelection.isUneven(sequence, frameCount: cursor.frameCount)
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             header
             previews
             Picker("Keep", selection: $preset) {
+                if cursor.frameDurations != nil {
+                    Text("By Time").tag(Preset.byTime)
+                }
                 Text(everyNthLabel).tag(Preset.everyNth)
                 Text("Spread \(min(limit, cursor.frameCount)) evenly").tag(Preset.spread)
                 Text("First \(min(limit, cursor.frameCount))").tag(Preset.first)
@@ -57,10 +75,7 @@ struct FrameChooserView: View {
         .task { frames = await FrameCache.shared.frames(for: cursor, scale: 2) }
         .onChange(of: preset) { _, newValue in applyPreset(newValue) }
         .onChange(of: kept) { _, _ in
-            if !durationEdited {
-                frameDuration = FrameSelection.loopPreservingDuration(
-                    frameDuration: cursor.frameDuration, frameCount: cursor.frameCount, kept: kept.count)
-            }
+            if !durationEdited { frameDuration = loopPreservingDuration }
         }
         .alert("Frames not changed", isPresented: $failed) {
             Button("OK") {}
@@ -75,7 +90,9 @@ struct FrameChooserView: View {
         VStack(alignment: .leading, spacing: 4) {
             Text("Choose Frames — \(cursor.name)")
                 .font(.title2.weight(.semibold))
-            Text("macOS shows at most \(limit) frames of an animation. Pick the ones to keep; by default one loop keeps its length, so the animation runs at the same speed.")
+            Text(cursor.frameDurations != nil
+                 ? "The frames have different durations, but macOS shows every frame equally long, and at most \(limit) of them. By Time picks the frame shown at \(limit) evenly spaced moments of the loop, so the timing stays; the other choices keep the loop's length."
+                 : "macOS shows at most \(limit) frames of an animation. Pick the ones to keep; by default one loop keeps its length, so the animation runs at the same speed.")
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
         }
@@ -84,12 +101,12 @@ struct FrameChooserView: View {
     private var previews: some View {
         HStack(spacing: 24) {
             PreviewBox(title: String(localized: "Original · \(cursor.frameCount) frames"),
-                       frames: frames, duration: cursor.frameDuration, aspect: aspect)
+                       frames: frames, duration: cursor.frameDuration, durations: cursor.frameDurations, aspect: aspect)
             Image(systemName: "arrow.right")
                 .foregroundStyle(.secondary)
-            PreviewBox(title: String(localized: "Result · \(kept.count) frames"),
-                       frames: keptInOrder.compactMap { frames.indices.contains($0) ? frames[$0] : nil },
-                       duration: frameDuration, aspect: aspect)
+            PreviewBox(title: String(localized: "Result · \(sequence.count) frames"),
+                       frames: sequence.compactMap { frames.indices.contains($0) ? frames[$0] : nil },
+                       duration: frameDuration, durations: nil, aspect: aspect)
             Spacer()
         }
     }
@@ -111,7 +128,9 @@ struct FrameChooserView: View {
     private var footer: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 16) {
-                Text("\(kept.count) of \(cursor.frameCount) frames kept · at most \(limit)")
+                Text(preset == .byTime
+                     ? "\(sequence.count) frames from \(kept.count) of \(cursor.frameCount) · at most \(limit)"
+                     : "\(kept.count) of \(cursor.frameCount) frames kept · at most \(limit)")
                     .foregroundStyle(isValid ? Color.secondary : Color.red)
                     .monospacedDigit()
                 Spacer()
@@ -124,8 +143,7 @@ struct FrameChooserView: View {
                 .fixedSize()
                 Button("Keep Loop Length") {
                     durationEdited = false
-                    frameDuration = FrameSelection.loopPreservingDuration(
-                        frameDuration: cursor.frameDuration, frameCount: cursor.frameCount, kept: kept.count)
+                    frameDuration = loopPreservingDuration
                 }
                 .disabled(!durationEdited)
             }
@@ -140,7 +158,7 @@ struct FrameChooserView: View {
                 Spacer()
                 Button("Cancel", role: .cancel) { dismiss() }
                     .keyboardShortcut(.cancelAction)
-                Button("Keep \(kept.count) Frames") { apply() }
+                Button("Keep \(sequence.count) Frames") { apply() }
                     .keyboardShortcut(.defaultAction)
                     .disabled(!isValid)
             }
@@ -169,8 +187,18 @@ struct FrameChooserView: View {
         Binding(get: { frameDuration }, set: { frameDuration = max(0.001, $0); durationEdited = true })
     }
 
+    /// The duration per frame that keeps one loop as long as the original's.
+    private var loopPreservingDuration: Double {
+        FrameSelection.loopPreservingDuration(frameDuration: cursor.frameDuration,
+                                              frameCount: cursor.frameCount, kept: sequence.count)
+    }
+
     private func applyPreset(_ preset: Preset) {
+        defer { if !durationEdited { frameDuration = loopPreservingDuration } }
         switch preset {
+        case .byTime:
+            timeSequence = FrameSelection.byTime(durations: cursor.frameDurations ?? []).frames
+            kept = Set(timeSequence)
         case .everyNth: kept = Set(FrameSelection.everyNth(of: cursor.frameCount))
         case .spread: kept = Set(FrameSelection.spread(of: cursor.frameCount))
         case .first: kept = Set(FrameSelection.first(of: cursor.frameCount))
@@ -184,7 +212,7 @@ struct FrameChooserView: View {
     }
 
     private func apply() {
-        guard let result = cursor.keepingFrames(keptInOrder, frameDuration: frameDuration) else {
+        guard let result = cursor.keepingFrames(sequence, frameDuration: frameDuration) else {
             failed = true
             return
         }
@@ -198,15 +226,17 @@ private struct PreviewBox: View {
     let title: String
     let frames: [CGImage]
     let duration: Double
+    /// Each frame's own duration, when they differ.
+    let durations: [Double]?
     let aspect: CGFloat
 
     var body: some View {
         VStack(spacing: 6) {
-            TimelineView(.animation(minimumInterval: max(duration, 0.01), paused: frames.count < 2)) { context in
+            TimelineView(.animation(minimumInterval: max(durations?.min() ?? duration, 0.01), paused: frames.count < 2)) { context in
                 ZStack {
                     CheckerboardBackground()
                     if !frames.isEmpty {
-                        let index = Int(context.date.timeIntervalSinceReferenceDate / max(duration, 0.01)) % frames.count
+                        let index = frameIndex(at: context.date.timeIntervalSinceReferenceDate)
                         Image(decorative: frames[index], scale: 1)
                             .resizable()
                             .interpolation(.high)
@@ -221,6 +251,18 @@ private struct PreviewBox: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
+    }
+
+    private func frameIndex(at time: TimeInterval) -> Int {
+        guard let durations, durations.count == frames.count, case let total = durations.reduce(0, +), total > 0 else {
+            return Int(time / max(duration, 0.01)) % frames.count
+        }
+        var moment = time.truncatingRemainder(dividingBy: total)
+        for (index, length) in durations.enumerated() {
+            if moment < length { return index }
+            moment -= length
+        }
+        return frames.count - 1
     }
 }
 

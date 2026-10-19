@@ -13,12 +13,14 @@ public enum WindowsCursor {
     public static func capeCursor(from data: Data, identifier: String) throws -> CapeCursor {
         let frames: [WindowsIconImage]
         var frameDuration = 1.0
+        var frameDurations: [Double]?
         if data.starts(with: Array("RIFF".utf8)) {
             let animation = try WindowsAni.parse(data)
             let chosen = animation.frames.map(largest)
             let timing = timeline(steps: animation.steps, rates: animation.rates)
             frames = timing.frames.map { chosen[$0] }
             frameDuration = timing.duration
+            frameDurations = timing.stepDurations
         } else {
             frames = [largest(try WindowsIcon.images(from: data))]
         }
@@ -42,7 +44,7 @@ public enum WindowsCursor {
             representations.append(sheet)
         }
         let cursor = CapeCursor(identifier: identifier, frameCount: frames.count, frameDuration: frameDuration,
-                                hotSpot: hotSpot, size: CGSize(width: pointWidth, height: pointHeight),
+                                frameDurations: frameDurations, hotSpot: hotSpot, size: CGSize(width: pointWidth, height: pointHeight),
                                 representations: representations)
         return cursor.trimmingTransparentMargins() ?? cursor
     }
@@ -54,7 +56,7 @@ public enum WindowsCursor {
 
     /// Frames in display order and one duration for all of them (see `CursorSheet.timeline`);
     /// Windows durations are in jiffies (1/60 s).
-    static func timeline(steps: [Int], rates: [Int]) -> (frames: [Int], duration: Double) {
+    static func timeline(steps: [Int], rates: [Int]) -> (frames: [Int], duration: Double, stepDurations: [Double]?) {
         CursorSheet.timeline(steps: steps, durations: rates, unit: 1.0 / 60)
     }
 }
