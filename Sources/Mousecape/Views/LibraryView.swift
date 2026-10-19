@@ -70,6 +70,12 @@ struct LibraryView: View {
         } message: {
             Text("A cape with the same identifier is already in the library.")
         }
+        .confirmationDialog(revertTitle, isPresented: revertBinding) {
+            Button("Revert") { model.confirmRevert() }
+            Button("Cancel", role: .cancel) { model.capeToRevert = nil }
+        } message: {
+            Text("The cape goes back to how it was imported. The edited version is moved to the Trash.")
+        }
         .confirmationDialog(deleteTitle, isPresented: deleteBinding) {
             Button("Move to Trash", role: .destructive) { model.confirmDelete() }
             Button("Cancel", role: .cancel) { model.capeToDelete = nil }
@@ -89,6 +95,7 @@ struct LibraryView: View {
         List(selection: $model.selection) {
             ForEach(model.library.capes) { cape in
                 CapeRow(cape: cape, isApplied: cape.identifier == model.library.appliedIdentifier,
+                        isEdited: model.library.editedIdentifiers.contains(cape.identifier),
                         problems: model.library.problems[cape.id] ?? [:])
                     .tag(cape.id)
                     .contextMenu { contextMenu(for: cape) }
@@ -125,6 +132,9 @@ struct LibraryView: View {
             .disabled(cape.identifier == model.library.appliedIdentifier)
         Button("Edit…") { model.edit(cape) }
         Button("Duplicate") { model.duplicate(cape) }
+        if model.library.editedIdentifiers.contains(cape.identifier) {
+            Button("Revert to Original…") { model.capeToRevert = cape }
+        }
         Divider()
         Button("Show in Finder") { model.revealInFinder(cape) }
         Divider()
@@ -139,6 +149,14 @@ struct LibraryView: View {
 
     private var replaceBinding: Binding<Bool> {
         Binding(get: { model.pendingReplacement != nil }, set: { if !$0 { model.pendingReplacement = nil } })
+    }
+
+    private var revertBinding: Binding<Bool> {
+        Binding(get: { model.capeToRevert != nil }, set: { if !$0 { model.capeToRevert = nil } })
+    }
+
+    private var revertTitle: String {
+        String(localized: "Revert “\(model.capeToRevert?.name ?? "")” to the original?")
     }
 
     private var deleteBinding: Binding<Bool> {
@@ -157,6 +175,7 @@ struct LibraryView: View {
 private struct CapeRow: View {
     let cape: Cape
     let isApplied: Bool
+    let isEdited: Bool
     let problems: [String: [CursorProblem]]
 
     var body: some View {
@@ -178,6 +197,11 @@ private struct CapeRow: View {
                 }
             }
             Spacer()
+            if isEdited {
+                Image(systemName: "pencil")
+                    .foregroundStyle(.secondary)
+                    .help("Edited; Revert to Original brings back the imported version")
+            }
             if !problems.isEmpty {
                 ProblemBadge(problems: problems.values.flatMap { $0 })
                     .help(ProblemBadge.summary(cursorCount: problems.count))

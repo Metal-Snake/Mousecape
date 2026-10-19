@@ -111,29 +111,15 @@ x86_64 build.
       - `.tar.zst`: the system's libarchive has no built-in zstd.
 - [ ] **Frame chooser follow-ups.** Drag across the filmstrip to select ranges; show the
       gap pattern of the kept frames; open it straight from the library's problem banner.
-- [ ] **Keep the original when a cape is edited.** Saving in the editor overwrites the
-      library copy (`Library.save`) with no backup; the only way back is importing the
-      original file again, if the user still has it. Captured and converted capes
-      (Capture Current Cursors, MightyMouse) have no original anywhere.
-      - Before the first save, copy the unchanged file to
-        `~/Library/Application Support/Mousecape/Originals/<identifier>.cape`. Later saves
-        leave it alone, so it always holds the state as imported.
-      - "Revert to Original" in the context menu and the Cape menu while such a copy
-        exists; a small mark in the sidebar for edited capes.
-      - Deleting a cape moves its original to the Trash as well. Follow identifier
-        changes (rename the original too).
-      - When a save changes the identifier, move the old file to the Trash instead of
-        removing it.
-      - **Idea: full version history.** Keep every saved version, not only the original
-        (e.g. `Versions/<identifier>/<date>.cape`), and let the user go back to any of
-        them. Possibly with:
-        - a diff between two versions: which cursors were added, removed or changed, and
-          per cursor what changed (images, hot spot, frames, size), with the images side
-          by side;
-        - "Remove intermediate versions", which keeps only the original and the current
-          version;
-        - a size limit or an age limit, since capes with many HiDPI cursors can be several
-          MB each.
+- [ ] **Version history for edited capes.** Today only the original is kept (see
+      CHANGES.md). Keep every saved version too (e.g. `Versions/<identifier>/<date>.cape`)
+      and let the user go back to any of them. Possibly with:
+      - a diff between two versions: which cursors were added, removed or changed, and per
+        cursor what changed (images, hot spot, frames, size), with the images side by side;
+      - "Remove intermediate versions", which keeps only the original and the current
+        version;
+      - a size limit or an age limit, since capes with many HiDPI cursors can be several
+        MB each.
 - [ ] **Per-cursor control over left-handed mirroring.** Today only the pointers in
       `MCPointerCursorIdentifiers` (and their variants) are mirrored. Capes like Kiriko
       draw the I-beam (and others) as arrow-like shapes too, so mirroring only some of them

@@ -249,7 +249,8 @@ New SwiftUI app. Compared with the original:
 - **Identifier clashes on import.** The app now asks whether to replace the existing cape.
   The original silently appended a UUID to the identifier.
 - **Deleting** uses the system Trash API (`FileManager.trashItem`). The original moved the
-  file to `~/.Trash` by hand. There is no undo for deleting yet.
+  file to `~/.Trash` by hand. There is no undo for deleting yet. When a save changes a
+  cape's identifier, the old file goes to the Trash too, instead of being removed.
 - **Capture Current Cursors** (the original's dump) imports the cursors on screen as a new
   cape.
 - **Settings** cover the login agent, the cursor size (slider from 1 to 4) and left-handed
@@ -277,6 +278,15 @@ New SwiftUI app. Compared with the original:
 Rebuilt from scratch. It works on a draft and saves explicitly:
 
 - **New, edit, duplicate:** ⌘N, ⌘E, ⌘D.
+- **The original stays.** Before a cape's first save in the editor, its unchanged file is
+  kept in `~/Library/Application Support/Mousecape/Originals/<identifier>.cape` (next to
+  the library folder, so neither the original Mousecape nor the agent sees it). Later
+  saves leave that copy alone; saving the cape back to how it was removes it. Edited capes
+  get a pencil in the sidebar, and **Revert to Original…** (Cape menu and context menu)
+  brings the imported version back, moving the edited one to the Trash. The original
+  follows identifier changes, goes to the Trash with its cape, and is dropped when the
+  cape is imported again (the new import is the new starting point). New capes and
+  duplicates have none. In the original app, saving overwrote the file with no way back.
 - **Cape details:** name, author, version, HiDPI and identifier. Changing the identifier
   renames the file, and an applied cape is re-applied after saving.
 - **Cursors:** add any system cursor the cape doesn't replace yet, or remove one.

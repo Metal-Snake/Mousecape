@@ -15,6 +15,8 @@ final class AppModel {
     /// An import waiting for "Replace?" confirmation.
     var pendingReplacement: PendingReplacement?
     var capeToDelete: Cape?
+    /// An edited cape waiting for "Revert to the original?" confirmation.
+    var capeToRevert: Cape?
 
     var selectedCape: Cape? { library.capes.first { $0.id == selection } }
 
@@ -87,8 +89,7 @@ final class AppModel {
                 selection = cape.id
                 if cape.identifier == library.appliedIdentifier { try library.reapply() }
             case .converted(let cape, let skipped):
-                // Saving under the same identifier re-applies it when it's the applied cape.
-                let saved = try library.save(cape, originalIdentifier: cape.identifier)
+                let saved = try library.replace(with: cape)
                 selection = saved.id
                 reportSkipped(skipped, in: saved)
             }
@@ -195,6 +196,12 @@ final class AppModel {
 
     func captureCurrentCursors() {
         perform { selection = try library.captureCurrentCursors().id }
+    }
+
+    func confirmRevert() {
+        guard let cape = capeToRevert else { return }
+        capeToRevert = nil
+        perform { selection = try library.revertToOriginal(cape).id }
     }
 
     func confirmDelete() {

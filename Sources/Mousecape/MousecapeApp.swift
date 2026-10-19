@@ -41,6 +41,8 @@ struct MousecapeApp: App {
                 }
                 .keyboardShortcut("d")
                 .disabled(model.selectedCape == nil)
+                Button("Revert to Original…") { model.capeToRevert = model.selectedCape }
+                    .disabled(!(model.selectedCape.map { model.library.editedIdentifiers.contains($0.identifier) } ?? false))
                 Divider()
                 Button("Show in Finder") {
                     if let cape = model.selectedCape { model.revealInFinder(cape) }
