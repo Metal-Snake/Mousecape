@@ -80,12 +80,27 @@ private func centreColour(_ png: Data, frameHeight: Int) throws -> [UInt8] {
     #expect(try centreColour(cursor.representations[1], frameHeight: 48) == [0, 0, 255, 255])
 }
 
-@Test func scalesDownWhenDefaultSizeIsMissing() throws {
-    let file = xcursorFile([XcursorTestImage(nominalSize: 64, width: 64, height: 64, hotSpot: (16, 8))])
+@Test func showsClosestSizeUnscaledLikeLinux() throws {
+    // Like the Obsidian theme: only size 48, a normal-sized arrow on a 48-pixel canvas.
+    // Linux shows these images 1:1 at the default size, so they become 48 points.
+    let file = xcursorFile([XcursorTestImage(nominalSize: 48, width: 48, height: 48, hotSpot: (7, 5))])
     let cursor = try Xcursor.capeCursor(from: file, identifier: "x")
-    #expect(cursor.size == CGSize(width: 24, height: 24))
-    #expect(cursor.hotSpot == CGPoint(x: 6, y: 3))
-    #expect(cursor.scales == [1, 2])
+    #expect(cursor.size == CGSize(width: 48, height: 48))
+    #expect(cursor.hotSpot == CGPoint(x: 7, y: 5))
+    #expect(cursor.scales == [1])                               // nothing at 96 for 2x
+}
+
+@Test func picksSizeClosestToDefault() throws {
+    // 16 and 32 are equally close to 24: the first in the file wins, as in libXcursor.
+    let file = xcursorFile([
+        XcursorTestImage(nominalSize: 32, width: 32, height: 32, hotSpot: (4, 4)),
+        XcursorTestImage(nominalSize: 16, width: 16, height: 16, hotSpot: (2, 2)),
+        XcursorTestImage(nominalSize: 64, width: 64, height: 64, hotSpot: (8, 8)),
+    ])
+    let cursor = try Xcursor.capeCursor(from: file, identifier: "x")
+    #expect(cursor.size == CGSize(width: 32, height: 32))
+    #expect(cursor.hotSpot == CGPoint(x: 4, y: 4))
+    #expect(cursor.scales == [1, 2])                            // 2x from the 64-pixel images
 }
 
 @Test func convertsXcursorAnimation() throws {

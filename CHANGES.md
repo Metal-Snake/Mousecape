@@ -330,10 +330,14 @@ BSDs), import as capes.
   takes the first name the theme has from a list per cursor. Linux has counterparts for
   more macOS cursors than Windows: closed and open hand, contextual menu, zoom in and out,
   vertical I-beam, cell, each resize direction.
-- **Size:** nominal size 24, the default pointer size on Linux, becomes 24 points;
-  measured against Apple's own arrow, that matches macOS. Each scale uses the file's own
-  images for that size when it has them (Xcursor files usually carry 16 to 96 pixels),
-  else the next larger ones scaled down. Hot spots come from the 24-pixel image.
+- **Size:** as on Linux (libXcursor), the images whose nominal size is closest to 24, the
+  default pointer size there, are shown one pixel per point, unscaled. For most themes
+  that's the 24-pixel images, and measured against Apple's own arrow, 24 points match
+  macOS. Older themes made only at size 48 (e.g. Obsidian, a normal-sized arrow on a
+  48-pixel canvas) become 48 points, as large as on Linux; scaling them down to 24 made
+  them half as large. Higher scales use the file's images of a multiple of that size when
+  it has them (Xcursor files usually carry 16 to 96 pixels), else larger ones scaled down;
+  a theme with only one size gets 1x only.
 - **Animation:** frames with their own delays (in milliseconds), handled like `.ani`
   steps. Typical themes have 40 to 60 frames, which the engine reduces to at most 24.
 - **Safety:** links that point outside the theme folder are ignored.

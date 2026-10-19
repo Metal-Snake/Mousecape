@@ -29,8 +29,8 @@ struct XcursorImage {
 /// size, hot spot, frame delay and premultiplied ARGB pixels (see `man Xcursor`). An
 /// animated cursor has several images of the same nominal size, in display order.
 public enum Xcursor {
-    /// The nominal size of the default pointer size on Linux desktops (`XCURSOR_SIZE`).
-    /// Measured against Apple's cursors, it matches macOS's default size in points.
+    /// The default pointer size on Linux desktops (`XCURSOR_SIZE`). Measured against Apple's
+    /// cursors, a theme's 24-pixel images match macOS's default size in points.
     public static let defaultSize = 24
 
     private static let magic = Array("Xcur".utf8)
@@ -109,48 +109,45 @@ public enum Xcursor {
                             hotSpot: CGPoint(x: min(hotX, width), y: min(hotY, height)), delay: delay)
     }
 
-    /// A cape cursor for `identifier` from the contents of an Xcursor file. The nominal size
-    /// `defaultSize` becomes that many points; each scale takes the file's own images for
-    /// that size when it has them (sharpest), else the next larger ones scaled down. Scales
-    /// larger than the file's largest images are left out.
+    /// A cape cursor for `identifier` from the contents of an Xcursor file.
+    ///
+    /// Like libXcursor on Linux, the images whose nominal size is closest to `defaultSize`
+    /// are shown at their own pixel size, one pixel per point: a theme made only at size 48
+    /// shows its 48-pixel images unscaled there, so scaling them down to 24 points would
+    /// make the cursor half as large as on Linux. Higher scales take the file's images of a
+    /// multiple of that size when it has them (else the next larger ones, scaled down);
+    /// scales larger than the file's largest images are left out.
     public static func capeCursor(from data: Data, identifier: String) throws -> CapeCursor {
         let all = try images(from: data)
         // Images by nominal size, frames in file order.
         var bySize: [Int: [XcursorImage]] = [:]
         for image in all { bySize[image.nominalSize, default: []].append(image) }
-        guard let largestSize = bySize.keys.max(), let largest = bySize[largestSize], let first = largest.first else {
+        // The first size in the file among the closest, as libXcursor picks it.
+        guard let baseSize = all.map(\.nominalSize).min(by: { abs($0 - defaultSize) < abs($1 - defaultSize) }),
+              let base = bySize[baseSize], let reference = base.first,
+              let largestSize = bySize.keys.max() else {
             throw XcursorError.notACursor
         }
 
-        // Size and hot spot from the default-size image, where the designer set them; else
-        // from the largest, scaled down.
-        let reference = bySize[defaultSize]?.first ?? first
-        let toPoints = Double(defaultSize) / Double(max(reference.nominalSize, 1))
-        let pointWidth = (Double(reference.image.width) * toPoints).rounded()
-        let pointHeight = (Double(reference.image.height) * toPoints).rounded()
-        guard pointWidth > 0, pointHeight > 0 else { throw XcursorError.notACursor }
-        let hotSpot = CGPoint(x: (reference.hotSpot.x * toPoints).rounded(),
-                              y: (reference.hotSpot.y * toPoints).rounded())
-        let timing = CursorSheet.timeline(steps: Array(largest.indices),
-                                          durations: largest.map { max($0.delay, 1) }, unit: 0.001)
+        let pointWidth = reference.image.width, pointHeight = reference.image.height
+        let timing = CursorSheet.timeline(steps: Array(base.indices),
+                                          durations: base.map { max($0.delay, 1) }, unit: 0.001)
 
         var representations: [Data] = []
-        for scale in CapeCursor.supportedScales where scale == 1 || defaultSize * scale <= largestSize {
+        for scale in CapeCursor.supportedScales where scale == 1 || baseSize * scale <= largestSize {
             // The smallest size at least as large as needed, with the same frames.
-            let wanted = defaultSize * scale
-            let source = bySize.keys.sorted()
-                .first { $0 >= wanted && bySize[$0]!.count == largest.count }
-                .map { bySize[$0]! } ?? largest
-            let width = Int(pointWidth) * scale, height = Int(pointHeight) * scale
+            let source = scale == 1 ? base : bySize.keys.sorted()
+                .first { $0 >= baseSize * scale && bySize[$0]!.count == base.count }
+                .map { bySize[$0]! } ?? base
             guard let sheet = CursorSheet.render(timing.frames.map { source[$0].image },
-                                                 frameWidth: width, frameHeight: height) else {
+                                                 frameWidth: pointWidth * scale, frameHeight: pointHeight * scale) else {
                 throw XcursorError.notACursor
             }
             representations.append(sheet)
         }
         return CapeCursor(identifier: identifier, frameCount: timing.frames.count,
-                          frameDuration: largest.count > 1 ? timing.duration : 1,
-                          hotSpot: hotSpot, size: CGSize(width: pointWidth, height: pointHeight),
+                          frameDuration: base.count > 1 ? timing.duration : 1,
+                          hotSpot: reference.hotSpot, size: CGSize(width: pointWidth, height: pointHeight),
                           representations: representations)
     }
 }
