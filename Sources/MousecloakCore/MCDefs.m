@@ -267,6 +267,17 @@ NSArray *MCPointerCursorIdentifiers() {
     return pointers;
 }
 
+BOOL MCIsSafeIdentifier(NSString *identifier) {
+    if (![identifier isKindOfClass:[NSString class]] || identifier.length == 0 || [identifier hasPrefix:@"."])
+        return NO;
+    if ([identifier lengthOfBytesUsingEncoding:NSUTF8StringEncoding] > 200)
+        return NO;
+    NSMutableCharacterSet *unsafe = [NSMutableCharacterSet characterSetWithCharactersInString:@"/:\\"];
+    [unsafe formUnionWithCharacterSet:[NSCharacterSet controlCharacterSet]];
+    [unsafe formUnionWithCharacterSet:[NSCharacterSet newlineCharacterSet]];
+    return [identifier rangeOfCharacterFromSet:unsafe].location == NSNotFound;
+}
+
 BOOL MCCursorIsPointer(NSString *identifier) {
     // A variant such as ArrowS is a pointer when its base is: on macOS 27 ArrowS is the
     // arrow people see, so left-handed mode has to mirror it too.

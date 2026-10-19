@@ -42,7 +42,11 @@ struct HistoryView: View {
         .onAppear(perform: reloadVersions)
         .confirmationDialog("Remove the saved states of “\(cape.name)”?", isPresented: $confirmingRemoval) {
             Button("Move to Trash", role: .destructive) {
-                model.library.removeSavedVersions(of: cape)
+                do {
+                    try model.library.removeSavedVersions(of: cape)
+                } catch {
+                    model.errorMessage = error.localizedDescription
+                }
                 reloadVersions()
             }
             Button("Cancel", role: .cancel) {}

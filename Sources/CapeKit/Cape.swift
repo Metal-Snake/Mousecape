@@ -47,10 +47,14 @@ public struct Cape: Identifiable, Equatable, Sendable {
         guard minimum <= Self.formatVersion else { throw CapeError.unsupportedVersion(minimum) }
         guard let identifier = dict[Key.identifier] as? String,
               let cursors = dict[Key.cursors] as? [String: Any] else { throw CapeError.notACape }
+        // Identifiers become file and folder names (the library file, its history, exports).
+        guard Self.isValidIdentifier(identifier) else { throw CapeError.invalidIdentifier(identifier) }
 
         var parsed: [CapeCursor] = []
         for (cursorID, value) in cursors {
-            guard let cursorDict = value as? [String: Any] else { throw CapeError.invalidCursor(cursorID) }
+            guard Self.isValidIdentifier(cursorID), let cursorDict = value as? [String: Any] else {
+                throw CapeError.invalidCursor(cursorID)
+            }
             parsed.append(try CapeCursor(identifier: cursorID, propertyList: cursorDict))
         }
         self.init(identifier: identifier,
@@ -78,6 +82,15 @@ public struct Cape: Identifiable, Equatable, Sendable {
         ])
     }
 
+    /// Whether `identifier` is safe as a file or folder name: not empty, no path separators
+    /// or control characters, not starting with a dot (no "..", no hidden files), not
+    /// overly long. Cape and cursor identifiers both have to be.
+    public static func isValidIdentifier(_ identifier: String) -> Bool {
+        !identifier.isEmpty && identifier.utf8.count <= 200 && !identifier.hasPrefix(".")
+            && !identifier.contains { $0 == "/" || $0 == ":" || $0 == "\\" || $0.isNewline
+                                      || $0.unicodeScalars.contains { $0.properties.generalCategory == .control } }
+    }
+
     public func propertyListData() throws -> Data {
         try PropertyListSerialization.data(fromPropertyList: propertyList, format: .xml, options: 0)
     }
@@ -101,12 +114,15 @@ public enum CapeError: Error, Equatable, LocalizedError {
     case notACape
     case unsupportedVersion(Double)
     case invalidCursor(String)
+    case invalidIdentifier(String)
 
     public var errorDescription: String? {
         switch self {
-        case .notACape: "The file is not a valid cape."
-        case .unsupportedVersion(let v): "The cape needs a newer Mousecape (format \(v))."
-        case .invalidCursor(let id): "The cursor \(id) in the cape is damaged."
+        case .notACape: String(localized: "The file is not a valid cape.")
+        case .unsupportedVersion(let v): String(localized: "The cape needs a newer Mousecape (format \(v)).")
+        case .invalidCursor(let id): String(localized: "The cursor \(id) in the cape is damaged.")
+        case .invalidIdentifier(let id):
+            String(localized: "The cape's identifier “\(id)” can't be used as a file name (no “/”, “:”, leading dot).")
         }
     }
 }

@@ -391,6 +391,11 @@ extern void exportCape(NSDictionary *cape, NSString *destination) {
 
     NSDictionary *cursors = cape[MCCursorDictionaryCursorsKey];
     for (NSString *key in cursors) {
+        // Keys become file names; one like "../x" would write outside the destination.
+        if (!MCIsSafeIdentifier(key)) {
+            MMLog(BOLD RED "Skipping cursor %s: not usable as a file name" RESET, key.description.UTF8String);
+            continue;
+        }
         NSArray *reps = cursors[key][MCCursorDictionaryRepresentationsKey];
         for (NSUInteger idx = 0; idx < reps.count; idx++) {
             NSData *data = reps[idx];

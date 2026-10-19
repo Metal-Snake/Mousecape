@@ -120,7 +120,10 @@ public struct WindowsCursorTheme: Sendable {
     /// Reads the theme in a folder: roles from `install.inf` when there is one, otherwise
     /// guessed from the file names.
     public static func load(folder: URL) throws -> WindowsCursorTheme {
-        let contents = (try? FileManager.default.contentsOfDirectory(at: folder, includingPropertiesForKeys: nil)) ?? []
+        // Links that point outside the folder are ignored: the theme may come from an archive.
+        let root = folder.resolvingSymlinksInPath().standardizedFileURL.path + "/"
+        let contents = ((try? FileManager.default.contentsOfDirectory(at: folder, includingPropertiesForKeys: nil)) ?? [])
+            .filter { $0.resolvingSymlinksInPath().standardizedFileURL.path.hasPrefix(root) }
         // Windows file names are case-insensitive.
         let cursorFiles = Dictionary(
             contents.filter { fileExtensions.contains($0.pathExtension.lowercased()) }

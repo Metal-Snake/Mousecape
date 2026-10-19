@@ -13,6 +13,9 @@ struct WindowsAnimation {
 }
 
 enum WindowsAni {
+    /// More steps than any real cursor has; the header's count is only trusted up to here.
+    static let maximumSteps = 1024
+
     static func parse(_ data: Data) throws -> WindowsAnimation {
         var reader = ByteReader(data)
         guard try reader.tag() == "RIFF" else { throw WindowsCursorError.notACursor }
@@ -60,6 +63,9 @@ enum WindowsAni {
 
         guard !frames.isEmpty else { throw WindowsCursorError.notACursor }
         if frameCount == 0 { frameCount = frames.count }
+        guard stepCount <= Self.maximumSteps, (sequence?.count ?? 0) <= Self.maximumSteps else {
+            throw WindowsCursorError.unsupportedImage("more than \(Self.maximumSteps) animation steps")
+        }
         let steps = (sequence ?? Array(0..<(stepCount > 0 ? stepCount : frames.count)))
             .map { min(max($0, 0), frames.count - 1) }
         let stepRates = (rates ?? []).count == steps.count

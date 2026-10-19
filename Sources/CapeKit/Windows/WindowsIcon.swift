@@ -60,6 +60,10 @@ enum WindowsIcon {
                   let image = CGImageSourceCreateImageAtIndex(source, 0, nil) else {
                 throw WindowsCursorError.unsupportedImage("PNG")
             }
+            // Cursor images are at most 256 pixels; a huge one would only eat memory.
+            guard image.width <= 1024, image.height <= 1024 else {
+                throw WindowsCursorError.unsupportedImage("\(image.width) × \(image.height) PNG")
+            }
             return image
         }
         return try DIBDecoder.decode(payload)

@@ -249,6 +249,13 @@ BOOL applyCape(NSDictionary *dictionary) {
         NSDictionary *cursors = dictionary[MCCursorDictionaryCursorsKey];
         NSString *name = dictionary[MCCursorDictionaryCapeNameKey];
         NSNumber *version = dictionary[MCCursorDictionaryCapeVersionKey];
+
+        // The identifier is stored and later becomes a path (the agent reads
+        // capes/<identifier>.cape at login), so it has to be a plain file name.
+        if (!MCIsSafeIdentifier(dictionary[MCCursorDictionaryIdentifierKey])) {
+            MMLog(BOLD RED "The cape's identifier can't be used as a file name" RESET);
+            return NO;
+        }
         
         resetAllCursors();
         backupAllCursors();

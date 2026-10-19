@@ -69,14 +69,15 @@ private func curFile(_ images: [(payload: Data, size: Int, hotSpot: (Int, Int))]
 }
 
 /// An `.ani` file from whole `.cur` files.
-private func aniFile(frames: [Data], defaultRate: Int, rates: [Int]? = nil, sequence: [Int]? = nil) -> Data {
+private func aniFile(frames: [Data], defaultRate: Int, rates: [Int]? = nil, sequence: [Int]? = nil,
+                     stepCount: Int? = nil) -> Data {
     var body = Bytes()
     func chunk(_ id: String, _ payload: Data) {
         body.tag(id); body.u32(payload.count); body.data.append(payload)
         if payload.count % 2 == 1 { body.u8(0) }
     }
     var header = Bytes()
-    header.u32(36); header.u32(frames.count); header.u32(sequence?.count ?? frames.count)
+    header.u32(36); header.u32(frames.count); header.u32(stepCount ?? sequence?.count ?? frames.count)
     header.u32(0); header.u32(0); header.u32(0); header.u32(0)
     header.u32(defaultRate); header.u32(sequence == nil ? 1 : 3)
     chunk("anih", header.data)
@@ -155,6 +156,35 @@ private func pixel(_ image: CGImage, _ x: Int, _ y: Int) -> NSColor {
     #expect(animation.frames.count == 3)
     #expect(animation.steps == [0, 2, 1])
     #expect(animation.rates == [2, 4, 2])
+}
+
+@Test func refusesAbsurdStepCounts() throws {
+    // A header claiming four billion steps must not become a four-billion-element array.
+    let frame = solidCur(size: 4, rgba: [255, 0, 0, 255])
+    let file = aniFile(frames: [frame], defaultRate: 6, stepCount: Int(UInt32.max))
+    #expect(throws: WindowsCursorError.self) { try WindowsAni.parse(file) }
+}
+
+@Test func refusesHugePNGEntries() throws {
+    let rep = try #require(NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: 2000, pixelsHigh: 2, bitsPerSample: 8,
+                                            samplesPerPixel: 4, hasAlpha: true, isPlanar: false,
+                                            colorSpaceName: .deviceRGB, bytesPerRow: 0, bitsPerPixel: 0))
+    let png = try #require(rep.representation(using: .png, properties: [:]))
+    let file = curFile([(payload: png, size: 0, hotSpot: (0, 0))])
+    #expect(throws: WindowsCursorError.unsupportedImage("2000 × 2 PNG")) { try WindowsIcon.images(from: file) }
+}
+
+@Test func ignoresLinksLeavingTheThemeFolder() throws {
+    let base = FileManager.default.temporaryDirectory.appending(path: "WinLinks-\(UUID().uuidString)")
+    defer { try? FileManager.default.removeItem(at: base) }
+    let theme = base.appending(path: "theme")
+    try FileManager.default.createDirectory(at: theme, withIntermediateDirectories: true)
+    try solidCur(size: 4, rgba: [255, 0, 0, 255]).write(to: theme.appending(path: "arrow.cur"))
+    try solidCur(size: 4, rgba: [0, 0, 255, 255]).write(to: base.appending(path: "outside.cur"))
+    try FileManager.default.createSymbolicLink(atPath: theme.appending(path: "text.cur").path,
+                                               withDestinationPath: base.appending(path: "outside.cur").path)
+    let loaded = try WindowsCursorTheme.load(folder: theme)
+    #expect(Array(loaded.files.keys) == [.arrow])
 }
 
 @Test func timesUnevenSteps() {

@@ -226,7 +226,7 @@ final class LibraryTests {
         var cape = try importedAndEdited(library)
         cape.name = "Again"
         cape = try library.save(cape, originalIdentifier: "test.theme")
-        library.removeSavedVersions(of: cape)
+        try library.removeSavedVersions(of: cape)
         #expect(library.versions(of: cape).map(\.kind) == [.original])
         #expect(library.capes.map(\.name) == ["Again"])
     }
@@ -252,5 +252,33 @@ final class LibraryTests {
         _ = try importedAndEdited(library)
         let converted = try library.replace(with: Cape(identifier: "test.theme", name: "Converted", author: ""))
         #expect(try names(library.versions(of: converted)) == ["Converted"])
+    }
+
+    // MARK: - Unsafe identifiers
+
+    @Test func refusesCapesWhoseIdentifierLeavesTheLibrary() throws {
+        let library = makeLibrary()
+        try FileManager.default.createDirectory(at: base, withIntermediateDirectories: true)
+        let file = base.appending(path: "evil.cape")
+        // Written by hand: CapeKit itself wouldn't produce such a cape.
+        let plist: [String: Any] = ["Version": 2.0, "MinimumVersion": 2.0, "Identifier": "../capes",
+                                    "CapeName": "Evil", "Cursors": [String: Any]()]
+        try PropertyListSerialization.data(fromPropertyList: plist, format: .xml, options: 0).write(to: file)
+        try library.save(Cape(identifier: "test.keep", name: "Keep", author: ""), originalIdentifier: nil)
+        #expect(throws: CapeError.self) { try library.importCape(at: file) }
+        #expect(files() == ["test.keep.cape"])                 // the library is still there
+        #expect(files(in: trash).isEmpty)
+        #expect(throws: CapeError.self) { try library.history.capeFolder(for: "../capes") }
+    }
+
+    @Test func openingTheLibraryFileKeepsItsHistory() throws {
+        let library = makeLibrary()
+        var cape = try importedAndEdited(library)
+        cape.name = "Again"
+        cape = try library.save(cape, originalIdentifier: "test.theme")
+        let file = try #require(cape.fileURL)
+        try library.importCape(at: file)                        // e.g. a double-click in Finder
+        #expect(library.versions(of: cape).count == 2)
+        #expect(files(in: trash).isEmpty)
     }
 }

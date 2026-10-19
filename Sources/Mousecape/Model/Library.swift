@@ -123,7 +123,11 @@ final class Library {
         var edited: Set<String> = []
         for cape in capes {
             guard let file = cape.fileURL else { continue }
-            history.ensureOriginal(for: cape.identifier, from: file)
+            do {
+                try history.ensureOriginal(for: cape.identifier, from: file)
+            } catch {
+                NSLog("Mousecape: no original kept for %@: %@", cape.identifier, "\(error)")
+            }
             if history.differsFromOriginal(file, identifier: cape.identifier) { edited.insert(cape.identifier) }
         }
         editedIdentifiers = edited
@@ -181,14 +185,12 @@ final class Library {
     @discardableResult
     func importCape(at url: URL) throws -> Cape {
         let cape = try Cape(contentsOf: url)
-        history.discard(for: cape.identifier)
         let destination = fileURL(for: cape.identifier)
+        // Opening the library's own file (e.g. from Finder) replaces nothing and keeps the
+        // history.
         if url.standardizedFileURL != destination.standardizedFileURL {
-            if FileManager.default.fileExists(atPath: destination.path) {
-                _ = try FileManager.default.replaceItemAt(destination, withItemAt: copyToTemporary(url))
-            } else {
-                try FileManager.default.copyItem(at: url, to: destination)
-            }
+            try history.discard(for: cape.identifier)
+            try place(url, at: destination)
         }
         reload()
         return capes.first { $0.identifier == cape.identifier } ?? cape
@@ -201,7 +203,7 @@ final class Library {
         while capes.contains(where: { $0.identifier == cape.identifier }) {
             cape.identifier += ".\(UUID().uuidString.prefix(8))"
         }
-        history.discard(for: cape.identifier)
+        try history.discard(for: cape.identifier)
         try cape.propertyListData().write(to: fileURL(for: cape.identifier), options: .atomic)
         reload()
         return capes.first { $0.identifier == cape.identifier } ?? cape
@@ -212,7 +214,7 @@ final class Library {
     /// with a new history.
     @discardableResult
     func replace(with cape: Cape) throws -> Cape {
-        history.discard(for: cape.identifier)
+        try history.discard(for: cape.identifier)
         try cape.propertyListData().write(to: fileURL(for: cape.identifier), options: .atomic)
         reload()
         let result = capes.first { $0.identifier == cape.identifier } ?? cape
@@ -228,7 +230,7 @@ final class Library {
     @discardableResult
     func save(_ cape: Cape, originalIdentifier: String?) throws -> Cape {
         let identifier = cape.identifier.trimmingCharacters(in: .whitespaces)
-        guard !identifier.isEmpty, !identifier.contains("/"), !identifier.hasPrefix(".") else {
+        guard Cape.isValidIdentifier(identifier) else {
             throw LibraryError.invalidIdentifier
         }
         if identifier != originalIdentifier, capes.contains(where: { $0.identifier == identifier }) {
@@ -240,24 +242,20 @@ final class Library {
         let existing = originalIdentifier.flatMap { id in capes.first { $0.identifier == id } }
         let history = history
 
+        // The history first: when keeping the replaced state fails, nothing is overwritten.
         if let existing, let source = existing.fileURL {
-            history.ensureOriginal(for: existing.identifier, from: source)
+            try history.ensureOriginal(for: existing.identifier, from: source)
             try history.record(source, for: existing.identifier)
             try history.rename(from: existing.identifier, to: identifier)
         } else {
-            history.discard(for: identifier)                    // a new cape starts fresh
+            try history.discard(for: identifier)                // a new cape starts fresh
         }
         let data = try saved.propertyListData()
-        let original = history.originalURL(for: identifier)
+        let original = try history.originalURL(for: identifier)
         if existing != nil, let originalCape = try? Cape(contentsOf: original),
            (try? originalCape.propertyListData()) == data {
             // Back to how it came in: the original's own bytes, so it isn't "edited".
-            let temporary = try copyToTemporary(original)
-            if FileManager.default.fileExists(atPath: destination.path) {
-                _ = try FileManager.default.replaceItemAt(destination, withItemAt: temporary)
-            } else {
-                try FileManager.default.moveItem(at: temporary, to: destination)
-            }
+            try place(original, at: destination)
         } else {
             try data.write(to: destination, options: .atomic)
         }
@@ -292,7 +290,7 @@ final class Library {
         if let url = cape.fileURL {
             try moveToTrash(url)
         }
-        history.discard(for: cape.identifier)
+        try history.discard(for: cape.identifier)
         reload()
     }
 
@@ -317,17 +315,11 @@ final class Library {
             try history.record(current, for: cape.identifier)
             if restored.identifier != cape.identifier {
                 try history.rename(from: cape.identifier, to: restored.identifier)
-                versionURL = history.capeFolder(for: restored.identifier).appending(path: version.url.lastPathComponent)
+                versionURL = try history.capeFolder(for: restored.identifier).appending(path: version.url.lastPathComponent)
                 if FileManager.default.fileExists(atPath: current.path) { try moveToTrash(current) }
             }
         }
-        let destination = fileURL(for: restored.identifier)
-        let temporary = try copyToTemporary(versionURL)
-        if FileManager.default.fileExists(atPath: destination.path) {
-            _ = try FileManager.default.replaceItemAt(destination, withItemAt: temporary)
-        } else {
-            try FileManager.default.moveItem(at: temporary, to: destination)
-        }
+        try place(versionURL, at: fileURL(for: restored.identifier))
         reload()
         let result = capes.first { $0.identifier == restored.identifier } ?? restored
         if wasApplied { try apply(result) }
@@ -344,8 +336,8 @@ final class Library {
     }
 
     /// Moves a cape's saved states to the Trash, keeping its original and current state.
-    func removeSavedVersions(of cape: Cape) {
-        history.removeSavedVersions(for: cape.identifier)
+    func removeSavedVersions(of cape: Cape) throws {
+        try history.removeSavedVersions(for: cape.identifier)
     }
 
     /// Captures the cursors currently on screen as a new cape.
@@ -365,10 +357,15 @@ final class Library {
         folder.appending(path: identifier + ".cape")
     }
 
-    private func copyToTemporary(_ url: URL) throws -> URL {
+    /// Puts a copy of `source` at `destination`, replacing what's there in one step.
+    private func place(_ source: URL, at destination: URL) throws {
         let temporary = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString + ".cape")
-        try FileManager.default.copyItem(at: url, to: temporary)
-        return temporary
+        try FileManager.default.copyItem(at: source, to: temporary)
+        if FileManager.default.fileExists(atPath: destination.path) {
+            _ = try FileManager.default.replaceItemAt(destination, withItemAt: temporary)
+        } else {
+            try FileManager.default.moveItem(at: temporary, to: destination)
+        }
     }
 }
 
@@ -388,7 +385,7 @@ enum LibraryError: LocalizedError {
         case .resetIncomplete:
             String(localized: "Some cursors could not be reset and still show the previous cape. Logging out and back in restores them.")
         case .invalidIdentifier:
-            String(localized: "The identifier must not be empty, contain “/” or start with a dot.")
+            String(localized: "The identifier must not be empty, contain “/” or “:”, or start with a dot.")
         case .identifierTaken(let identifier):
             String(localized: "Another cape in the library already uses the identifier “\(identifier)”.")
         case .notInLibrary: String(localized: "The cape is not saved in the library.")
