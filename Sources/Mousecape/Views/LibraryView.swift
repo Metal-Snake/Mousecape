@@ -15,7 +15,7 @@ struct LibraryView: View {
                                isApplied: cape.identifier == model.library.appliedIdentifier,
                                problems: model.library.problems[cape.id] ?? [:],
                                onApply: { model.apply(cape) },
-                               onEdit: { model.edit(cape) })
+                               onEdit: { model.edit(cape, cursor: $0) })
             } else if model.library.capes.isEmpty {
                 ContentUnavailableView {
                     Label("No Capes", systemImage: "cursorarrow.rays")

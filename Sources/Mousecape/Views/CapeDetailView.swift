@@ -8,7 +8,8 @@ struct CapeDetailView: View {
     /// Cursors with problems, by identifier.
     let problems: [String: [CursorProblem]]
     let onApply: () -> Void
-    let onEdit: () -> Void
+    /// Opens the editor at a cursor, or (nil) at the cape details.
+    let onEdit: (String?) -> Void
 
     @AppStorage("showsHotSpots") private var showsHotSpots = false
 
@@ -52,7 +53,7 @@ struct CapeDetailView: View {
                     .foregroundStyle(.secondary)
             }
             Spacer()
-            Button("Edit…", action: onEdit)
+            Button("Edit…") { onEdit(nil) }
                 .controlSize(.large)
             if isApplied {
                 Label("Applied", systemImage: "checkmark.circle.fill")
@@ -77,11 +78,11 @@ struct CapeDetailView: View {
     }
 }
 
-/// What is wrong with which cursor, and the way to the editor.
+/// What is wrong with which cursor, and the way to it in the editor.
 private struct ProblemBanner: View {
     let cape: Cape
     let problems: [String: [CursorProblem]]
-    let onEdit: () -> Void
+    let onEdit: (String?) -> Void
 
     private var hasErrors: Bool { problems.values.joined().contains(where: \.isError) }
 
@@ -93,13 +94,22 @@ private struct ProblemBanner: View {
                 Text(hasErrors ? "Some cursors won't apply correctly" : "Some cursors are adjusted when applied")
                     .font(.headline)
                 ForEach(affected) { cursor in
-                    Text("**\(cursor.name):** \((problems[cursor.identifier] ?? []).map(\.description).joined(separator: " "))")
-                        .font(.callout)
-                        .foregroundStyle(.secondary)
+                    // Each line opens its cursor in the editor.
+                    Button {
+                        onEdit(cursor.identifier)
+                    } label: {
+                        Text("**\(cursor.name):** \((problems[cursor.identifier] ?? []).map(\.description).joined(separator: " "))")
+                            .multilineTextAlignment(.leading)
+                    }
+                    .buttonStyle(.plain)
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                    .help("Show \(cursor.name) in the editor")
                 }
             }
             Spacer()
-            Button("Edit…", action: onEdit)
+            Button("Show in Editor…") { onEdit(affected.first?.identifier) }
+                .help("Open the editor at the first cursor with a problem")
         }
         .padding(12)
         .background((hasErrors ? Color.red : Color.orange).opacity(0.1), in: RoundedRectangle(cornerRadius: 10))

@@ -6,6 +6,8 @@ import CapeKit
 /// how it looks in left-handed mode.
 struct CursorEditorView: View {
     @Binding var cursor: CapeCursor
+    /// The cursor's problems within its cape (left-handed hints included).
+    let problems: [CursorProblem]
 
     @State private var importError: String?
     @State private var choosingFrames = false
@@ -26,7 +28,7 @@ struct CursorEditorView: View {
                 }
                 imageWells
                 leftHandedSection
-                problems
+                problemList
             }
             .padding(20)
         }
@@ -293,8 +295,7 @@ struct CursorEditorView: View {
     }
 
     @ViewBuilder
-    private var problems: some View {
-        let problems = cursor.problems
+    private var problemList: some View {
         if !problems.isEmpty {
             VStack(alignment: .leading, spacing: 4) {
                 ForEach(Array(problems.enumerated()), id: \.offset) { _, problem in

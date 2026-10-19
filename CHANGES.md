@@ -264,7 +264,10 @@ New SwiftUI app. Compared with the original:
   left-handed mode re-applies the current cape right away.
 - **Problem marks.** Capes with cursors that won't apply cleanly get a badge in the
   sidebar: red when a cursor won't apply or will look wrong, orange when macOS only
-  adjusts it (e.g. a reduced animation). The cape view lists what happens per cursor.
+  adjusts it (e.g. a reduced animation). The cape view lists what happens per cursor;
+  each line opens that cursor in the editor, and **Show in Editor…** opens the first one.
+  The editor flags the same cursors in its list and lists them under Cape Details (a
+  click selects the cursor), left-handed hints included.
 - **Smoother previews.** Cursor images are decoded off the main thread and cached. Each
   cape gets fresh tiles, so switching capes never shows the previous cape's images.
   Coming back to the app reads the library again only if the folder changed.

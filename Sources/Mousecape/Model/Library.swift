@@ -133,10 +133,7 @@ final class Library {
     func updateProblems() {
         let leftHanded = EnginePreferences.leftHanded
         problems = Dictionary(uniqueKeysWithValues: capes.compactMap { cape in
-            var found = cape.problems
-            if leftHanded {
-                for (identifier, problem) in cape.unevenMirroring { found[identifier, default: []].append(problem) }
-            }
+            let found = cape.problems(leftHanded: leftHanded)
             return found.isEmpty ? nil : (cape.id, found)
         })
     }

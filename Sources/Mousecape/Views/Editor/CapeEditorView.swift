@@ -22,6 +22,12 @@ struct CapeEditorView: View {
         self.session = session
         self.onSave = onSave
         _draft = State(initialValue: session.cape)
+        _selection = State(initialValue: session.cursor.map(Item.cursor) ?? .info)
+    }
+
+    /// Problems per cursor, as the library shows them (left-handed hints included).
+    private var problems: [String: [CursorProblem]] {
+        draft.problems(leftHanded: EnginePreferences.leftHanded)
     }
 
     private var hasChanges: Bool { draft != session.cape || session.originalIdentifier == nil }
@@ -56,7 +62,7 @@ struct CapeEditorView: View {
                     .tag(Item.info)
                 Section("Cursors") {
                     ForEach(draft.cursors) { cursor in
-                        CursorRow(cursor: cursor)
+                        CursorRow(cursor: cursor, problems: problems[cursor.identifier] ?? [])
                             .tag(Item.cursor(cursor.identifier))
                     }
                 }
@@ -96,10 +102,10 @@ struct CapeEditorView: View {
     private var detail: some View {
         switch selection {
         case .info, nil:
-            CapeInfoForm(cape: $draft)
+            CapeInfoForm(cape: $draft, problems: problems) { selection = .cursor($0) }
         case .cursor(let identifier):
             if let binding = cursorBinding(identifier) {
-                CursorEditorView(cursor: binding)
+                CursorEditorView(cursor: binding, problems: problems[identifier] ?? [])
                     .id(identifier)
             } else {
                 ContentUnavailableView("No Cursor Selected", systemImage: "cursorarrow")
@@ -109,7 +115,7 @@ struct CapeEditorView: View {
 
     private var footer: some View {
         HStack {
-            let problemCount = draft.problems.count
+            let problemCount = problems.count
             if problemCount > 0 {
                 Label(ProblemBadge.summary(cursorCount: problemCount), systemImage: "exclamationmark.triangle.fill")
                     .foregroundStyle(.orange)
@@ -163,6 +169,7 @@ struct CapeEditorView: View {
 
 private struct CursorRow: View {
     let cursor: CapeCursor
+    let problems: [CursorProblem]
 
     var body: some View {
         HStack(spacing: 8) {
@@ -171,18 +178,19 @@ private struct CursorRow: View {
             Text(cursor.name)
                 .lineLimit(1)
             Spacer()
-            if !cursor.problems.isEmpty {
-                Image(systemName: "exclamationmark.triangle.fill")
-                    .foregroundStyle(.orange)
-                    .help(cursor.problems.map(\.description).joined(separator: "\n"))
+            if !problems.isEmpty {
+                ProblemBadge(problems: problems)
+                    .help(problems.map(\.description).joined(separator: "\n"))
             }
         }
     }
 }
 
-/// Name, author, identifier and version of the cape.
+/// Name, author, identifier and version of the cape, and the cursors with problems.
 private struct CapeInfoForm: View {
     @Binding var cape: Cape
+    let problems: [String: [CursorProblem]]
+    let onSelectCursor: (String) -> Void
 
     var body: some View {
         Form {
@@ -210,6 +218,36 @@ private struct CapeInfoForm: View {
                 if cape.cursors.isEmpty {
                     Text("Add cursors with the + button below the list.")
                         .foregroundStyle(.secondary)
+                }
+            }
+            if !problems.isEmpty {
+                Section("Warnings") {
+                    ForEach(cape.cursors.filter { problems[$0.identifier] != nil }) { cursor in
+                        let found = problems[cursor.identifier] ?? []
+                        Button {
+                            onSelectCursor(cursor.identifier)
+                        } label: {
+                            HStack(alignment: .top, spacing: 8) {
+                                ProblemBadge(problems: found)
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(cursor.name)
+                                        .font(.body.weight(.medium))
+                                    ForEach(Array(found.enumerated()), id: \.offset) { _, problem in
+                                        Text(problem.description)
+                                            .font(.callout)
+                                            .foregroundStyle(.secondary)
+                                            .multilineTextAlignment(.leading)
+                                    }
+                                }
+                                Spacer()
+                                Image(systemName: "chevron.right")
+                                    .foregroundStyle(.tertiary)
+                            }
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .help("Show \(cursor.name)")
+                    }
                 }
             }
         }

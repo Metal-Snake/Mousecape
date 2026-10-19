@@ -174,8 +174,9 @@ final class AppModel {
         editorSession = EditorSession(cape: .untitled(author: NSFullUserName()), originalIdentifier: nil)
     }
 
-    func edit(_ cape: Cape) {
-        editorSession = EditorSession(cape: cape, originalIdentifier: cape.identifier)
+    /// Opens the editor, at `cursor` when given (e.g. from a problem), else at the details.
+    func edit(_ cape: Cape, cursor: String? = nil) {
+        editorSession = EditorSession(cape: cape, originalIdentifier: cape.identifier, cursor: cursor)
     }
 
     /// Saves the editor's draft; returns false (and shows why) if it could not be saved.
@@ -270,4 +271,6 @@ struct EditorSession: Identifiable {
     let id = UUID()
     let cape: Cape
     let originalIdentifier: String?
+    /// The cursor to show first; nil shows the cape details.
+    var cursor: String? = nil
 }

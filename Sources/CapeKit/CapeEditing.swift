@@ -340,10 +340,20 @@ extension Cape {
 
     /// Problems per cursor identifier, only for cursors that have any.
     public var problems: [String: [CursorProblem]] {
-        Dictionary(uniqueKeysWithValues: cursors.compactMap { cursor in
+        problems(leftHanded: false)
+    }
+
+    /// Problems per cursor identifier, only for cursors that have any; in left-handed mode
+    /// also the cursors mirrored unlike the arrow (`unevenMirroring`).
+    public func problems(leftHanded: Bool) -> [String: [CursorProblem]] {
+        var found: [String: [CursorProblem]] = Dictionary(uniqueKeysWithValues: cursors.compactMap { cursor in
             let problems = cursor.problems
             return problems.isEmpty ? nil : (cursor.identifier, problems)
         })
+        if leftHanded {
+            for (identifier, problem) in unevenMirroring { found[identifier, default: []].append(problem) }
+        }
+        return found
     }
 }
 
