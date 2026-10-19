@@ -63,6 +63,9 @@ struct LibraryView: View {
         }
         .confirmationDialog(replaceTitle, isPresented: replaceBinding) {
             Button("Replace") { model.confirmReplacement() }
+            if model.pendingReplacement?.canKeepBoth == true {
+                Button("Keep Both") { model.keepBoth() }
+            }
             Button("Cancel", role: .cancel) { model.pendingReplacement = nil }
         } message: {
             Text("A cape with the same identifier is already in the library.")

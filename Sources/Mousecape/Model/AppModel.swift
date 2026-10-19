@@ -12,8 +12,8 @@ final class AppModel {
 
     var selection: Cape.ID?
     var errorMessage: String?
-    /// An import waiting for "Replace?" confirmation: the file, and the cape it replaces.
-    var pendingReplacement: (url: URL, existing: Cape)?
+    /// An import waiting for "Replace?" confirmation.
+    var pendingReplacement: PendingReplacement?
     var capeToDelete: Cape?
 
     var selectedCape: Cape? { library.capes.first { $0.id == selection } }
@@ -66,7 +66,7 @@ final class AppModel {
             do {
                 if let existing = try library.existingCape(forFileAt: url),
                    existing.fileURL?.standardizedFileURL != url.standardizedFileURL {
-                    pendingReplacement = (url, existing)
+                    pendingReplacement = PendingReplacement(source: .file(url), existing: existing)
                     return      // the confirmation dialog continues with confirmReplacement()
                 }
                 let cape = try library.importCape(at: url)
@@ -78,13 +78,28 @@ final class AppModel {
     }
 
     func confirmReplacement() {
-        guard let (url, _) = pendingReplacement else { return }
+        guard let pending = pendingReplacement else { return }
         pendingReplacement = nil
         perform {
-            let cape = try library.importCape(at: url)
-            selection = cape.id
-            if cape.identifier == library.appliedIdentifier { try library.reapply() }
+            switch pending.source {
+            case .file(let url):
+                let cape = try library.importCape(at: url)
+                selection = cape.id
+                if cape.identifier == library.appliedIdentifier { try library.reapply() }
+            case .converted(let cape, let skipped):
+                // Saving under the same identifier re-applies it when it's the applied cape.
+                let saved = try library.save(cape, originalIdentifier: cape.identifier)
+                selection = saved.id
+                reportSkipped(skipped, in: saved)
+            }
         }
+    }
+
+    /// Adds the converted theme next to the cape it would have replaced.
+    func keepBoth() {
+        guard let pending = pendingReplacement, case .converted(let cape, let skipped) = pending.source else { return }
+        pendingReplacement = nil
+        perform { try addConverted(cape, skipped: skipped) }
     }
 
     func showImportPanel() {
@@ -104,24 +119,40 @@ final class AppModel {
         return try theme.makeCape(author: author)
     }
 
-    /// Adds a cape converted from a cursor theme and says which cursors were left out.
+    /// Adds a cape converted from a cursor theme and says which cursors were left out. When
+    /// the library already has a cape with its identifier (the same theme imported before),
+    /// asks whether to replace it.
     private func importTheme(_ convert: () throws -> (cape: Cape, skipped: [String])) {
         perform {
-            var (cape, skipped) = try convert()
-            // Two themes of the same name ("kiriko" animated and static) shouldn't look alike.
-            let names = Set(library.capes.map(\.name))
-            if names.contains(cape.name) {
-                let base = cape.name
-                var number = 2
-                while names.contains("\(base) \(number)") { number += 1 }
-                cape.name = "\(base) \(number)"
+            let (cape, skipped) = try convert()
+            if pendingReplacement == nil,
+               let existing = library.capes.first(where: { $0.identifier == cape.identifier }) {
+                pendingReplacement = PendingReplacement(source: .converted(cape, skipped: skipped), existing: existing)
+                return      // the confirmation dialog continues with confirmReplacement() or keepBoth()
             }
-            let added = try library.add(propertyList: cape.propertyList)
-            selection = added.id
-            if !skipped.isEmpty {
-                errorMessage = String(localized: "Imported “\(added.name)”. Left out, as macOS has no matching cursor or the file couldn't be read: \(skipped.joined(separator: ", ")).")
-            }
+            try addConverted(cape, skipped: skipped)
         }
+    }
+
+    /// Adds a converted cape under a free identifier and name.
+    private func addConverted(_ converted: Cape, skipped: [String]) throws {
+        var cape = converted
+        // Two themes of the same name ("kiriko" animated and static) shouldn't look alike.
+        let names = Set(library.capes.map(\.name))
+        if names.contains(cape.name) {
+            let base = cape.name
+            var number = 2
+            while names.contains("\(base) \(number)") { number += 1 }
+            cape.name = "\(base) \(number)"
+        }
+        let added = try library.add(propertyList: cape.propertyList)
+        selection = added.id
+        reportSkipped(skipped, in: added)
+    }
+
+    private func reportSkipped(_ skipped: [String], in cape: Cape) {
+        guard !skipped.isEmpty else { return }
+        errorMessage = String(localized: "Imported “\(cape.name)”. Left out, as macOS has no matching cursor or the file couldn't be read: \(skipped.joined(separator: ", ")).")
     }
 
     private func importMightyMouse(_ url: URL) {
@@ -192,6 +223,23 @@ final class AppModel {
 
     private func show(_ error: Error, file: URL) {
         errorMessage = "\(file.lastPathComponent): \(error.localizedDescription)"
+    }
+}
+
+/// An import that would replace a cape in the library: a `.cape` file, or a theme already
+/// converted into a cape.
+struct PendingReplacement {
+    enum Source {
+        case file(URL)
+        case converted(Cape, skipped: [String])
+    }
+
+    let source: Source
+    let existing: Cape
+
+    /// A converted theme can also be added next to the existing cape, under a new identifier.
+    var canKeepBoth: Bool {
+        if case .converted = source { true } else { false }
     }
 }
 

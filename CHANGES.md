@@ -315,8 +315,14 @@ New: Windows cursor themes import as capes.
 - **Margins:** themes put every cursor on one canvas (Windows: 32 × 32), often with a lot
   of empty space around it. Imports cut the transparent margin off: to the area any frame
   at any scale draws into, faint shadows included, plus one point, with the hot spot
-  always inside. Nothing changes on screen, but the size says what's there and the editor
-  shows the artwork filling its preview. Applies to Xcursor imports too.
+  always inside. The size then says what's there and the editor shows the artwork filling
+  its preview. Applies to Xcursor imports too. On macOS 15.6 the window server draws
+  cursors at their registered size (measured up to 64 × 64 points), so trimming changes
+  nothing on screen there; on another Mac a trimmed cursor was reported to show larger
+  than the untrimmed one, which is still to be measured (see TODO.md).
+- **Importing a theme again** asks whether to replace the cape from the earlier import
+  (same identifier) or keep both; keeping both adds a number to the name, as every
+  theme import did before.
 - **Editor:** dropping a `.cur` or `.ani` on a cursor's image well replaces the whole
   cursor (images, size, hot spot, frames).
 - Written from the published file formats; no code from other projects.

@@ -24,6 +24,13 @@ and what has been tested.
       15 fr (the 30-frame system cursor, reduced), not 28x40.
 - [ ] **macOS 26.** Tested on 15.6 and 27.0.1 only. The engine relies on private
       CGS/CoreCursor calls that any macOS version can change.
+- [ ] **Cursor size limit on newer macOS.** On a second Mac, an untrimmed Obsidian (48 × 48
+      points) showed smaller than the trimmed one (28 × 36). On macOS 15.6 the window
+      server draws every size as registered (red test rectangles up to 64 × 64 points,
+      measured with ScreenCaptureKit; `screencapture -C` doesn't show custom cursors).
+      Run `Scripts/cursor-size-probe.swift` (red rectangles, prints the drawn size) on macOS 26/27 to see
+      whether those cap or scale large cursors, then decide whether imports or the
+      problem list should take that into account.
 
 ## Known issues
 
