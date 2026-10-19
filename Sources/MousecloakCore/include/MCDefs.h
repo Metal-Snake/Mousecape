@@ -59,6 +59,9 @@ extern const NSString *MCCursorDictionaryCapeVersionKey;
 // Required cursors for cape format 2.0
 extern const NSString *MCCursorDictionaryFrameCountKey;
 extern const NSString *MCCursorDictionaryFrameDuratiomKey;
+// Optional (this fork): each frame's own duration in seconds, when they differ.
+// FrameDuration then holds their average.
+extern const NSString *MCCursorDictionaryFrameDurationsKey;
 //extern const NSString *MCCursorDictionaryRepeatCountKey;
 extern const NSString *MCCursorDictionaryHotSpotXKey;
 extern const NSString *MCCursorDictionaryHotSpotYKey;

@@ -46,7 +46,8 @@ private func shadedSheet(count: Int, side: Int = 4) throws -> Data {
                             size: CGSize(width: 4, height: 4), representations: [try shadedSheet(count: 3)])
     #expect(cursor.frameDurations == [0.1, 0.2, 0.3])
     #expect(abs(cursor.frameDuration - 0.2) < 1e-9)                    // the average, for macOS
-    #expect(cursor.problems.contains(.unevenTiming))
+    #expect(cursor.problems.contains(.timedByDurations(from: 3, to: 6)))   // 100/200/300 ms → 100 ms slots
+    #expect(cursor.appliedFrameCount == 6)
     let copy = try CapeCursor(identifier: cursor.identifier, propertyList: cursor.propertyList)
     #expect(copy.frameDurations == [0.1, 0.2, 0.3])
 }
@@ -75,5 +76,7 @@ private func shadedSheet(count: Int, side: Int = 4) throws -> Data {
     #expect(result.frameCount == 4)
     #expect(abs(result.frameDuration - 0.1) < 1e-9)
     #expect(result.frameDurations == nil)
-    #expect(!result.problems.contains(.unevenTiming))
+    #expect(result.problems.isEmpty)
+    // reducingFrames (the editor's "Reduce to") does the same as the engine.
+    #expect(try #require(cursor.reducingFrames()).frameCount == 4)
 }

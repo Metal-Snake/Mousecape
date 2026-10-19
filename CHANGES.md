@@ -27,8 +27,9 @@ bundled third-party libraries are gone.
   under the same type identifier `com.alexzielenski.mousecape.cape`. One optional key is
   new: `FrameDurations` in a cursor, each frame's own duration in seconds, written only
   for imported animations whose frames last differently long. `FrameDuration` still
-  holds their average, so the original Mousecape (which ignores the new key) and the
-  engine play them as before. The original's editor drops the key when it saves.
+  holds their average, which the original Mousecape (ignoring the new key) uses; this
+  fork's engine picks the frames by time instead. The original's editor drops the key
+  when it saves.
 - **Library.** `~/Library/Application Support/Mousecape/capes`, the same folder.
 - **Preferences.** The engine and the app keep using the `com.alexzielenski.Mousecape`
   preferences domain (applied cape, cursor scale, left-handed mode), so an existing setup
@@ -193,6 +194,10 @@ The Objective-C sources of `mousecloak` moved unchanged in substance (history ke
 - Of the vendored `CGSInternal` headers, only the three in use are kept
   (`CGSCursor.h`, `CGSConnection.h`, `CGSAccessibility.h`).
 - Behaviour fixes are described under [Bugs in the original](#bugs-in-the-original).
+- **Frames picked by time.** A cursor with `FrameDurations` (frames that last differently
+  long) is applied as frames picked by time, the same way as Choose Frames → By Time,
+  instead of every n-th frame at the average duration: the window server takes one
+  duration for all frames, so this keeps the timing. Other cursors are applied as before.
 - Still compiled with manual retain/release (`-fno-objc-arc`), as before.
 - Deprecation warnings are silenced for this target (see TODO.md).
 
@@ -318,8 +323,8 @@ New: Windows cursor themes import as capes.
   cursors can't invert. `.ani` animations with their own frame order and per-step
   durations; uneven durations are repeated in units of their common divisor, within the
   frame limit. Beyond it, each step stays one frame and keeps its duration
-  (`FrameDurations`); the cursor is then flagged, and Choose Frames → By Time turns it into
-  24 frames with the right timing.
+  (`FrameDurations`). Applying picks the frames by time, so the timing stays; the cape view
+  says so, and Choose Frames → By Time shows the result beforehand.
 - **Size:** Windows shows cursors at 32 × 32 pixels at the default pointer size, whatever
   the file's resolution, so cursors become 32 × 32 points. Images are resampled to 1x and
   2x, and to 5x when the source is large enough. Hot spots are scaled to match.

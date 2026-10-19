@@ -13,8 +13,9 @@
 #import "MCPrefs.h"
 #import "NSBitmapImageRep+ColorSpace.h"
 
-// Keeps every `step`-th frame of each vertically stacked sheet, `count` frames in all.
-static NSArray *downsampledSheets(NSArray *sheets, NSUInteger frameCount, NSUInteger step, NSUInteger count) {
+// Rebuilds each vertically stacked sheet from the frames at `indices` (in that order,
+// repeats allowed), `count` frames in all.
+static NSArray *sheetsWithFrames(NSArray *sheets, NSUInteger frameCount, const NSUInteger *indices, NSUInteger count) {
     NSMutableArray *result = [NSMutableArray arrayWithCapacity:sheets.count];
     CGColorSpaceRef space = CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
     for (id object in sheets) {
@@ -30,7 +31,7 @@ static NSArray *downsampledSheets(NSArray *sheets, NSUInteger frameCount, NSUInt
         }
         for (NSUInteger k = 0; k < count; k++) {
             // Cropping counts from the top, drawing from the bottom.
-            CGImageRef frame = CGImageCreateWithImageInRect(sheet, CGRectMake(0, k * step * frameHeight, width, frameHeight));
+            CGImageRef frame = CGImageCreateWithImageInRect(sheet, CGRectMake(0, indices[k] * frameHeight, width, frameHeight));
             CGContextDrawImage(ctx, CGRectMake(0, (count - 1 - k) * frameHeight, width, frameHeight), frame);
             CGImageRelease(frame);
         }
@@ -43,13 +44,70 @@ static NSArray *downsampledSheets(NSArray *sheets, NSUInteger frameCount, NSUInt
     return result;
 }
 
+static NSUInteger gcdOf(NSUInteger a, NSUInteger b) {
+    return b == 0 ? a : gcdOf(b, a % b);
+}
+
+// For frames with their own durations: the frames to show (into `indices`, room for
+// MCMaxFrameCount) and one duration for all, so the animation keeps its timing. Repeats
+// each frame in units of the durations' common divisor when that fits (exact); otherwise
+// samples the loop at MCMaxFrameCount evenly spaced moments, the middle of each slot.
+// The same as FrameSelection.byTime in CapeKit. Returns the number of frames, 0 if the
+// durations can't be used.
+static NSUInteger framesByTime(NSArray *durations, NSUInteger *indices, CGFloat *duration) {
+    NSUInteger n = durations.count;
+    if (n == 0) return 0;
+    double total = 0;
+    for (NSNumber *d in durations) {
+        if (![d isKindOfClass:[NSNumber class]] || d.doubleValue <= 0) return 0;
+        total += d.doubleValue;
+    }
+    // Exactly, in the unit the durations came in: jiffies (Windows) or milliseconds.
+    const double units[] = { 1.0 / 60, 0.001 };
+    for (int u = 0; u < 2; u++) {
+        BOOL whole = YES;
+        NSUInteger divisor = 0, expanded = 0;
+        for (NSNumber *d in durations) {
+            double ticks = d.doubleValue / units[u];
+            if (fabs(ticks - round(ticks)) >= 0.01 || round(ticks) < 1) { whole = NO; break; }
+            divisor = gcdOf(divisor, (NSUInteger)round(ticks));
+        }
+        if (!whole) continue;
+        for (NSNumber *d in durations) expanded += (NSUInteger)round(d.doubleValue / units[u]) / divisor;
+        if (expanded <= MCMaxFrameCount) {
+            NSUInteger k = 0;
+            for (NSUInteger i = 0; i < n; i++) {
+                NSUInteger repeats = (NSUInteger)round([durations[i] doubleValue] / units[u]) / divisor;
+                for (NSUInteger r = 0; r < repeats; r++) indices[k++] = i;
+            }
+            *duration = divisor * units[u];
+            return expanded;
+        }
+        break;
+    }
+    double slot = total / MCMaxFrameCount;
+    for (NSUInteger k = 0; k < MCMaxFrameCount; k++) {
+        double moment = (k + 0.5) * slot, end = 0;
+        NSUInteger frame = n - 1;
+        for (NSUInteger i = 0; i < n; i++) {
+            end += [durations[i] doubleValue];
+            if (moment < end) { frame = i; break; }
+        }
+        indices[k] = frame;
+    }
+    *duration = slot;
+    return MCMaxFrameCount;
+}
+
 BOOL applyCursorForIdentifier(NSUInteger frameCount, CGFloat frameDuration, CGPoint hotSpot, CGSize size, NSArray *images, NSString *ident, NSUInteger repeatCount) {
     if (frameCount > MCMaxFrameCount) {
         // Too many frames for the window server: keep every n-th frame and show each one
         // n times as long, so the animation still runs at the same speed.
         NSUInteger step = (frameCount + MCMaxFrameCount - 1) / MCMaxFrameCount;
         NSUInteger count = (frameCount + step - 1) / step;
-        NSArray *sheets = downsampledSheets(images, frameCount, step, count);
+        NSUInteger indices[MCMaxFrameCount];
+        for (NSUInteger k = 0; k < count; k++) indices[k] = k * step;
+        NSArray *sheets = sheetsWithFrames(images, frameCount, indices, count);
         if (sheets) {
             MMLog("Reducing %s from %lu to %lu frames", ident.UTF8String, (unsigned long)frameCount, (unsigned long)count);
             images = sheets;
@@ -153,7 +211,27 @@ BOOL applyCapeForIdentifier(NSDictionary *cursor, NSString *identifier, BOOL res
         }
     }
     
-    return applyCursorForIdentifier(frameCount.unsignedIntegerValue, frameDuration.doubleValue, hotSpot, size, images, identifier, 0);
+    NSArray *sheets = images;
+    NSUInteger count = frameCount.unsignedIntegerValue;
+    CGFloat duration = frameDuration.doubleValue;
+    // Frames with their own durations: the window server takes one duration for all, so
+    // pick the frames by time instead of keeping every n-th one at the average.
+    NSArray *durations = cursor[MCCursorDictionaryFrameDurationsKey];
+    if (!restore && [durations isKindOfClass:[NSArray class]] && durations.count == count && count > 1) {
+        NSUInteger indices[MCMaxFrameCount];
+        CGFloat timed = duration;
+        NSUInteger timedCount = framesByTime(durations, indices, &timed);
+        NSArray *timedSheets = timedCount > 0 ? sheetsWithFrames(images, count, indices, timedCount) : nil;
+        if (timedSheets) {
+            MMLog("Timing %s by its frame durations: %lu frames of %.3f s", identifier.UTF8String,
+                  (unsigned long)timedCount, timed);
+            sheets = timedSheets;
+            count = timedCount;
+            duration = timed;
+        }
+    }
+
+    return applyCursorForIdentifier(count, duration, hotSpot, size, sheets, identifier, 0);
 }
 
 BOOL applyCape(NSDictionary *dictionary) {

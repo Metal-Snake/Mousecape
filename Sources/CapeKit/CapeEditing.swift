@@ -17,11 +17,22 @@ extension CapeCursor {
         return (frameCount + step - 1) / step
     }
 
+    /// How many frames the engine registers when applying: frames with their own durations
+    /// are picked by time, longer animations reduced to every n-th frame.
+    public var appliedFrameCount: Int {
+        if let frameDurations { return FrameSelection.byTime(durations: frameDurations).frames.count }
+        return Self.reducedFrameCount(frameCount)
+    }
+
     /// A copy within the frame limit, the same way the engine reduces it when applying:
-    /// every n-th frame is kept and shown n times as long, so the animation keeps its
-    /// speed. Returns the cursor unchanged when it is within the limit, nil if an image
-    /// can't be decoded.
+    /// frames with their own durations are picked by time; otherwise every n-th frame is
+    /// kept and shown n times as long, so the animation keeps its speed. Returns the cursor
+    /// unchanged when there's nothing to do, nil if an image can't be decoded.
     public func reducingFrames() -> CapeCursor? {
+        if let frameDurations {
+            let timing = FrameSelection.byTime(durations: frameDurations)
+            return keepingFrames(timing.frames, frameDuration: timing.duration)
+        }
         guard frameCount > Self.maximumFrameCount else { return self }
         let kept = FrameSelection.everyNth(of: frameCount)
         return keepingFrames(kept, frameDuration: FrameSelection.loopPreservingDuration(
@@ -169,10 +180,11 @@ extension CapeCursor {
         var problems: [CursorProblem] = []
         if representations.isEmpty { problems.append(.noImages) }
         if frameCount < 1 { problems.append(.frameCountOutOfRange) }
-        if frameCount > Self.maximumFrameCount {
+        if frameDurations != nil {
+            problems.append(.timedByDurations(from: frameCount, to: appliedFrameCount))
+        } else if frameCount > Self.maximumFrameCount {
             problems.append(.framesWillBeReduced(from: frameCount, to: Self.reducedFrameCount(frameCount)))
         }
-        if frameDurations != nil { problems.append(.unevenTiming) }
         if hotSpot.x < 0 || hotSpot.y < 0 || hotSpot.x > size.width || hotSpot.y > size.height {
             problems.append(.hotSpotOutside)
         }
@@ -226,7 +238,7 @@ public enum CursorProblem: Equatable, Sendable, CustomStringConvertible {
     case noImages
     case frameCountOutOfRange
     case framesWillBeReduced(from: Int, to: Int)
-    case unevenTiming
+    case timedByDurations(from: Int, to: Int)
     case hotSpotOutside
     case unreadableImage
     case unexpectedWidth(CGSize)
@@ -236,7 +248,7 @@ public enum CursorProblem: Equatable, Sendable, CustomStringConvertible {
     /// around (a reduced animation, a hot spot off the image).
     public var isError: Bool {
         switch self {
-        case .framesWillBeReduced, .unevenTiming, .hotSpotOutside: false
+        case .framesWillBeReduced, .timedByDurations, .hotSpotOutside: false
         default: true
         }
     }
@@ -249,8 +261,8 @@ public enum CursorProblem: Equatable, Sendable, CustomStringConvertible {
             String(localized: "A cursor needs at least one frame.")
         case .framesWillBeReduced(let from, let to):
             String(localized: "macOS shows at most \(CapeCursor.maximumFrameCount) frames; the \(from) frames are reduced to \(to) when applied.")
-        case .unevenTiming:
-            String(localized: "The frames have different durations, but macOS shows every frame equally long. Frames → Choose… → By Time keeps the timing.")
+        case .timedByDurations(let from, let to):
+            String(localized: "The \(from) frames have different durations, but macOS shows every frame equally long: when applied, they become \(to) frames picked by time, so the timing stays.")
         case .hotSpotOutside:
             String(localized: "The hot spot lies outside the cursor.")
         case .unreadableImage:

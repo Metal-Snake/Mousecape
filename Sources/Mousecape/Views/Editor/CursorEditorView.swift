@@ -101,7 +101,7 @@ struct CursorEditorView: View {
                     HStack {
                         Text("\(cursor.frameCount)")
                             .monospacedDigit()
-                        Button("Reduce to \(CapeCursor.reducedFrameCount(cursor.frameCount))", action: reduceFrames)
+                        Button("Reduce to \(cursor.appliedFrameCount)", action: reduceFrames)
                         Button("Choose…") { choosingFrames = true }
                             .help("Pick which frames to keep")
                     }
