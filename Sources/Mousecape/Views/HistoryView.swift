@@ -12,6 +12,14 @@ struct HistoryView: View {
     @State private var selected: Entry = .current
     @State private var comparedWith: Entry = .current
     @State private var confirmingRemoval = false
+    /// The diff of the compared entries, worked out when they change (nil: not readable).
+    @State private var diff: CapeDiff?
+    @State private var isComparing = true
+
+    private struct CompareKey: Equatable {
+        let entries: [Entry]
+        let versionCount: Int
+    }
 
     /// A stored version, or the cape as it is now.
     enum Entry: Hashable {
@@ -40,6 +48,8 @@ struct HistoryView: View {
         .frame(minWidth: 760, idealWidth: 820, maxWidth: .infinity, minHeight: 480, idealHeight: 560, maxHeight: .infinity)
         .resizableSheet(minWidth: 760, minHeight: 480, sizeKey: "history")
         .onAppear(perform: reloadVersions)
+        // Restoring changes the current state and adds a version: compare again then too.
+        .task(id: CompareKey(entries: [earlier, later], versionCount: versions.count)) { await compare() }
         .confirmationDialog("Remove the saved states of “\(cape.name)”?", isPresented: $confirmingRemoval) {
             Button("Move to Trash", role: .destructive) {
                 do {
@@ -87,8 +97,11 @@ struct HistoryView: View {
                 .labelsHidden()
                 .fixedSize()
             }
-            if let older = load(earlier), let newer = load(later) {
-                let diff = CapeDiff(from: older, to: newer)
+            if isComparing {
+                ProgressView()
+                    .controlSize(.small)
+                Spacer()
+            } else if let diff {
                 Text("Changes from \(title(of: earlier)) to \(title(of: later))")
                     .font(.headline)
                 if diff.isEmpty {
@@ -149,11 +162,21 @@ struct HistoryView: View {
         }
     }
 
-    private func load(_ entry: Entry) -> Cape? {
-        switch entry {
-        case .current: cape
-        case .version(let version): try? Cape(contentsOf: version.url)
+    /// Reads the two compared states (off the main thread: they can be several MB) and
+    /// works out their diff.
+    private func compare() async {
+        isComparing = true
+        let current = cape
+        func url(_ entry: Entry) -> URL? {
+            if case .version(let version) = entry { version.url } else { nil }
         }
+        let (olderURL, newerURL) = (url(earlier), url(later))
+        diff = await Task.detached {
+            func load(_ url: URL?) -> Cape? { url.map { try? Cape(contentsOf: $0) } ?? current }
+            guard let older = load(olderURL), let newer = load(newerURL) else { return nil }
+            return CapeDiff(from: older, to: newer)
+        }.value
+        isComparing = false
     }
 
     // MARK: - Actions

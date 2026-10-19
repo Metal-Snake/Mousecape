@@ -1,17 +1,9 @@
 import AppKit
 import Testing
+import TestSupport
 @testable import CapeKit
 
 // MARK: - Writing test files
-
-/// Little-endian bytes.
-private struct Bytes {
-    var data = Data()
-    mutating func u8(_ v: Int) { data.append(UInt8(v & 0xFF)) }
-    mutating func u16(_ v: Int) { u8(v); u8(v >> 8) }
-    mutating func u32(_ v: Int) { u16(v & 0xFFFF); u16(v >> 16) }
-    mutating func tag(_ s: String) { data.append(contentsOf: Array(s.utf8)) }
-}
 
 /// A 32-bit DIB from top-down RGBA pixels, with an all-clear AND mask.
 private func dib32(width: Int, height: Int, rgba: [[UInt8]]) -> Data {
@@ -50,21 +42,6 @@ private func dib8(width: Int, height: Int, indices: [Int], transparent: Set<Int>
         }
         b.data.append(contentsOf: line)
     }
-    return b.data
-}
-
-/// A `.cur` file with the given images (each with its size and hot spot).
-private func curFile(_ images: [(payload: Data, size: Int, hotSpot: (Int, Int))]) -> Data {
-    var b = Bytes()
-    b.u16(0); b.u16(2); b.u16(images.count)
-    var offset = 6 + 16 * images.count
-    for image in images {
-        b.u8(image.size % 256); b.u8(image.size % 256); b.u8(0); b.u8(0)
-        b.u16(image.hotSpot.0); b.u16(image.hotSpot.1)
-        b.u32(image.payload.count); b.u32(offset)
-        offset += image.payload.count
-    }
-    for image in images { b.data.append(image.payload) }
     return b.data
 }
 

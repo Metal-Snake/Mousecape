@@ -1,17 +1,14 @@
 import AppKit
 import Testing
+import TestSupport
 @testable import CapeKit
 
 /// A sheet of `frames` frames, `side` pixels square, each with its left `filled` columns red.
 private func sheet(side: Int, frames: Int = 1, filled: Int) throws -> Data {
-    let space = try #require(CGColorSpace(name: CGColorSpace.sRGB))
-    let context = try #require(CGContext(data: nil, width: side, height: side * frames, bitsPerComponent: 8,
-                                         bytesPerRow: 0, space: space,
-                                         bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue))
-    context.setFillColor(CGColor(red: 1, green: 0, blue: 0, alpha: 1))
-    context.fill(CGRect(x: 0, y: 0, width: filled, height: side * frames))
-    let image = try #require(context.makeImage())
-    return try #require(NSBitmapImageRep(cgImage: image).representation(using: .png, properties: [:]))
+    pngImage(width: side, height: side * frames) { context in
+        context.setFillColor(CGColor(red: 1, green: 0, blue: 0, alpha: 1))
+        context.fill(CGRect(x: 0, y: 0, width: filled, height: side * frames))
+    }
 }
 
 private func alpha(_ png: Data, x: Int, y: Int) throws -> Int {

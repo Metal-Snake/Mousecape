@@ -52,16 +52,13 @@ extension CapeCursor {
     public func mirroredRepresentations() -> [Data]? {
         var mirrored: [Data] = []
         for data in representations {
-            guard let sheet = NSBitmapImageRep(data: data)?.cgImage,
-                  let space = CGColorSpace(name: CGColorSpace.sRGB),
-                  let context = CGContext(data: nil, width: sheet.width, height: sheet.height, bitsPerComponent: 8,
-                                          bytesPerRow: 0, space: space,
-                                          bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else { return nil }
+            // The whole sheet at once: flipping it horizontally flips every frame in place.
+            guard let sheet = CursorSheet.decode(data),
+                  let context = CursorSheet.context(width: sheet.width, height: sheet.height) else { return nil }
             context.translateBy(x: CGFloat(sheet.width), y: 0)
             context.scaleBy(x: -1, y: 1)
             context.draw(sheet, in: CGRect(x: 0, y: 0, width: sheet.width, height: sheet.height))
-            guard let image = context.makeImage(),
-                  let png = NSBitmapImageRep(cgImage: image).representation(using: .png, properties: [:]) else { return nil }
+            guard let png = context.makeImage().flatMap(CursorSheet.png) else { return nil }
             mirrored.append(png)
         }
         return mirrored

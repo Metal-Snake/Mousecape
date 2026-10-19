@@ -1,19 +1,16 @@
 import AppKit
 import Testing
+import TestSupport
 @testable import CapeKit
 
 /// A sheet of `count` frames, each a different shade, `side` pixels square.
 private func shadedSheet(count: Int, side: Int = 4) throws -> Data {
-    let space = try #require(CGColorSpace(name: CGColorSpace.sRGB))
-    let context = try #require(CGContext(data: nil, width: side, height: side * count, bitsPerComponent: 8,
-                                         bytesPerRow: 0, space: space,
-                                         bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue))
-    for index in 0..<count {
-        context.setFillColor(CGColor(red: CGFloat(index) / CGFloat(count), green: 0, blue: 0, alpha: 1))
-        context.fill(CGRect(x: 0, y: (count - 1 - index) * side, width: side, height: side))
+    pngImage(width: side, height: side * count) { context in
+        for index in 0..<count {
+            context.setFillColor(CGColor(red: CGFloat(index) / CGFloat(count), green: 0, blue: 0, alpha: 1))
+            context.fill(CGRect(x: 0, y: (count - 1 - index) * side, width: side, height: side))
+        }
     }
-    let image = try #require(context.makeImage())
-    return try #require(NSBitmapImageRep(cgImage: image).representation(using: .png, properties: [:]))
 }
 
 @Test func byTimeExpandsExactlyWhenItFits() {

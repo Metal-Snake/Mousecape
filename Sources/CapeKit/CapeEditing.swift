@@ -55,30 +55,10 @@ extension CapeCursor {
         return copy
     }
 
-    /// Each sheet rebuilt from the frames at `indices`, in that order.
+    /// Each sheet rebuilt from the frames at `indices`, in that order (indices checked by
+    /// the caller).
     private static func sheets(_ sheets: [Data], frameCount: Int, keeping indices: [Int]) -> [Data]? {
-        guard let sRGB = CGColorSpace(name: CGColorSpace.sRGB) else { return nil }
-        let count = indices.count
-        var rebuilt: [Data] = []
-        for data in sheets {
-            guard let sheet = NSBitmapImageRep(data: data)?.cgImage else { return nil }
-            let frameHeight = sheet.height / frameCount
-            guard frameHeight > 0,
-                  let context = CGContext(data: nil, width: sheet.width, height: frameHeight * count,
-                                          bitsPerComponent: 8, bytesPerRow: 0, space: sRGB,
-                                          bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else { return nil }
-            for (slot, index) in indices.enumerated() {
-                // Cropping counts from the top, drawing from the bottom.
-                guard let frame = sheet.cropping(to: CGRect(x: 0, y: index * frameHeight,
-                                                            width: sheet.width, height: frameHeight)) else { return nil }
-                context.draw(frame, in: CGRect(x: 0, y: (count - 1 - slot) * frameHeight,
-                                               width: sheet.width, height: frameHeight))
-            }
-            guard let image = context.makeImage(),
-                  let png = NSBitmapImageRep(cgImage: image).representation(using: .png, properties: [:]) else { return nil }
-            rebuilt.append(png)
-        }
-        return rebuilt
+        CursorSheet.rebuild(sheets, frameCount: frameCount) { frames in indices.map { frames[$0] } }
     }
 
     /// A copy without the transparent margin around the artwork: cut to the area any frame
@@ -92,16 +72,14 @@ extension CapeCursor {
         guard frameCount > 0, pointWidth > 0, pointHeight > 0,
               Double(pointWidth) == size.width, Double(pointHeight) == size.height else { return self }
 
-        // Each sheet as RGBA pixels, and the visible area of all its frames in points.
-        var sheets: [(image: CGImage, scale: Int)] = []
+        // The visible area of all frames of all sheets, in points.
         var visible: (minX: Int, minY: Int, maxX: Int, maxY: Int)?
         for data in representations {
-            guard let image = NSBitmapImageRep(data: data)?.cgImage,
+            guard let image = CursorSheet.decode(data),
                   image.width % pointWidth == 0, image.height % frameCount == 0,
                   let pixels = Self.rgbaPixels(of: image) else { return nil }
             let scale = image.width / pointWidth
             let frameHeight = image.height / frameCount
-            sheets.append((image, scale))
             var minX = Int.max, minY = Int.max, maxX = -1, maxY = -1
             for y in 0..<image.height {
                 let frameY = y % frameHeight
@@ -124,27 +102,14 @@ extension CapeCursor {
         let maxX = min(pointWidth, max(visible.maxX + margin, hotX + 1))
         let maxY = min(pointHeight, max(visible.maxY + margin, hotY + 1))
         let width = maxX - minX, height = maxY - minY
-        guard width < pointWidth || height < pointHeight, width > 0, height > 0,
-              let sRGB = CGColorSpace(name: CGColorSpace.sRGB) else { return self }
+        guard width < pointWidth || height < pointHeight, width > 0, height > 0 else { return self }
 
-        var trimmed: [Data] = []
-        for (image, scale) in sheets {
-            let frameHeight = image.height / frameCount
-            guard let context = CGContext(data: nil, width: width * scale, height: height * scale * frameCount,
-                                          bitsPerComponent: 8, bytesPerRow: 0, space: sRGB,
-                                          bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else { return nil }
-            for index in 0..<frameCount {
-                // Cropping counts from the top, drawing from the bottom.
-                let crop = CGRect(x: minX * scale, y: index * frameHeight + minY * scale,
-                                  width: width * scale, height: height * scale)
-                guard let frame = image.cropping(to: crop) else { return nil }
-                context.draw(frame, in: CGRect(x: 0, y: (frameCount - 1 - index) * height * scale,
-                                               width: width * scale, height: height * scale))
-            }
-            guard let sheet = context.makeImage(),
-                  let png = NSBitmapImageRep(cgImage: sheet).representation(using: .png, properties: [:]) else { return nil }
-            trimmed.append(png)
-        }
+        guard let trimmed = CursorSheet.rebuild(representations, frameCount: frameCount, { frames in
+            let scale = frames[0].width / pointWidth
+            let crop = CGRect(x: minX * scale, y: minY * scale, width: width * scale, height: height * scale)
+            let cropped = frames.compactMap { $0.cropping(to: crop) }
+            return cropped.count == frames.count ? cropped : nil
+        }) else { return nil }
         var copy = self
         copy.representations = trimmed
         copy.size = CGSize(width: width, height: height)
@@ -154,6 +119,7 @@ extension CapeCursor {
 
     /// The image as RGBA bytes, rows top to bottom.
     private static func rgbaPixels(of image: CGImage) -> [UInt8]? {
+        // Its own buffer rather than CursorSheet.context, to read the bytes afterwards.
         guard let sRGB = CGColorSpace(name: CGColorSpace.sRGB) else { return nil }
         var pixels = [UInt8](repeating: 0, count: image.width * image.height * 4)
         let drawn = pixels.withUnsafeMutableBytes { buffer -> Bool in
@@ -239,11 +205,7 @@ extension CapeCursor {
 
     /// Read from the image header, without decoding the pixels.
     static func pixelSize(of data: Data) -> CGSize? {
-        guard let source = CGImageSourceCreateWithData(data as CFData, nil),
-              let properties = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any],
-              let width = properties[kCGImagePropertyPixelWidth] as? Int,
-              let height = properties[kCGImagePropertyPixelHeight] as? Int else { return nil }
-        return CGSize(width: width, height: height)
+        CursorSheet.pixelSize(of: data)
     }
 
     static func pixelWidth(of data: Data) -> Int {
@@ -316,10 +278,22 @@ public enum CursorProblem: Equatable, Sendable, CustomStringConvertible {
 extension Cape {
     /// A new, empty cape with an identifier unique enough for a local library.
     public static func untitled(author: String) -> Cape {
-        let slug = author.lowercased().filter { $0.isLetter || $0.isNumber }
         let stamp = Int(Date().timeIntervalSince1970)
-        return Cape(identifier: "local.\(slug.isEmpty ? "user" : slug).untitled.\(stamp)",
+        return Cape(identifier: "local.\(slug(author, otherwise: "user")).untitled.\(stamp)",
                     name: String(localized: "Untitled"), author: author)
+    }
+
+    /// `text` lowercased, letters and digits only: a safe identifier part. `otherwise` when
+    /// nothing is left.
+    static func slug(_ text: String, otherwise fallback: String) -> String {
+        let slug = text.lowercased().filter { $0.isLetter || $0.isNumber }
+        return slug.isEmpty ? fallback : slug
+    }
+
+    /// A cape converted from a theme: identifier `local.<kind>.<name slug>`.
+    static func converted(kind: String, name: String, author: String, cursors: [CapeCursor]) -> Cape {
+        Cape(identifier: "local.\(kind).\(slug(name, otherwise: "theme"))",
+             name: name, author: author, version: 1, isHiDPI: true, cursors: cursors)
     }
 
     /// System cursors this cape does not replace yet, in display order.

@@ -113,11 +113,7 @@ public struct CapeCursor: Identifiable, Equatable, Sendable {
     /// point size (or the sharpest one there is). Empty if no image decodes.
     public func frames(scale: Int = .max) -> [CGImage] {
         guard let sheet = representation(atLeast: scale) else { return [] }
-        let frameHeight = sheet.height / frameCount
-        guard frameHeight > 0 else { return [] }
-        return (0..<frameCount).compactMap { index in
-            sheet.cropping(to: CGRect(x: 0, y: index * frameHeight, width: sheet.width, height: frameHeight))
-        }
+        return CursorSheet.frames(of: sheet, count: frameCount)
     }
 
     /// Pixel densities present, e.g. [1, 2, 5, 10].
@@ -128,12 +124,14 @@ public struct CapeCursor: Identifiable, Equatable, Sendable {
         }.sorted()
     }
 
+    /// Chooses by the sizes in the image headers, so only the chosen image is decoded.
     private func representation(atLeast scale: Int) -> CGImage? {
-        let images = representations
-            .compactMap { NSBitmapImageRep(data: $0)?.cgImage }
+        let sized = representations
+            .compactMap { data in CursorSheet.pixelSize(of: data).map { (data: data, width: $0.width) } }
             .sorted { $0.width < $1.width }
         let minimumWidth = Double(scale) * size.width
-        return images.first { Double($0.width) >= minimumWidth } ?? images.last
+        guard let chosen = sized.first(where: { $0.width >= minimumWidth }) ?? sized.last else { return nil }
+        return CursorSheet.decode(chosen.data)
     }
 
     /// Main pointers first (in the order macOS users meet them), the rest alphabetically.

@@ -18,5 +18,9 @@ extern BOOL applyCapeAtPath(NSString *path);
 // Back to the macOS cursors; in left-handed mode, mirrored. Returns NO if some cursor
 // could not be reset or mirrored.
 extern BOOL applyDefaultCursors(void);
+// Frames picked by time for frames with their own durations (see apply.m); exposed so a
+// test can check it against CapeKit's FrameSelection.byTime. `indices` needs room for
+// MCMaxFrameCount entries. Returns the number of frames, 0 if the durations can't be used.
+extern NSUInteger MCFramesByTime(NSArray *durations, NSUInteger *indices, CGFloat *duration);
 
 #endif

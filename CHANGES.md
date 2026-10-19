@@ -436,6 +436,28 @@ no unpacking code of our own. `tar` refuses absolute paths and `..` and won't wr
 links. Not supported: `.tar.zst`, since the system's libarchive has no built-in zstd. Inside
 the archive, the theme is searched up to five folders deep; the shallowest wins.
 
+## Hardening
+
+Cape files, Windows and Xcursor themes and archives come from anywhere, so everything that
+reads them treats them as untrusted:
+
+- **Identifiers are file names.** A cape's identifier and its cursor keys become the
+  library file, the history folder and export file names. They are refused when a cape
+  is read unless they are plain names (no "/", ":", "\\", control characters or leading
+  dot): a cape named `../capes` could otherwise have written outside the library, or
+  had its "history" (the library itself) moved to the Trash on import. The history
+  checks again before touching a folder, and the engine has the same rule
+  (`MCIsSafeIdentifier`) for applying, `--export` and the agent's path; a test keeps
+  both rules equal.
+- **Sizes are bounded.** `.ani` step counts (at most 1024), PNG images in `.cur`/`.ico`
+  (at most 1024 px) and sprite sheets in capes (at most 640 × 640 × 120 pixels) are
+  checked before decoding, so a crafted file can't exhaust memory.
+- **Links stay inside.** Themes from archives ignore links pointing out of the theme
+  folder (Windows and Xcursor alike); archives are unpacked by `tar`/`ditto`, which refuse
+  absolute paths and "..".
+- **No silent history loss.** A save whose replaced state can't be kept overwrites
+  nothing; opening the library's own file (e.g. from Finder) keeps its history.
+
 ## New code
 
 - **`Sources/CapeKit`:** reads and writes `.cape` files, splits sprite sheets into frames,

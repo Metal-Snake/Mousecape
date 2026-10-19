@@ -1,29 +1,26 @@
 import AppKit
 import Testing
+import TestSupport
 @testable import CapeKit
 
 /// A sheet of `frames` frames, `points` square at `scale`, each with an opaque rectangle
 /// (in points, from the top-left) and optionally a faint pixel.
 private func sheet(points: Int, scale: Int, rects: [CGRect], faint: CGPoint? = nil) throws -> Data {
     let side = points * scale
-    let space = try #require(CGColorSpace(name: CGColorSpace.sRGB))
-    let context = try #require(CGContext(data: nil, width: side, height: side * rects.count, bitsPerComponent: 8,
-                                         bytesPerRow: 0, space: space,
-                                         bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue))
-    for (index, rect) in rects.enumerated() {
-        // Frame `index` from the top; drawing counts from the bottom.
-        let top = CGFloat((rects.count - index) * side)
-        context.setFillColor(CGColor(red: 1, green: 0, blue: 0, alpha: 1))
-        context.fill(CGRect(x: rect.minX * CGFloat(scale), y: top - rect.maxY * CGFloat(scale),
-                            width: rect.width * CGFloat(scale), height: rect.height * CGFloat(scale)))
-        if let faint {
-            context.setFillColor(CGColor(red: 0, green: 0, blue: 0, alpha: 0.05))
-            context.fill(CGRect(x: faint.x * CGFloat(scale), y: top - (faint.y + 1) * CGFloat(scale),
-                                width: CGFloat(scale), height: CGFloat(scale)))
+    return pngImage(width: side, height: side * rects.count) { context in
+        for (index, rect) in rects.enumerated() {
+            // Frame `index` from the top; drawing counts from the bottom.
+            let top = CGFloat((rects.count - index) * side)
+            context.setFillColor(CGColor(red: 1, green: 0, blue: 0, alpha: 1))
+            context.fill(CGRect(x: rect.minX * CGFloat(scale), y: top - rect.maxY * CGFloat(scale),
+                                width: rect.width * CGFloat(scale), height: rect.height * CGFloat(scale)))
+            if let faint {
+                context.setFillColor(CGColor(red: 0, green: 0, blue: 0, alpha: 0.05))
+                context.fill(CGRect(x: faint.x * CGFloat(scale), y: top - (faint.y + 1) * CGFloat(scale),
+                                    width: CGFloat(scale), height: CGFloat(scale)))
+            }
         }
     }
-    let image = try #require(context.makeImage())
-    return try #require(NSBitmapImageRep(cgImage: image).representation(using: .png, properties: [:]))
 }
 
 private func cursor(points: Int = 48, rects: [CGRect], hotSpot: CGPoint, faint: CGPoint? = nil) throws -> CapeCursor {

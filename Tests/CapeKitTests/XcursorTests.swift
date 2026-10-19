@@ -1,44 +1,9 @@
 import AppKit
 import Testing
+import TestSupport
 @testable import CapeKit
 
 // MARK: - Writing test files
-
-/// One image chunk: a solid colour (premultiplied ARGB) at a nominal size.
-struct XcursorTestImage {
-    var nominalSize: Int
-    var width: Int
-    var height: Int
-    var hotSpot: (Int, Int)
-    var delay = 0
-    var argb: UInt32 = 0xFF_FF_00_00                   // opaque red
-}
-
-/// An Xcursor file with the given images, in order, plus a comment chunk to skip.
-func xcursorFile(_ images: [XcursorTestImage]) -> Data {
-    var data = Data()
-    func u32(_ v: Int) { withUnsafeBytes(of: UInt32(truncatingIfNeeded: v).littleEndian) { data.append(contentsOf: $0) } }
-    let entries = images.count + 1
-    u32(0); data.replaceSubrange(0..<4, with: Array("Xcur".utf8))
-    u32(16); u32(0x1_0000); u32(entries)
-    let tocEnd = 16 + 12 * entries
-    // The comment chunk comes first in the file, images after it.
-    let comment = Array("made for a test".utf8)
-    let commentSize = 20 + comment.count
-    var position = tocEnd + commentSize
-    u32(0xFFFE_0001); u32(1); u32(tocEnd)
-    for image in images {
-        u32(0xFFFD_0002); u32(image.nominalSize); u32(position)
-        position += 36 + image.width * image.height * 4
-    }
-    u32(20); u32(0xFFFE_0001); u32(1); u32(1); u32(comment.count); data.append(contentsOf: comment)
-    for image in images {
-        u32(36); u32(0xFFFD_0002); u32(image.nominalSize); u32(1)
-        u32(image.width); u32(image.height); u32(image.hotSpot.0); u32(image.hotSpot.1); u32(image.delay)
-        for _ in 0..<(image.width * image.height) { u32(Int(image.argb)) }
-    }
-    return data
-}
 
 /// The colour at the centre of a sheet's top frame, as RGBA bytes.
 private func centreColour(_ png: Data, frameHeight: Int) throws -> [UInt8] {

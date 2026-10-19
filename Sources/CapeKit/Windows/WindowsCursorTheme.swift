@@ -175,10 +175,7 @@ public struct WindowsCursorTheme: Sendable {
             }
         }
         guard !cursors.isEmpty else { throw WindowsCursorError.noCursorsFound }
-        let slug = name.lowercased().filter { $0.isLetter || $0.isNumber }
-        let cape = Cape(identifier: "local.windows.\(slug.isEmpty ? "theme" : slug)",
-                        name: name, author: author, version: 1, isHiDPI: true, cursors: cursors)
-        return (cape, skipped)
+        return (Cape.converted(kind: "windows", name: name, author: author, cursors: cursors), skipped)
     }
 }
 

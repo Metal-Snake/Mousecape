@@ -36,13 +36,18 @@ let package = Package(
             name: "Mousecape",
             dependencies: ["MousecloakCore", "CapeKit"]
         ),
+        // File builders shared by the test targets.
+        .target(
+            name: "TestSupport",
+            path: "Tests/TestSupport"
+        ),
         .testTarget(
             name: "CapeKitTests",
-            dependencies: ["CapeKit"]
+            dependencies: ["CapeKit", "TestSupport"]
         ),
         .testTarget(
             name: "MousecapeTests",
-            dependencies: ["Mousecape", "CapeKit", "MousecloakCore"]
+            dependencies: ["Mousecape", "CapeKit", "MousecloakCore", "TestSupport"]
         ),
     ]
 )

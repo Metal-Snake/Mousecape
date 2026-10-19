@@ -140,9 +140,6 @@ public struct XcursorTheme: CursorThemeConvertible {
             cursors.append(cursor)
         }
         guard !cursors.isEmpty else { throw XcursorError.noCursorsFound }
-        let slug = name.lowercased().filter { $0.isLetter || $0.isNumber }
-        let cape = Cape(identifier: "local.xcursor.\(slug.isEmpty ? "theme" : slug)",
-                        name: name, author: author, version: 1, isHiDPI: true, cursors: cursors)
-        return (cape, skipped)
+        return (Cape.converted(kind: "xcursor", name: name, author: author, cursors: cursors), skipped)
     }
 }

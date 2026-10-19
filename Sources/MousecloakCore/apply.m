@@ -54,7 +54,7 @@ static NSUInteger gcdOf(NSUInteger a, NSUInteger b) {
 // samples the loop at MCMaxFrameCount evenly spaced moments, the middle of each slot.
 // The same as FrameSelection.byTime in CapeKit. Returns the number of frames, 0 if the
 // durations can't be used.
-static NSUInteger framesByTime(NSArray *durations, NSUInteger *indices, CGFloat *duration) {
+NSUInteger MCFramesByTime(NSArray *durations, NSUInteger *indices, CGFloat *duration) {
     NSUInteger n = durations.count;
     if (n == 0) return 0;
     double total = 0;
@@ -230,7 +230,7 @@ BOOL applyCapeForIdentifier(NSDictionary *cursor, NSString *identifier, BOOL res
     if (!restore && [durations isKindOfClass:[NSArray class]] && durations.count == count && count > 1) {
         NSUInteger indices[MCMaxFrameCount];
         CGFloat timed = duration;
-        NSUInteger timedCount = framesByTime(durations, indices, &timed);
+        NSUInteger timedCount = MCFramesByTime(durations, indices, &timed);
         NSArray *timedSheets = timedCount > 0 ? sheetsWithFrames(images, count, indices, timedCount) : nil;
         if (timedSheets) {
             MMLog("Timing %s by its frame durations: %lu frames of %.3f s", identifier.UTF8String,

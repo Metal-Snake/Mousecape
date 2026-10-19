@@ -283,17 +283,9 @@ struct CursorEditorView: View {
     }
 
     private func addLeftHandedImage(from url: URL, scale: Int) {
-        guard let data = try? Data(contentsOf: url),
-              let (png, pixels) = CapeCursor.normalizedPNG(from: data) else {
-            importError = String(localized: "“\(url.lastPathComponent)” is not an image Mousecape can read.")
-            return
+        if let png = loadImage(from: url, scale: scale, definesSize: false) {
+            cursor.setLeftHandedRepresentation(png, for: scale)
         }
-        let expected = cursor.expectedPixelSize(for: scale)
-        guard pixels == expected else {
-            importError = String(localized: "The \(scale)x image must be \(Int(expected.width)) × \(Int(expected.height)) px; “\(url.lastPathComponent)” is \(Int(pixels.width)) × \(Int(pixels.height)) px.")
-            return
-        }
-        cursor.setLeftHandedRepresentation(png, for: scale)
     }
 
     @ViewBuilder
@@ -341,22 +333,30 @@ struct CursorEditorView: View {
             }
             return
         }
+        // The first image of a cursor defines its size; later ones must fit it.
+        if let png = loadImage(from: url, scale: scale, definesSize: cursor.representations.isEmpty) {
+            cursor.setRepresentation(png, for: scale)
+        }
+    }
+
+    /// An image file as PNG if it has the size a sheet at `scale` needs; otherwise nil, and
+    /// the reason is shown. With `definesSize`, the image sets the cursor's size instead.
+    private func loadImage(from url: URL, scale: Int, definesSize: Bool) -> Data? {
         guard let data = try? Data(contentsOf: url),
               let (png, pixels) = CapeCursor.normalizedPNG(from: data) else {
             importError = String(localized: "“\(url.lastPathComponent)” is not an image Mousecape can read.")
-            return
+            return nil
         }
-        // The first image of a cursor defines its size; later ones must fit it.
-        if cursor.representations.isEmpty {
+        if definesSize {
             cursor.size = CGSize(width: pixels.width / Double(scale),
                                  height: pixels.height / Double(scale) / Double(cursor.frameCount))
         }
         let expected = cursor.expectedPixelSize(for: scale)
         guard pixels == expected else {
             importError = String(localized: "The \(scale)x image must be \(Int(expected.width)) × \(Int(expected.height)) px; “\(url.lastPathComponent)” is \(Int(pixels.width)) × \(Int(pixels.height)) px.")
-            return
+            return nil
         }
-        cursor.setRepresentation(png, for: scale)
+        return png
     }
 }
 
@@ -428,9 +428,8 @@ private struct ImageWell: View {
 
     /// The top frame of the sheet, so tall animated sheets don't shrink to a sliver.
     private var firstFrame: CGImage? {
-        guard let image, let sheet = NSBitmapImageRep(data: image)?.cgImage else { return nil }
-        let height = sheet.height / max(frameCount, 1)
-        return sheet.cropping(to: CGRect(x: 0, y: 0, width: sheet.width, height: max(height, 1))) ?? sheet
+        guard let image, let sheet = CursorSheet.decode(image) else { return nil }
+        return CursorSheet.frames(of: sheet, count: max(frameCount, 1)).first ?? sheet
     }
 }
 

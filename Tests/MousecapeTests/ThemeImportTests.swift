@@ -1,5 +1,6 @@
 import AppKit
 import Testing
+import TestSupport
 import CapeKit
 @testable import Mousecape
 
@@ -10,15 +11,9 @@ final class ThemeImportTests {
 
     deinit { try? FileManager.default.removeItem(at: folder) }
 
-    /// A one-image Xcursor file (24 px, opaque).
+    /// A one-image Xcursor file (24 px, opaque black).
     func xcursor() -> Data {
-        var data = Data("Xcur".utf8)
-        func u32(_ v: UInt32) { withUnsafeBytes(of: v.littleEndian) { data.append(contentsOf: $0) } }
-        u32(16); u32(0x1_0000); u32(1)
-        u32(0xFFFD_0002); u32(24); u32(28)
-        u32(36); u32(0xFFFD_0002); u32(24); u32(1); u32(24); u32(24); u32(3); u32(2); u32(0)
-        for _ in 0..<(24 * 24) { u32(0xFF00_0000) }
-        return data
+        xcursorFile([XcursorTestImage(nominalSize: 24, width: 24, height: 24, hotSpot: (3, 2), argb: 0xFF00_0000)])
     }
 
     /// `<folder>/src/Nice Cursors/{index.theme, cursors/…}`, returns `src`.
@@ -105,19 +100,8 @@ final class ThemeImportTests {
     }
 
     /// A `.cur` file holding one PNG image of `size` pixels.
-    func curFile(size: Int) throws -> Data {
-        let rep = try #require(NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: size, pixelsHigh: size,
-                                                bitsPerSample: 8, samplesPerPixel: 4, hasAlpha: true, isPlanar: false,
-                                                colorSpaceName: .deviceRGB, bytesPerRow: 0, bitsPerPixel: 0))
-        let png = try #require(rep.representation(using: .png, properties: [:]))
-        var data = Data()
-        func u8(_ v: Int) { data.append(UInt8(v & 0xFF)) }
-        func u16(_ v: Int) { u8(v); u8(v >> 8) }
-        func u32(_ v: Int) { u16(v & 0xFFFF); u16(v >> 16) }
-        u16(0); u16(2); u16(1)
-        u8(size & 0xFF); u8(size & 0xFF); u8(0); u8(0); u16(1); u16(1); u32(png.count); u32(22)
-        data.append(png)
-        return data
+    func curFile(size: Int) -> Data {
+        TestSupport.curFile([(payload: pngImage(width: size, height: size), size: size, hotSpot: (1, 1))])
     }
 
     @Test func recognisesSizeFolders() {
