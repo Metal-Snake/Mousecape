@@ -233,8 +233,7 @@ The Objective-C sources of `mousecloak` moved unchanged in substance (history ke
   fork registered it through `SMAppService`; for an app without an Apple team ID (ad-hoc or
   self-signed), launchd pinned that registration to the exact build and refused the agent
   after every update ("needs LWCR update"), and re-registering didn't help. A plain agent
-  isn't pinned, so updates just work. Old `SMAppService` registrations are moved over at
-  launch.
+  isn't pinned, so updates just work.
 - Turned on and off in **Settings → Apply cape at login** instead of the **Install Helper
   Tool** menu item. If it is switched off under System Settings → Login Items, Settings
   links there. macOS lists it as "mousecloak".

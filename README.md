@@ -138,7 +138,7 @@ testing on new macOS versions).
 | `Sources/CapeKit` | The cape format, cursor images, editing, the Windows and Xcursor importers (pure Swift) |
 | `Sources/Mousecape` | The SwiftUI app: library, history, editor, theme import |
 | `Tests` | Swift Testing suites, and `TestSupport` with the file builders they share |
-| `Resources` | Info.plist, app icon, plists of earlier login agents (for unregistering) |
+| `Resources` | Info.plist, app icon |
 | `Scripts` | Building, signing, the cursor size probe |
 
 ### Safety

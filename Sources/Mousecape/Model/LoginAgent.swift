@@ -15,13 +15,6 @@ final class LoginAgent {
     /// Per bundle identifier, so a second copy under another identifier (a test build) has an
     /// agent of its own instead of pointing this one at itself.
     nonisolated static let label = "\(Bundle.main.bundleIdentifier ?? "io.github.metal-snake.Mousecape").listener"
-    /// SMAppService agents of earlier versions, unregistered when found. Their plists stay
-    /// in the app bundle because SMAppService can only unregister with the plist present.
-    private static let smAppServicePlists = [
-        "io.github.metal-snake.Mousecape.agent.plist",
-        "io.github.metal-snake.Mousecape.cursor-agent.plist",
-    ]
-    private static let legacyKeys = ["agentRegisteredCodeHash", "agentEnabled"]
 
     private(set) var isEnabled = false
     /// Turned on, but launchd isn't running it (e.g. switched off under System Settings →
@@ -66,24 +59,10 @@ final class LoginAgent {
         needsApproval = isEnabled && !Self.isLoaded()
     }
 
-    /// At launch: moves an agent of an earlier version over, and keeps the plist pointing at
-    /// this copy of the app (it may have moved) and loaded.
+    /// At launch: keeps the plist pointing at this copy of the app (it may have moved) and
+    /// loaded.
     func repairIfNeeded() {
-        let defaults = UserDefaults.standard
-        var wanted = FileManager.default.fileExists(atPath: Self.plistURL.path)
-            || defaults.bool(forKey: "agentEnabled")
-            || defaults.string(forKey: "agentRegisteredCodeHash") != nil
-        for name in Self.smAppServicePlists {
-            let old = SMAppService.agent(plistName: name)
-            if old.status == .enabled || old.status == .requiresApproval {
-                wanted = true
-            }
-            if old.status != .notRegistered {
-                try? old.unregister()
-            }
-        }
-        Self.legacyKeys.forEach { defaults.removeObject(forKey: $0) }
-        guard wanted else { return }
+        guard FileManager.default.fileExists(atPath: Self.plistURL.path) else { return }
         do {
             if Self.installedProgram() != Self.agentExecutable.path || !Self.isLoaded() {
                 try install()

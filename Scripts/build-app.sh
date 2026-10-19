@@ -16,10 +16,6 @@ set -euo pipefail
 
 VERSION="2.0.0"     # CFBundleShortVersionString
 BUILD="1"           # CFBundleVersion
-# Login agents of earlier versions (SMAppService). Shipped only so the app can unregister
-# them: SMAppService needs the plist in the bundle for that. The current agent is a plain
-# launch agent the app writes to ~/Library/LaunchAgents (see LoginAgent.swift).
-LEGACY_AGENT_PLISTS="io.github.metal-snake.Mousecape.agent.plist io.github.metal-snake.Mousecape.cursor-agent.plist"
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
@@ -36,11 +32,10 @@ BIN="$(swift build -c release --show-bin-path)"
 
 echo "==> Bundle…"
 rm -rf "$APP"
-mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources" "$APP/Contents/Library/LaunchAgents"
+mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp "$BIN/Mousecape" "$BIN/mousecloak" "$APP/Contents/MacOS/"
-for plist in $LEGACY_AGENT_PLISTS; do cp "Resources/$plist" "$APP/Contents/Library/LaunchAgents/"; done
 sed -e "s/@VERSION@/$VERSION/" -e "s/@BUILD@/$BUILD/" Resources/Info.plist > "$APP/Contents/Info.plist"
-plutil -lint -s "$APP/Contents/Info.plist" "$APP/Contents/Library/LaunchAgents/"*.plist
+plutil -lint -s "$APP/Contents/Info.plist"
 printf 'APPL????' > "$APP/Contents/PkgInfo"
 
 echo "==> Icon…"
