@@ -29,8 +29,9 @@ the Arrow may come at 1x, 2x, 5x and 10x, the Wait cursor at 1x and 2x.
 An example cape is included: [Examples/com.maxrudberg.svanslosbluehazard.cape](Examples/com.maxrudberg.svanslosbluehazard.cape),
 a remake of [Max Rudberg's](http://maxrudberg.com/) Svanslös cursors, generously crafted by
 Max. Double-click a cape, drop it on the window or use **File → Import…** to add it to
-your library. MightyMouse themes are converted on import, and so are Windows cursor
-themes: drop a theme folder, its `.zip`, or `.cur`/`.ani` files on the window.
+your library. MightyMouse themes are converted on import, and so are Windows and Linux
+(Xcursor) cursor themes: drop a theme folder, an archive of it (`.zip`, `.7z`, `.rar`,
+`.tar.gz`, `.tar.xz`, …), or `.cur`/`.ani`/Xcursor files on the window.
 [EXAMPLES.md](EXAMPLES.md) lists places to find more capes and cursor themes.
 
 Your library lives in `~/Library/Application Support/Mousecape/capes`, the same folder

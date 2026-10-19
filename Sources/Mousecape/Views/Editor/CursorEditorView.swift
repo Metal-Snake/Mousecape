@@ -196,10 +196,13 @@ struct CursorEditorView: View {
     }
 
     private func addImage(from url: URL, scale: Int) {
-        // A Windows cursor replaces the whole cursor: images, size, hot spot and frames.
-        if WindowsImport.cursorExtensions.contains(url.pathExtension.lowercased()) {
+        // A Windows or Xcursor file replaces the whole cursor: images, size, hot spot and frames.
+        let isWindows = ThemeImport.windowsExtensions.contains(url.pathExtension.lowercased())
+        if isWindows || ThemeImport.isLooseXcursor(url) {
             do {
-                cursor = try WindowsCursor.capeCursor(from: Data(contentsOf: url), identifier: cursor.identifier)
+                let data = try Data(contentsOf: url)
+                cursor = isWindows ? try WindowsCursor.capeCursor(from: data, identifier: cursor.identifier)
+                                   : try Xcursor.capeCursor(from: data, identifier: cursor.identifier)
             } catch {
                 importError = "“\(url.lastPathComponent)”: \(error.localizedDescription)"
             }

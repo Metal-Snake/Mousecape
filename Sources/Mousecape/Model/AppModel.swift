@@ -42,16 +42,21 @@ final class AppModel {
 
     // MARK: - Importing
 
-    /// Imports `.cape` and `.MightyMouse` files (from the open panel, Finder or drag and drop).
+    /// Imports capes, MightyMouse files and Windows or Linux cursor themes (from the open
+    /// panel, Finder or drag and drop).
     func importFiles(_ urls: [URL]) {
-        // Loose .cur/.ani files dropped together make one cape.
-        let looseCursors = urls.filter { WindowsImport.cursorExtensions.contains($0.pathExtension.lowercased()) }
-        if !looseCursors.isEmpty {
-            importWindows { try WindowsImport.theme(files: looseCursors) }
+        // Loose cursor files dropped together make one cape (one per format).
+        let looseWindows = urls.filter { ThemeImport.windowsExtensions.contains($0.pathExtension.lowercased()) }
+        let looseXcursors = urls.filter(ThemeImport.isLooseXcursor)
+        if !looseWindows.isEmpty {
+            importTheme { try convert(ThemeImport.windowsTheme(files: looseWindows)) }
         }
-        for url in urls where !looseCursors.contains(url) {
-            if WindowsImport.handles(url) {
-                importWindows { try WindowsImport.theme(at: url) }
+        if !looseXcursors.isEmpty {
+            importTheme { try convert(ThemeImport.xcursorTheme(files: looseXcursors)) }
+        }
+        for url in urls where !looseWindows.contains(url) && !looseXcursors.contains(url) {
+            if ThemeImport.handles(url) {
+                importTheme { try ThemeImport.withTheme(at: url, convert) }
                 continue
             }
             if url.pathExtension.lowercased() == "mightymouse" {
@@ -84,20 +89,25 @@ final class AppModel {
 
     func showImportPanel() {
         let panel = NSOpenPanel()
-        panel.allowedContentTypes = [Self.capeType, Self.mightyMouseType] + WindowsImport.contentTypes
+        panel.allowedContentTypes = [Self.capeType, Self.mightyMouseType] + ThemeImport.contentTypes
         panel.canChooseDirectories = true
         panel.allowsMultipleSelection = true
-        panel.message = String(localized: "Choose capes, MightyMouse files, or Windows cursors (a theme folder, .zip, .inf, .cur or .ani)")
+        panel.message = String(localized: "Choose capes, MightyMouse files, or Windows or Linux cursor themes (a theme folder or an archive of one, .inf, .cur or .ani)")
         panel.prompt = String(localized: "Import")
         if panel.runModal() == .OK { importFiles(panel.urls) }
     }
 
-    /// Converts a Windows cursor theme into a new cape and says which Windows cursors had
-    /// no macOS counterpart.
-    private func importWindows(_ load: () throws -> WindowsCursorTheme) {
+    /// A cape from a Windows or Xcursor theme, and what was left out.
+    private func convert(_ theme: any CursorThemeConvertible) throws -> (cape: Cape, skipped: [String]) {
+        let author = theme is XcursorTheme ? String(localized: "Linux cursor theme")
+                                           : String(localized: "Windows cursor theme")
+        return try theme.makeCape(author: author)
+    }
+
+    /// Adds a cape converted from a cursor theme and says which cursors were left out.
+    private func importTheme(_ convert: () throws -> (cape: Cape, skipped: [String])) {
         perform {
-            let theme = try load()
-            var (cape, skipped) = try theme.makeCape(author: String(localized: "Windows cursor theme"))
+            var (cape, skipped) = try convert()
             // Two themes of the same name ("kiriko" animated and static) shouldn't look alike.
             let names = Set(library.capes.map(\.name))
             if names.contains(cape.name) {

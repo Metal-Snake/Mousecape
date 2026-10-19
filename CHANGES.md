@@ -19,6 +19,7 @@ bundled third-party libraries are gone.
 | Bundle identifier | `com.alexzielenski.Mousecape` | `io.github.metal-snake.Mousecape` |
 | Architectures | Universal (arm64, x86_64) | Apple silicon only |
 | Tests | None | Swift Testing (`swift test`) |
+| Imports | `.cape`, MightyMouse | Also Windows (`.cur`, `.ani`) and Linux (Xcursor) themes, from folders or archives |
 
 ## What stays compatible
 
@@ -292,9 +293,11 @@ Rebuilt from scratch. It works on a draft and saves explicitly:
 
 New: Windows cursor themes import as capes.
 
-- **What can be imported:** a theme folder, its `install.inf`, a `.zip` of the theme, or
-  loose `.cur`/`.ani` files. Use File → Import, drag and drop, or Finder's "Open With" for
-  `.cur`/`.ani`.
+- **What can be imported:** a theme folder, its `install.inf`, an archive of the theme
+  (see [Archives](#archives)), or loose `.cur`/`.ani` files. Use File → Import, drag and
+  drop, or Finder's "Open With" for `.cur`/`.ani`.
+- **Size folders:** some packs keep each size in a folder of its own (`x1` … `x5`, `32`,
+  `48`, `@2x`, …). The largest is taken, and the cape is named after the folder above.
 - **Roles:** taken from the registry lines in `install.inf` (or its scheme line); without
   a usable `.inf`, guessed from the file names. Each Windows role fills every matching
   macOS cursor; Vertical Resize, for example, fills all six vertical resize cursors.
@@ -312,6 +315,38 @@ New: Windows cursor themes import as capes.
 - **Editor:** dropping a `.cur` or `.ani` on a cursor's image well replaces the whole
   cursor (images, size, hot spot, frames).
 - Written from the published file formats; no code from other projects.
+
+## Linux cursors (Xcursor)
+
+New: Xcursor themes, the cursor format of X11 and Wayland desktops (GNOME, KDE, Xfce, the
+BSDs), import as capes.
+
+- **What can be imported:** a theme folder (`index.theme` plus `cursors/`), its `cursors`
+  folder, an archive of the theme (Linux themes usually come as `.tar.xz` or `.tar.gz`),
+  or loose Xcursor files. Xcursor files have no extension; they are recognised by their
+  contents.
+- **Names:** themes name their cursors after CSS (`pointer`, `ew-resize`) or old X11 names
+  (`hand2`, `sb_h_double_arrow`), many of them links to the same file. Each macOS cursor
+  takes the first name the theme has from a list per cursor. Linux has counterparts for
+  more macOS cursors than Windows: closed and open hand, contextual menu, zoom in and out,
+  vertical I-beam, cell, each resize direction.
+- **Size:** nominal size 24, the default pointer size on Linux, becomes 24 points;
+  measured against Apple's own arrow, that matches macOS. Each scale uses the file's own
+  images for that size when it has them (Xcursor files usually carry 16 to 96 pixels),
+  else the next larger ones scaled down. Hot spots come from the 24-pixel image.
+- **Animation:** frames with their own delays (in milliseconds), handled like `.ani`
+  steps. Typical themes have 40 to 60 frames, which the engine reduces to at most 24.
+- **Safety:** links that point outside the theme folder are ignored.
+- Written from the format description in `man Xcursor`; no code from other projects.
+
+## Archives
+
+Themes are imported straight from archives, unpacked with the system's own tools into a
+temporary folder that is removed afterwards: `ditto` for `.zip`, `tar` (libarchive) for
+`.7z`, `.rar` and `.tar` with gzip, bzip2 or xz (`.tgz`, `.txz`, …). No third-party code,
+no unpacking code of our own. `tar` refuses absolute paths and `..` and won't write through
+links. Not supported: `.tar.zst`, since the system's libarchive has no built-in zstd. Inside
+the archive, the theme is searched up to five folders deep; the shallowest wins.
 
 ## New code
 

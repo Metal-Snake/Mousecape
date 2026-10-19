@@ -49,7 +49,7 @@ struct LibraryView: View {
             }
         }
         .dropDestination(for: URL.self) { urls, _ in
-            let files = urls.filter { ["cape", "mightymouse"].contains($0.pathExtension.lowercased()) || WindowsImport.handles($0) }
+            let files = urls.filter { ["cape", "mightymouse"].contains($0.pathExtension.lowercased()) || ThemeImport.handles($0) }
             model.importFiles(files)
             return !files.isEmpty
         }

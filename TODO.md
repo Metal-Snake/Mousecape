@@ -102,6 +102,17 @@ x86_64 build.
 - [ ] **Localised file names in Windows packs.** Without an `install.inf`, roles are
       guessed from English file names only. Packs from Korea, Japan or China often use
       names like `일반선택.ani` (Normal Select). Add keywords in more languages.
+- [ ] **Theme import follow-ups.**
+      - Archives with several themes (e.g. `banana-all.tar.xz`, Bibata's light and dark):
+        only the first is imported. Import all, or let the user choose.
+      - Windows packs with colour variants in one folder (`normal-select_black.cur`,
+        `…_white.cur`): the first by name wins. Detect the variants and ask.
+      - Xcursor themes that `Inherits=` another theme for missing cursors: the inherited
+        theme isn't there on a Mac, so those cursors stay macOS's. Could fall back to a
+        theme in the same archive.
+      - KDE's SVG cursors (`cursors_scalable/`, Plasma 6): sharp at every scale. Only
+        worth it once themes ship them without Xcursor files.
+      - `.tar.zst`: the system's libarchive has no built-in zstd.
 - [ ] **Frame chooser follow-ups.** Drag across the filmstrip to select ranges; show the
       gap pattern of the kept frames; open it straight from the library's problem banner.
 - [ ] **Keep the original when a cape is edited.** Saving in the editor overwrites the
