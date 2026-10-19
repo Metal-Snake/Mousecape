@@ -14,7 +14,8 @@ import ScreenCaptureKit
 //
 // Usage: swift Scripts/cursor-size-probe.swift [path to Mousecape.app]
 //        (or compile it with swiftc and sign it to run it on a Mac without the toolchain)
-// Needs Screen Recording permission. Don't move the mouse while it runs.
+// Needs Screen Recording permission. Don't move the mouse while it runs. In a virtual
+// machine, copy it out of a shared folder first: macOS kills it when run from there.
 
 let app = CommandLine.arguments.dropFirst().first ?? "/Applications/Mousecape.app"
 let mousecloak = app + "/Contents/MacOS/mousecloak"
