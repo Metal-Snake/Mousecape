@@ -8,7 +8,8 @@ public enum WindowsCursor {
     public static let pointSize = 32
 
     /// A cape cursor for `identifier` from the contents of a `.cur`, `.ico` or `.ani` file.
-    /// Images are resampled to 1x and 2x (and 5x when the source is large enough).
+    /// Images are resampled to 1x and 2x (and 5x when the source is large enough), and the
+    /// transparent margin around the artwork is cut off.
     public static func capeCursor(from data: Data, identifier: String) throws -> CapeCursor {
         let frames: [WindowsIconImage]
         var frameDuration = 1.0
@@ -40,9 +41,10 @@ public enum WindowsCursor {
             }
             representations.append(sheet)
         }
-        return CapeCursor(identifier: identifier, frameCount: frames.count, frameDuration: frameDuration,
-                          hotSpot: hotSpot, size: CGSize(width: pointWidth, height: pointHeight),
-                          representations: representations)
+        let cursor = CapeCursor(identifier: identifier, frameCount: frames.count, frameDuration: frameDuration,
+                                hotSpot: hotSpot, size: CGSize(width: pointWidth, height: pointHeight),
+                                representations: representations)
+        return cursor.trimmingTransparentMargins() ?? cursor
     }
 
     /// The sharpest image of a frame (files often carry 32, 48, 64 … pixel versions).

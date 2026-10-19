@@ -116,7 +116,8 @@ public enum Xcursor {
     /// shows its 48-pixel images unscaled there, so scaling them down to 24 points would
     /// make the cursor half as large as on Linux. Higher scales take the file's images of a
     /// multiple of that size when it has them (else the next larger ones, scaled down);
-    /// scales larger than the file's largest images are left out.
+    /// scales larger than the file's largest images are left out. The transparent margin
+    /// around the artwork is cut off.
     public static func capeCursor(from data: Data, identifier: String) throws -> CapeCursor {
         let all = try images(from: data)
         // Images by nominal size, frames in file order.
@@ -145,9 +146,10 @@ public enum Xcursor {
             }
             representations.append(sheet)
         }
-        return CapeCursor(identifier: identifier, frameCount: timing.frames.count,
-                          frameDuration: base.count > 1 ? timing.duration : 1,
-                          hotSpot: reference.hotSpot, size: CGSize(width: pointWidth, height: pointHeight),
-                          representations: representations)
+        let cursor = CapeCursor(identifier: identifier, frameCount: timing.frames.count,
+                                frameDuration: base.count > 1 ? timing.duration : 1,
+                                hotSpot: reference.hotSpot, size: CGSize(width: pointWidth, height: pointHeight),
+                                representations: representations)
+        return cursor.trimmingTransparentMargins() ?? cursor
     }
 }

@@ -61,6 +61,91 @@ extension CapeCursor {
         return copy
     }
 
+    /// A copy without the transparent margin around the artwork: cut to the area any frame
+    /// at any scale draws into (faint shadows count), plus `margin` points, and always
+    /// keeping the hot spot inside. Imported themes often put every cursor on one large
+    /// canvas; on screen nothing changes, but the size says what's really there and the
+    /// editor shows the artwork filling its preview. Returns the cursor unchanged when
+    /// there's nothing to cut, nil if an image can't be decoded.
+    public func trimmingTransparentMargins(margin: Int = 1) -> CapeCursor? {
+        let pointWidth = Int(size.width), pointHeight = Int(size.height)
+        guard frameCount > 0, pointWidth > 0, pointHeight > 0,
+              Double(pointWidth) == size.width, Double(pointHeight) == size.height else { return self }
+
+        // Each sheet as RGBA pixels, and the visible area of all its frames in points.
+        var sheets: [(image: CGImage, scale: Int)] = []
+        var visible: (minX: Int, minY: Int, maxX: Int, maxY: Int)?
+        for data in representations {
+            guard let image = NSBitmapImageRep(data: data)?.cgImage,
+                  image.width % pointWidth == 0, image.height % frameCount == 0,
+                  let pixels = Self.rgbaPixels(of: image) else { return nil }
+            let scale = image.width / pointWidth
+            let frameHeight = image.height / frameCount
+            sheets.append((image, scale))
+            var minX = Int.max, minY = Int.max, maxX = -1, maxY = -1
+            for y in 0..<image.height {
+                let frameY = y % frameHeight
+                for x in 0..<image.width where pixels[(y * image.width + x) * 4 + 3] > 0 {
+                    minX = min(minX, x); maxX = max(maxX, x)
+                    minY = min(minY, frameY); maxY = max(maxY, frameY)
+                }
+            }
+            guard maxX >= 0 else { continue }
+            let area = (minX: minX / scale, minY: minY / scale,
+                        maxX: (maxX + scale) / scale, maxY: (maxY + scale) / scale)   // exclusive
+            visible = visible.map { (min($0.minX, area.minX), min($0.minY, area.minY),
+                                     max($0.maxX, area.maxX), max($0.maxY, area.maxY)) } ?? area
+        }
+        guard let visible else { return self }                      // fully transparent
+
+        let hotX = Int(hotSpot.x.rounded(.down)), hotY = Int(hotSpot.y.rounded(.down))
+        let minX = max(0, min(visible.minX - margin, hotX))
+        let minY = max(0, min(visible.minY - margin, hotY))
+        let maxX = min(pointWidth, max(visible.maxX + margin, hotX + 1))
+        let maxY = min(pointHeight, max(visible.maxY + margin, hotY + 1))
+        let width = maxX - minX, height = maxY - minY
+        guard width < pointWidth || height < pointHeight, width > 0, height > 0,
+              let sRGB = CGColorSpace(name: CGColorSpace.sRGB) else { return self }
+
+        var trimmed: [Data] = []
+        for (image, scale) in sheets {
+            let frameHeight = image.height / frameCount
+            guard let context = CGContext(data: nil, width: width * scale, height: height * scale * frameCount,
+                                          bitsPerComponent: 8, bytesPerRow: 0, space: sRGB,
+                                          bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else { return nil }
+            for index in 0..<frameCount {
+                // Cropping counts from the top, drawing from the bottom.
+                let crop = CGRect(x: minX * scale, y: index * frameHeight + minY * scale,
+                                  width: width * scale, height: height * scale)
+                guard let frame = image.cropping(to: crop) else { return nil }
+                context.draw(frame, in: CGRect(x: 0, y: (frameCount - 1 - index) * height * scale,
+                                               width: width * scale, height: height * scale))
+            }
+            guard let sheet = context.makeImage(),
+                  let png = NSBitmapImageRep(cgImage: sheet).representation(using: .png, properties: [:]) else { return nil }
+            trimmed.append(png)
+        }
+        var copy = self
+        copy.representations = trimmed
+        copy.size = CGSize(width: width, height: height)
+        copy.hotSpot = CGPoint(x: hotSpot.x - Double(minX), y: hotSpot.y - Double(minY))
+        return copy
+    }
+
+    /// The image as RGBA bytes, rows top to bottom.
+    private static func rgbaPixels(of image: CGImage) -> [UInt8]? {
+        guard let sRGB = CGColorSpace(name: CGColorSpace.sRGB) else { return nil }
+        var pixels = [UInt8](repeating: 0, count: image.width * image.height * 4)
+        let drawn = pixels.withUnsafeMutableBytes { buffer -> Bool in
+            guard let context = CGContext(data: buffer.baseAddress, width: image.width, height: image.height,
+                                          bitsPerComponent: 8, bytesPerRow: image.width * 4, space: sRGB,
+                                          bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else { return false }
+            context.draw(image, in: CGRect(x: 0, y: 0, width: image.width, height: image.height))
+            return true
+        }
+        return drawn ? pixels : nil
+    }
+
     /// The representation whose width matches `scale` times the point width.
     public func representation(for scale: Int) -> Data? {
         representations.first { Self.scale(of: $0, pointWidth: size.width) == scale }

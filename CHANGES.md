@@ -312,6 +312,11 @@ New: Windows cursor themes import as capes.
 - **Size:** Windows shows cursors at 32 × 32 pixels at the default pointer size, whatever
   the file's resolution, so cursors become 32 × 32 points. Images are resampled to 1x and
   2x, and to 5x when the source is large enough. Hot spots are scaled to match.
+- **Margins:** themes put every cursor on one canvas (Windows: 32 × 32), often with a lot
+  of empty space around it. Imports cut the transparent margin off: to the area any frame
+  at any scale draws into, faint shadows included, plus one point, with the hot spot
+  always inside. Nothing changes on screen, but the size says what's there and the editor
+  shows the artwork filling its preview. Applies to Xcursor imports too.
 - **Editor:** dropping a `.cur` or `.ani` on a cursor's image well replaces the whole
   cursor (images, size, hot spot, frames).
 - Written from the published file formats; no code from other projects.
