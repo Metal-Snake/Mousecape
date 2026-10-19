@@ -203,20 +203,22 @@ struct CursorEditorView: View {
             case nil: return .automatic
             }
         } set: { mode in
-            if mode != .ownImages {
-                cursor.leftHandedRepresentations = []
-                cursor.leftHandedHotSpot = nil
-            }
+            // One change to the cursor, not several: the mode is read back from the result.
+            var changed = cursor
+            changed.leftHandedRepresentations = []
+            changed.leftHandedHotSpot = nil
             switch mode {
-            case .automatic: cursor.mirrorForLeftHanded = nil
-            case .mirror: cursor.mirrorForLeftHanded = true
-            case .dontMirror: cursor.mirrorForLeftHanded = false
+            case .automatic: changed.mirrorForLeftHanded = nil
+            case .mirror: changed.mirrorForLeftHanded = true
+            case .dontMirror: changed.mirrorForLeftHanded = false
             case .ownImages:
-                cursor.mirrorForLeftHanded = nil
-                if !cursor.useMirroredImagesAsLeftHanded() {
+                changed.mirrorForLeftHanded = nil
+                if !changed.useMirroredImagesAsLeftHanded() {
                     importError = String(localized: "The images of \(cursor.name) could not be read, so they could not be mirrored.")
+                    return
                 }
             }
+            cursor = changed
         }
     }
 
