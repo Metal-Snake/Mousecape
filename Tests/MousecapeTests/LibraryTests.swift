@@ -9,7 +9,8 @@ import CapeKit
 final class LibraryTests {
     let base = FileManager.default.temporaryDirectory.appending(path: "MousecapeTests-\(UUID().uuidString)")
     var folder: URL { base.appending(path: "capes") }
-    var originals: URL { base.appending(path: "Originals") }
+    var versionsFolder: URL { base.appending(path: "Versions") }
+    func history(_ identifier: String) -> URL { versionsFolder.appending(path: identifier) }
     /// Stands in for the Trash.
     var trash: URL { base.appending(path: "Trash") }
 
@@ -101,7 +102,7 @@ final class LibraryTests {
         #expect(library.capes.count == 2)
     }
 
-    // MARK: - Originals
+    // MARK: - Versions
 
     /// A cape in the library as if imported, then edited once.
     func importedAndEdited(_ library: Library) throws -> Cape {
@@ -114,68 +115,129 @@ final class LibraryTests {
         return try library.save(cape, originalIdentifier: "test.theme")
     }
 
-    @Test func keepsOriginalOnFirstSaveOnly() throws {
-        let library = makeLibrary()
-        var cape = try importedAndEdited(library)
-        #expect(files(in: originals) == ["test.theme.cape"])
-        #expect(library.editedIdentifiers == ["test.theme"])
-        cape.name = "Edited again"
-        try library.save(cape, originalIdentifier: "test.theme")
-        // Still the imported state.
-        #expect(try Cape(contentsOf: originals.appending(path: "test.theme.cape")).name == "Imported")
+    func names(_ versions: [CapeVersion]) throws -> [String] {
+        try versions.map { try Cape(contentsOf: $0.url).name }
     }
 
-    @Test func newCapesHaveNoOriginal() throws {
+    @Test func keepsOriginalOfCapesFoundAtStart() throws {
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        try Cape(identifier: "test.old", name: "Old", author: "").propertyListData()
+            .write(to: folder.appending(path: "test.old.cape"))
         let library = makeLibrary()
-        let cape = try library.save(Cape(identifier: "test.new", name: "New", author: ""), originalIdentifier: nil)
-        #expect(files(in: originals).isEmpty)
-        try library.duplicate(cape)
-        #expect(files(in: originals).isEmpty)
+        #expect(files(in: history("test.old")) == ["original.cape"])
         #expect(library.editedIdentifiers.isEmpty)
     }
 
-    @Test func savingBackToTheOriginalDropsIt() throws {
+    @Test func movesOriginalsOfEarlierVersion() throws {
+        let legacy = base.appending(path: "Originals")
+        try FileManager.default.createDirectory(at: legacy, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        try Cape(identifier: "test.theme", name: "Imported", author: "").propertyListData()
+            .write(to: legacy.appending(path: "test.theme.cape"))
+        try Cape(identifier: "test.theme", name: "Edited", author: "").propertyListData()
+            .write(to: folder.appending(path: "test.theme.cape"))
+        let library = makeLibrary()
+        #expect(!FileManager.default.fileExists(atPath: legacy.path))
+        #expect(try names(library.versions(of: try #require(library.capes.first))) == ["Imported"])
+        #expect(library.editedIdentifiers == ["test.theme"])
+    }
+
+    @Test func keepsEveryReplacedState() throws {
+        let library = makeLibrary()
+        var cape = try importedAndEdited(library)
+        #expect(library.editedIdentifiers == ["test.theme"])
+        cape.name = "Edited again"
+        cape = try library.save(cape, originalIdentifier: "test.theme")
+        let versions = library.versions(of: cape)
+        #expect(versions.map(\.kind) == [.original, .saved])
+        #expect(try names(versions) == ["Imported", "Edited"])
+        #expect(cape.name == "Edited again")                   // the current state is the library file
+    }
+
+    @Test func newCapesStartTheirOwnHistory() throws {
+        let library = makeLibrary()
+        let cape = try library.save(Cape(identifier: "test.new", name: "New", author: ""), originalIdentifier: nil)
+        #expect(files(in: history("test.new")) == ["original.cape"])
+        let copy = try library.duplicate(cape)
+        #expect(files(in: history(copy.identifier)) == ["original.cape"])
+        #expect(library.editedIdentifiers.isEmpty)
+    }
+
+    @Test func savingBackToTheOriginalIsNotEdited() throws {
         let library = makeLibrary()
         var cape = try importedAndEdited(library)
         cape.name = "Imported"
         try library.save(cape, originalIdentifier: "test.theme")
-        #expect(files(in: originals).isEmpty)
         #expect(library.editedIdentifiers.isEmpty)
     }
 
-    @Test func revertsToOriginal() throws {
+    @Test func revertsToOriginalKeepingTheEditedState() throws {
         let library = makeLibrary()
         let edited = try importedAndEdited(library)
         let reverted = try library.revertToOriginal(edited)
         #expect(reverted.name == "Imported")
         #expect(library.capes.map(\.name) == ["Imported"])
-        #expect(files() == ["test.theme.cape"])
-        #expect(files(in: originals).isEmpty)
         #expect(library.editedIdentifiers.isEmpty)
-        #expect(files(in: trash).count == 1)                  // the edited version
+        #expect(try names(library.versions(of: reverted)) == ["Imported", "Edited"])
+        #expect(files(in: trash).isEmpty)
     }
 
-    @Test func originalFollowsIdentifierChange() throws {
+    @Test func restoresASavedVersion() throws {
+        let library = makeLibrary()
+        var cape = try importedAndEdited(library)              // saved: –, current: Edited
+        cape.name = "Third"
+        cape = try library.save(cape, originalIdentifier: "test.theme")   // saved: Edited
+        let edited = try #require(library.versions(of: cape).first { $0.kind == .saved })
+        let restored = try library.restore(edited, of: cape)
+        #expect(restored.name == "Edited")
+        #expect(try names(library.versions(of: restored)) == ["Imported", "Edited", "Third"])
+    }
+
+    @Test func historyFollowsIdentifierChange() throws {
         let library = makeLibrary()
         var cape = try importedAndEdited(library)
         cape.identifier = "test.renamed"
         cape = try library.save(cape, originalIdentifier: "test.theme")
         #expect(files() == ["test.renamed.cape"])
-        #expect(files(in: originals) == ["test.renamed.cape"])
+        #expect(files(in: versionsFolder) == ["test.renamed"])
         #expect(files(in: trash).count == 1)                  // the old file, not removed for good
-        // Reverting brings the old identifier back.
+        // Reverting brings the old identifier back, history included.
         let reverted = try library.revertToOriginal(cape)
         #expect(reverted.identifier == "test.theme")
         #expect(files() == ["test.theme.cape"])
+        #expect(files(in: versionsFolder) == ["test.theme"])
     }
 
-    @Test func deletingMovesOriginalToTrash() throws {
+    @Test func keepsAtMostTheLimitOfSavedStates() throws {
+        let library = makeLibrary()
+        var cape = try importedAndEdited(library)
+        for number in 1...(CapeHistory.savedLimit + 3) {
+            cape.name = "Save \(number)"
+            cape = try library.save(cape, originalIdentifier: "test.theme")
+        }
+        let versions = library.versions(of: cape)
+        #expect(versions.filter { $0.kind == .saved }.count == CapeHistory.savedLimit)
+        #expect(versions.first?.kind == .original)
+        #expect(try names(versions).last == "Save \(CapeHistory.savedLimit + 2)")   // the one before the current
+    }
+
+    @Test func removesSavedStatesOnly() throws {
+        let library = makeLibrary()
+        var cape = try importedAndEdited(library)
+        cape.name = "Again"
+        cape = try library.save(cape, originalIdentifier: "test.theme")
+        library.removeSavedVersions(of: cape)
+        #expect(library.versions(of: cape).map(\.kind) == [.original])
+        #expect(library.capes.map(\.name) == ["Again"])
+    }
+
+    @Test func deletingMovesHistoryToTrash() throws {
         let library = makeLibrary()
         let cape = try importedAndEdited(library)
         try library.delete(cape)
         #expect(files().isEmpty)
-        #expect(files(in: originals).isEmpty)
-        #expect(files(in: trash).count == 2)
+        #expect(files(in: versionsFolder).isEmpty)
+        #expect(files(in: trash).count == 2)                  // the file and its history folder
     }
 
     @Test func importingAgainStartsOver() throws {
@@ -183,13 +245,12 @@ final class LibraryTests {
         _ = try importedAndEdited(library)
         let file = base.appending(path: "download.cape")
         try Cape(identifier: "test.theme", name: "Imported again", author: "").propertyListData().write(to: file)
-        try library.importCape(at: file)
-        #expect(files(in: originals).isEmpty)
+        let imported = try library.importCape(at: file)
+        #expect(try names(library.versions(of: imported)) == ["Imported again"])
         #expect(library.editedIdentifiers.isEmpty)
         // The same for a converted theme imported again.
         _ = try importedAndEdited(library)
-        try library.replace(with: Cape(identifier: "test.theme", name: "Converted", author: ""))
-        #expect(files(in: originals).isEmpty)
-        #expect(library.capes.map(\.name) == ["Converted"])
+        let converted = try library.replace(with: Cape(identifier: "test.theme", name: "Converted", author: ""))
+        #expect(try names(library.versions(of: converted)) == ["Converted"])
     }
 }

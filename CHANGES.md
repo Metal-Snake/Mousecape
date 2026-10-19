@@ -278,15 +278,26 @@ New SwiftUI app. Compared with the original:
 Rebuilt from scratch. It works on a draft and saves explicitly:
 
 - **New, edit, duplicate:** ⌘N, ⌘E, ⌘D.
-- **The original stays.** Before a cape's first save in the editor, its unchanged file is
-  kept in `~/Library/Application Support/Mousecape/Originals/<identifier>.cape` (next to
-  the library folder, so neither the original Mousecape nor the agent sees it). Later
-  saves leave that copy alone; saving the cape back to how it was removes it. Edited capes
-  get a pencil in the sidebar, and **Revert to Original…** (Cape menu and context menu)
-  brings the imported version back, moving the edited one to the Trash. The original
-  follows identifier changes, goes to the Trash with its cape, and is dropped when the
-  cape is imported again (the new import is the new starting point). New capes and
-  duplicates have none. In the original app, saving overwrote the file with no way back.
+- **History.** Every cape keeps the state it came into the library with, and the states
+  later saves replaced, in `~/Library/Application Support/Mousecape/Versions/<identifier>/`
+  (`original.cape` and one dated file per state; next to the library folder, so neither
+  the original Mousecape nor the agent sees them). Capes already in the library, or added
+  in Finder, get their original when the app first reads them. Up to 20 saved states are
+  kept per cape; older ones go to the Trash.
+  - **History…** (⌘Y, Cape menu and context menu) lists the original, the saved states and
+    the current one, and compares any two: changed details (name, author, …) and per cursor
+    whether it was added, removed or changed, and how (images, hot spot, frames, frame
+    duration or timing, size), with both versions side by side. **Restore This Version**
+    makes a stored state current again, keeping the current state in the history, so a
+    restore can be undone. **Remove Saved States…** keeps only the original and the current
+    state.
+  - Capes that differ from their original get a pencil in the sidebar; **Revert to
+    Original…** restores the original the same way. A cape saved back to its original
+    state no longer counts as edited.
+  - The history follows identifier changes (and restoring a state brings its identifier
+    back), goes to the Trash with its cape, and starts over when the cape is imported
+    again. New capes and duplicates start their own.
+  - In the original app, saving overwrote the file with no way back.
 - **Cape details:** name, author, version, HiDPI and identifier. Changing the identifier
   renames the file, and an applied cape is re-applied after saving.
 - **Cursors:** add any system cursor the cape doesn't replace yet, or remove one.

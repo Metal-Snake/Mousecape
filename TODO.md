@@ -111,15 +111,6 @@ x86_64 build.
       - `.tar.zst`: the system's libarchive has no built-in zstd.
 - [ ] **Frame chooser follow-ups.** Drag across the filmstrip to select ranges; show the
       gap pattern of the kept frames; open it straight from the library's problem banner.
-- [ ] **Version history for edited capes.** Today only the original is kept (see
-      CHANGES.md). Keep every saved version too (e.g. `Versions/<identifier>/<date>.cape`)
-      and let the user go back to any of them. Possibly with:
-      - a diff between two versions: which cursors were added, removed or changed, and per
-        cursor what changed (images, hot spot, frames, size), with the images side by side;
-      - "Remove intermediate versions", which keeps only the original and the current
-        version;
-      - a size limit or an age limit, since capes with many HiDPI cursors can be several
-        MB each.
 - [ ] **Per-cursor control over left-handed mirroring.** Today only the pointers in
       `MCPointerCursorIdentifiers` (and their variants) are mirrored. Capes like Kiriko
       draw the I-beam (and others) as arrow-like shapes too, so mirroring only some of them

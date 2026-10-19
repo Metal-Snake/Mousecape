@@ -14,24 +14,27 @@ final class Library {
     private(set) var unreadable: [URL] = []
     /// Files whose cape has the same identifier as one already in the library.
     private(set) var duplicates: [URL] = []
-    /// Capes edited since they came into the library: their original can be restored.
+    /// Capes that differ from how they came into the library.
     private(set) var editedIdentifiers: Set<String> = []
 
     let folder: URL
-    /// The unchanged file of each edited cape, `<identifier>.cape`, kept from before its
-    /// first save in the editor.
-    let originalsFolder: URL
+    /// Each cape's original and earlier states (see `CapeHistory`).
+    let versionsFolder: URL
     /// Moves a file to the Trash (tests swap it for plain removal).
     @ObservationIgnored var moveToTrash: (URL) throws -> Void = {
         try FileManager.default.trashItem(at: $0, resultingItemURL: nil)
     }
 
-    /// `originalsFolder` defaults to `Originals` next to the library folder, outside it so
-    /// the original Mousecape and the agent never see the copies.
-    init(folder: URL = Library.defaultFolder, originalsFolder: URL? = nil) {
+    var history: CapeHistory { CapeHistory(folder: versionsFolder, moveToTrash: moveToTrash) }
+
+    /// `versionsFolder` defaults to `Versions` next to the library folder, outside it so
+    /// the original Mousecape and the agent never see the copies. Originals kept by an
+    /// earlier version in `Originals` next to it move there.
+    init(folder: URL = Library.defaultFolder, versionsFolder: URL? = nil) {
         self.folder = folder
-        self.originalsFolder = originalsFolder
-            ?? folder.deletingLastPathComponent().appending(path: "Originals", directoryHint: .isDirectory)
+        self.versionsFolder = versionsFolder
+            ?? folder.deletingLastPathComponent().appending(path: "Versions", directoryHint: .isDirectory)
+        history.migrateOriginals(from: folder.deletingLastPathComponent().appending(path: "Originals", directoryHint: .isDirectory))
         reload()
     }
 
@@ -117,9 +120,16 @@ final class Library {
             return found.isEmpty ? nil : (cape.id, found)
         })
         appliedIdentifier = EnginePreferences.appliedCapeIdentifier
-        editedIdentifiers = Set(capes.map(\.identifier).filter {
-            FileManager.default.fileExists(atPath: originalURL(for: $0).path)
-        })
+        // Every cape keeps the state it came in with: capes from before the history existed
+        // (or added in Finder) get theirs now.
+        let history = history
+        var edited: Set<String> = []
+        for cape in capes {
+            guard let file = cape.fileURL else { continue }
+            history.ensureOriginal(for: cape.identifier, from: file)
+            if history.differsFromOriginal(file, identifier: cape.identifier) { edited.insert(cape.identifier) }
+        }
+        editedIdentifiers = edited
     }
 
     // MARK: - Applying
@@ -161,11 +171,11 @@ final class Library {
     }
 
     /// Copies a `.cape` file into the library (replacing a cape with the same identifier,
-    /// and with it the original of an edited one: the import is the new starting point).
+    /// and with it that cape's history: the import is the new starting point).
     @discardableResult
     func importCape(at url: URL) throws -> Cape {
         let cape = try Cape(contentsOf: url)
-        discardOriginal(for: cape.identifier)
+        history.discard(for: cape.identifier)
         let destination = fileURL(for: cape.identifier)
         if url.standardizedFileURL != destination.standardizedFileURL {
             if FileManager.default.fileExists(atPath: destination.path) {
@@ -185,18 +195,18 @@ final class Library {
         while capes.contains(where: { $0.identifier == cape.identifier }) {
             cape.identifier += ".\(UUID().uuidString.prefix(8))"
         }
-        discardOriginal(for: cape.identifier)
+        history.discard(for: cape.identifier)
         try cape.propertyListData().write(to: fileURL(for: cape.identifier), options: .atomic)
         reload()
         return capes.first { $0.identifier == cape.identifier } ?? cape
     }
 
     /// Writes a cape converted on import over the one with the same identifier (a theme
-    /// imported again); an applied cape is applied again. Like any import, it starts over:
-    /// the original of an edited cape goes.
+    /// imported again); an applied cape is applied again. Like any import, it starts over,
+    /// with a new history.
     @discardableResult
     func replace(with cape: Cape) throws -> Cape {
-        discardOriginal(for: cape.identifier)
+        history.discard(for: cape.identifier)
         try cape.propertyListData().write(to: fileURL(for: cape.identifier), options: .atomic)
         reload()
         let result = capes.first { $0.identifier == cape.identifier } ?? cape
@@ -204,11 +214,11 @@ final class Library {
         return result
     }
 
-    /// Writes an edited (or new) cape. Before an existing cape's first save, its unchanged
-    /// file is kept in `originalsFolder`; later saves leave that copy alone, and a save that
-    /// brings the cape back to it removes it. When the identifier changed, the original
-    /// follows and the old file goes to the Trash. An applied cape is applied again so the
-    /// screen shows the saved version.
+    /// Writes an edited (or new) cape. The state it replaces is kept in the history; a cape
+    /// saved back to its original state gets the original's file again, so it no longer
+    /// counts as edited. When the identifier changed, the history follows and the old file
+    /// goes to the Trash. An applied cape is applied again so the screen shows the saved
+    /// version.
     @discardableResult
     func save(_ cape: Cape, originalIdentifier: String?) throws -> Cape {
         let identifier = cape.identifier.trimmingCharacters(in: .whitespaces)
@@ -222,26 +232,28 @@ final class Library {
         saved.identifier = identifier
         let destination = fileURL(for: identifier)
         let existing = originalIdentifier.flatMap { id in capes.first { $0.identifier == id } }
+        let history = history
 
         if let existing, let source = existing.fileURL {
-            let original = originalURL(for: existing.identifier)
-            if !FileManager.default.fileExists(atPath: original.path) {
-                try FileManager.default.createDirectory(at: originalsFolder, withIntermediateDirectories: true)
-                try FileManager.default.copyItem(at: source, to: original)
-            }
-            if identifier != existing.identifier {
-                discardOriginal(for: identifier)
-                try FileManager.default.moveItem(at: original, to: originalURL(for: identifier))
-            }
+            history.ensureOriginal(for: existing.identifier, from: source)
+            try history.record(source, for: existing.identifier)
+            try history.rename(from: existing.identifier, to: identifier)
         } else {
-            discardOriginal(for: identifier)                    // a new cape starts fresh
+            history.discard(for: identifier)                    // a new cape starts fresh
         }
         let data = try saved.propertyListData()
-        try data.write(to: destination, options: .atomic)
-        // Saved back to how it was imported: nothing to restore.
-        if existing != nil, let original = try? Cape(contentsOf: originalURL(for: identifier)),
-           (try? original.propertyListData()) == data {
-            try? FileManager.default.removeItem(at: originalURL(for: identifier))
+        let original = history.originalURL(for: identifier)
+        if existing != nil, let originalCape = try? Cape(contentsOf: original),
+           (try? originalCape.propertyListData()) == data {
+            // Back to how it came in: the original's own bytes, so it isn't "edited".
+            let temporary = try copyToTemporary(original)
+            if FileManager.default.fileExists(atPath: destination.path) {
+                _ = try FileManager.default.replaceItemAt(destination, withItemAt: temporary)
+            } else {
+                try FileManager.default.moveItem(at: temporary, to: destination)
+            }
+        } else {
+            try data.write(to: destination, options: .atomic)
         }
 
         let wasApplied = originalIdentifier != nil && originalIdentifier == appliedIdentifier
@@ -267,37 +279,67 @@ final class Library {
         return try save(copy, originalIdentifier: nil)
     }
 
-    /// Moves the cape file (and the original of an edited cape) to the Trash; resets the
-    /// cursors first if it is applied.
+    /// Moves the cape file and its history to the Trash; resets the cursors first if it is
+    /// applied.
     func delete(_ cape: Cape) throws {
         if cape.identifier == appliedIdentifier { try resetToDefault() }
         if let url = cape.fileURL {
             try moveToTrash(url)
         }
-        discardOriginal(for: cape.identifier)
+        history.discard(for: cape.identifier)
         reload()
     }
 
-    /// Brings an edited cape back to how it came into the library. The edited version goes
-    /// to the Trash; an applied cape is applied again.
+    /// The stored states of a cape: its original first, then saved states, oldest first.
+    func versions(of cape: Cape) -> [CapeVersion] {
+        history.versions(for: cape.identifier)
+    }
+
+    /// Makes a stored version the current state again. The current state is kept in the
+    /// history first, so this can be undone; an applied cape is applied again.
+    @discardableResult
+    func restore(_ version: CapeVersion, of cape: Cape) throws -> Cape {
+        let restored = try Cape(contentsOf: version.url)
+        // Edits may have changed the identifier; the version brings its own back.
+        if restored.identifier != cape.identifier, capes.contains(where: { $0.identifier == restored.identifier }) {
+            throw LibraryError.identifierTaken(restored.identifier)
+        }
+        let history = history
+        let wasApplied = cape.identifier == appliedIdentifier
+        var versionURL = version.url
+        if let current = cape.fileURL {
+            try history.record(current, for: cape.identifier)
+            if restored.identifier != cape.identifier {
+                try history.rename(from: cape.identifier, to: restored.identifier)
+                versionURL = history.capeFolder(for: restored.identifier).appending(path: version.url.lastPathComponent)
+                if FileManager.default.fileExists(atPath: current.path) { try moveToTrash(current) }
+            }
+        }
+        let destination = fileURL(for: restored.identifier)
+        let temporary = try copyToTemporary(versionURL)
+        if FileManager.default.fileExists(atPath: destination.path) {
+            _ = try FileManager.default.replaceItemAt(destination, withItemAt: temporary)
+        } else {
+            try FileManager.default.moveItem(at: temporary, to: destination)
+        }
+        reload()
+        let result = capes.first { $0.identifier == restored.identifier } ?? restored
+        if wasApplied { try apply(result) }
+        return result
+    }
+
+    /// Brings a cape back to how it came into the library (see `restore`).
     @discardableResult
     func revertToOriginal(_ cape: Cape) throws -> Cape {
-        let originalFile = originalURL(for: cape.identifier)
-        guard FileManager.default.fileExists(atPath: originalFile.path) else { throw LibraryError.noOriginal(cape.name) }
-        let original = try Cape(contentsOf: originalFile)
-        // Edits may have changed the identifier; the original brings the old one back.
-        if original.identifier != cape.identifier, capes.contains(where: { $0.identifier == original.identifier }) {
-            throw LibraryError.identifierTaken(original.identifier)
+        guard let original = versions(of: cape).first(where: { $0.kind == .original }) else {
+            throw LibraryError.noOriginal(cape.name)
         }
-        let wasApplied = cape.identifier == appliedIdentifier
-        if let current = cape.fileURL, FileManager.default.fileExists(atPath: current.path) {
-            try moveToTrash(current)
-        }
-        try FileManager.default.moveItem(at: originalFile, to: fileURL(for: original.identifier))
-        reload()
-        let reverted = capes.first { $0.identifier == original.identifier } ?? original
-        if wasApplied { try apply(reverted) }
-        return reverted
+        return try restore(original, of: cape)
+    }
+
+    /// Moves a cape's saved states to the Trash, keeping its original and current state.
+    func removeSavedVersions(of cape: Cape) {
+        history.removeSavedVersions(for: cape.identifier)
     }
 
     /// Captures the cursors currently on screen as a new cape.
@@ -315,17 +357,6 @@ final class Library {
 
     private func fileURL(for identifier: String) -> URL {
         folder.appending(path: identifier + ".cape")
-    }
-
-    private func originalURL(for identifier: String) -> URL {
-        originalsFolder.appending(path: identifier + ".cape")
-    }
-
-    /// Moves an original that no longer belongs to the cape under `identifier` (it was
-    /// replaced, deleted or never edited) to the Trash.
-    private func discardOriginal(for identifier: String) {
-        let url = originalURL(for: identifier)
-        if FileManager.default.fileExists(atPath: url.path) { try? moveToTrash(url) }
     }
 
     private func copyToTemporary(_ url: URL) throws -> URL {

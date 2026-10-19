@@ -53,6 +53,9 @@ struct LibraryView: View {
             model.importFiles(files)
             return !files.isEmpty
         }
+        .sheet(item: $model.historyCape) { cape in
+            HistoryView(model: model, cape: cape)
+        }
         .sheet(item: $model.editorSession) { session in
             CapeEditorView(session: session) { model.save($0, from: session) }
         }
@@ -74,7 +77,7 @@ struct LibraryView: View {
             Button("Revert") { model.confirmRevert() }
             Button("Cancel", role: .cancel) { model.capeToRevert = nil }
         } message: {
-            Text("The cape goes back to how it was imported. The edited version is moved to the Trash.")
+            Text("The cape goes back to how it came into the library. The current state stays in its history.")
         }
         .confirmationDialog(deleteTitle, isPresented: deleteBinding) {
             Button("Move to Trash", role: .destructive) { model.confirmDelete() }
@@ -132,6 +135,7 @@ struct LibraryView: View {
             .disabled(cape.identifier == model.library.appliedIdentifier)
         Button("Edit…") { model.edit(cape) }
         Button("Duplicate") { model.duplicate(cape) }
+        Button("History…") { model.historyCape = cape }
         if model.library.editedIdentifiers.contains(cape.identifier) {
             Button("Revert to Original…") { model.capeToRevert = cape }
         }
@@ -200,7 +204,7 @@ private struct CapeRow: View {
             if isEdited {
                 Image(systemName: "pencil")
                     .foregroundStyle(.secondary)
-                    .help("Edited; Revert to Original brings back the imported version")
+                    .help("Edited; its history keeps how it came in")
             }
             if !problems.isEmpty {
                 ProblemBadge(problems: problems.values.flatMap { $0 })

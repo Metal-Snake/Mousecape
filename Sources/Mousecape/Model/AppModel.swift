@@ -17,6 +17,8 @@ final class AppModel {
     var capeToDelete: Cape?
     /// An edited cape waiting for "Revert to the original?" confirmation.
     var capeToRevert: Cape?
+    /// The cape whose history sheet is open.
+    var historyCape: Cape?
 
     var selectedCape: Cape? { library.capes.first { $0.id == selection } }
 
@@ -202,6 +204,18 @@ final class AppModel {
         guard let cape = capeToRevert else { return }
         capeToRevert = nil
         perform { selection = try library.revertToOriginal(cape).id }
+    }
+
+    /// Restores a stored version; returns the restored cape, or nil (and shows why).
+    func restore(_ version: CapeVersion, of cape: Cape) -> Cape? {
+        do {
+            let restored = try library.restore(version, of: cape)
+            selection = restored.id
+            return restored
+        } catch {
+            errorMessage = error.localizedDescription
+            return nil
+        }
     }
 
     func confirmDelete() {
