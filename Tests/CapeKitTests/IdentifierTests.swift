@@ -2,7 +2,7 @@ import Foundation
 import Testing
 @testable import CapeKit
 
-@Test(arguments: ["../../Evil", "../capes", "a/b", ".hidden", "", "a:b", "back\\slash", "line\nbreak",
+@Test(arguments: ["../../Evil", "../capes", "a/b", ".hidden", "", "a:b", "~/Documents", "~", "~Documents", "back\\slash", "line\nbreak",
                   String(repeating: "x", count: 201)])
 func refusesUnsafeIdentifiers(identifier: String) {
     #expect(!Cape.isValidIdentifier(identifier))
@@ -11,7 +11,7 @@ func refusesUnsafeIdentifiers(identifier: String) {
 }
 
 @Test(arguments: ["local.ArakiCC.Kiriko", "com.maxrudberg.svanslosbluehazard", "local.xcursor.bibatamodernclassic",
-                  "test.theme.copy.1760000000", "With Spaces", "ümlaut.ß", "a..b"])
+                  "test.theme.copy.1760000000", "With Spaces", "ümlaut.ß", "a..b", "a~b"])
 func acceptsOrdinaryIdentifiers(identifier: String) {
     #expect(Cape.isValidIdentifier(identifier))
 }

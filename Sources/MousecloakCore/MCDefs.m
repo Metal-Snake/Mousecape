@@ -268,7 +268,8 @@ NSArray *MCPointerCursorIdentifiers() {
 }
 
 BOOL MCIsSafeIdentifier(NSString *identifier) {
-    if (![identifier isKindOfClass:[NSString class]] || identifier.length == 0 || [identifier hasPrefix:@"."])
+    if (![identifier isKindOfClass:[NSString class]] || identifier.length == 0
+        || [identifier hasPrefix:@"."] || [identifier hasPrefix:@"~"])
         return NO;
     if ([identifier lengthOfBytesUsingEncoding:NSUTF8StringEncoding] > 200)
         return NO;

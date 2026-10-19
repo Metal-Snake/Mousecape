@@ -443,8 +443,8 @@ reads them treats them as untrusted:
 
 - **Identifiers are file names.** A cape's identifier and its cursor keys become the
   library file, the history folder and export file names. They are refused when a cape
-  is read unless they are plain names (no "/", ":", "\\", control characters or leading
-  dot): a cape named `../capes` could otherwise have written outside the library, or
+  is read unless they are plain names (no "/", ":", "\\", control characters, leading dot
+  or tilde): a cape named `../capes` could otherwise have written outside the library, or
   had its "history" (the library itself) moved to the Trash on import. The history
   checks again before touching a folder, and the engine has the same rule
   (`MCIsSafeIdentifier`) for applying, `--export` and the agent's path; a test keeps

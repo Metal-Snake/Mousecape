@@ -385,7 +385,7 @@ enum LibraryError: LocalizedError {
         case .resetIncomplete:
             String(localized: "Some cursors could not be reset and still show the previous cape. Logging out and back in restores them.")
         case .invalidIdentifier:
-            String(localized: "The identifier must not be empty, contain “/” or “:”, or start with a dot.")
+            String(localized: "The identifier must not be empty, contain “/” or “:”, or start with a dot or tilde.")
         case .identifierTaken(let identifier):
             String(localized: "Another cape in the library already uses the identifier “\(identifier)”.")
         case .notInLibrary: String(localized: "The cape is not saved in the library.")

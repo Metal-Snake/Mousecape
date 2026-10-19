@@ -83,10 +83,11 @@ public struct Cape: Identifiable, Equatable, Sendable {
     }
 
     /// Whether `identifier` is safe as a file or folder name: not empty, no path separators
-    /// or control characters, not starting with a dot (no "..", no hidden files), not
-    /// overly long. Cape and cursor identifiers both have to be.
+    /// or control characters, not starting with a dot (no "..", no hidden files) or a tilde
+    /// (nothing here expands "~", but a shell or a later change might), not overly long.
+    /// Cape and cursor identifiers both have to be.
     public static func isValidIdentifier(_ identifier: String) -> Bool {
-        !identifier.isEmpty && identifier.utf8.count <= 200 && !identifier.hasPrefix(".")
+        !identifier.isEmpty && identifier.utf8.count <= 200 && !identifier.hasPrefix(".") && !identifier.hasPrefix("~")
             && !identifier.contains { $0 == "/" || $0 == ":" || $0 == "\\" || $0.isNewline
                                       || $0.unicodeScalars.contains { $0.properties.generalCategory == .control } }
     }
@@ -122,7 +123,7 @@ public enum CapeError: Error, Equatable, LocalizedError {
         case .unsupportedVersion(let v): String(localized: "The cape needs a newer Mousecape (format \(v)).")
         case .invalidCursor(let id): String(localized: "The cursor \(id) in the cape is damaged.")
         case .invalidIdentifier(let id):
-            String(localized: "The cape's identifier “\(id)” can't be used as a file name (no “/”, “:”, leading dot).")
+            String(localized: "The cape's identifier “\(id)” can't be used as a file name (no “/”, “:”, leading dot or tilde).")
         }
     }
 }

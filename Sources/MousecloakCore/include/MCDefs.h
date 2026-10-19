@@ -89,7 +89,7 @@ extern CGError MCIsCursorRegistered(CGSConnectionID cid, char *cursorName, bool 
 extern BOOL MCCursorIsPointer(NSString *identifier);
 // Whether a cape or cursor identifier is safe as a file name (identifiers come from cape
 // files and become paths): not empty, no "/", ":" or "\\", no control characters, no
-// leading dot. The same rule as Cape.isValidIdentifier in CapeKit.
+// leading dot or tilde. The same rule as Cape.isValidIdentifier in CapeKit.
 extern BOOL MCIsSafeIdentifier(NSString *identifier);
 extern NSArray *MCPointerCursorIdentifiers(void);
 extern BOOL MCCursorIsStandard(NSString *identifier);

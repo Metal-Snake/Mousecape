@@ -10,7 +10,8 @@ import MousecloakCore
     #expect(CursorNames.pointers == engine)
 }
 
-@Test(arguments: ["local.ArakiCC.Kiriko", "With Spaces", "a..b", "../../Evil", "a/b", ".hidden", "", "a:b",
+@Test(arguments: ["local.ArakiCC.Kiriko", "With Spaces", "a..b", "a~b", "../../Evil", "a/b", ".hidden", "", "a:b",
+                  "~/Documents", "~", "~Documents",
                   "back\\slash", "line\nbreak", String(repeating: "x", count: 201)])
 func identifierRuleMatchesEngine(identifier: String) {
     #expect(MCIsSafeIdentifier(identifier) == Cape.isValidIdentifier(identifier))
