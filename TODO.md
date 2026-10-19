@@ -24,13 +24,6 @@ and what has been tested.
       15 fr (the 30-frame system cursor, reduced), not 28x40.
 - [ ] **macOS 26.** Tested on 15.6 and 27.0.1 only. The engine relies on private
       CGS/CoreCursor calls that any macOS version can change.
-- [ ] **Untrimmed Obsidian looked smaller than the trimmed one on macOS 27.** Not a size
-      limit: `Scripts/cursor-size-probe.swift` shows that macOS 15.6 draws every cursor at
-      its registered size and macOS 27.0.1 every cursor 1.17 times larger (its default
-      cursor scale is 1.1705), from 17 × 23 to 64 × 64 points, so trimming can't change
-      the visible size. Likely the untrimmed copy came from a build before 57a9989, which
-      scaled Obsidian's 48-pixel images down to 24 points. Confirm: its arrow tile says
-      24 × 24 pt.
 
 ## Known issues
 

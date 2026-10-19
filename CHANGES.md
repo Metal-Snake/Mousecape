@@ -317,9 +317,9 @@ New: Windows cursor themes import as capes.
   at any scale draws into, faint shadows included, plus one point, with the hot spot
   always inside. The size then says what's there and the editor shows the artwork filling
   its preview. Applies to Xcursor imports too. Nothing changes on screen: measured with
-  `Scripts/cursor-size-probe.swift`, macOS 15.6 draws cursors at their registered size
-  and macOS 27.0.1 all of them 1.17 times larger (its default cursor scale), with no
-  size limit up to 64 × 64 points.
+  `Scripts/cursor-size-probe.swift`, macOS 15.6 and 27.0.1 draw cursors at their
+  registered size times the cursor scale (System Settings → Accessibility → Display →
+  Pointer size), with no size limit up to 64 × 64 points.
 - **Importing a theme again** asks whether to replace the cape from the earlier import
   (same identifier) or keep both; keeping both adds a number to the name, as every
   theme import did before.
