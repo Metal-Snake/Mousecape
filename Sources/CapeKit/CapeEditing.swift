@@ -278,6 +278,15 @@ public enum CursorProblem: Equatable, Sendable, CustomStringConvertible {
         }
     }
 
+    /// True for what macOS (or the engine) adjusts when applying; false for errors and for
+    /// hints that need a decision, like uneven left-handed mirroring.
+    public var isAdjustment: Bool {
+        switch self {
+        case .framesWillBeReduced, .timedByDurations, .hotSpotOutside: true
+        default: false
+        }
+    }
+
     public var description: String {
         switch self {
         case .noImages:

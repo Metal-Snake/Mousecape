@@ -266,6 +266,9 @@ New SwiftUI app. Compared with the original:
   sidebar: red when a cursor won't apply or will look wrong, orange when macOS only
   adjusts it (e.g. a reduced animation). The cape view lists what happens per cursor;
   each line opens that cursor in the editor, and **Show in Editor…** opens the first one.
+  Its heading says what kind of problems it lists: cursors that won't apply correctly,
+  cursors adjusted when applied, or (for hints like uneven left-handed mirroring) cursors
+  that need attention.
   The editor flags the same cursors in its list and lists them under Cape Details (a
   click selects the cursor), left-handed hints included.
 - **Smoother previews.** Cursor images are decoded off the main thread and cached. Each

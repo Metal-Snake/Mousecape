@@ -86,12 +86,18 @@ private struct ProblemBanner: View {
 
     private var hasErrors: Bool { problems.values.joined().contains(where: \.isError) }
 
+    private var title: LocalizedStringKey {
+        if hasErrors { return "Some cursors won't apply correctly" }
+        if problems.values.joined().allSatisfy(\.isAdjustment) { return "Some cursors are adjusted when applied" }
+        return "Some cursors need attention"
+    }
+
     var body: some View {
         HStack(alignment: .top, spacing: 10) {
             ProblemBadge(problems: Array(problems.values.joined()))
                 .font(.title3)
             VStack(alignment: .leading, spacing: 4) {
-                Text(hasErrors ? "Some cursors won't apply correctly" : "Some cursors are adjusted when applied")
+                Text(title)
                     .font(.headline)
                 ForEach(affected) { cursor in
                     // Each line opens its cursor in the editor.
