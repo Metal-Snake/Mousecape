@@ -51,6 +51,7 @@ struct SettingsView: View {
         .onChange(of: leftHanded) { _, newValue in
             EnginePreferences.leftHanded = newValue
             model.reapply()
+            model.library.updateProblems()      // uneven mirroring only counts in left-handed mode
         }
         .onAppear { model.loginAgent.refresh() }
     }

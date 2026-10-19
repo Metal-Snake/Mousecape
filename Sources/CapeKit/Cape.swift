@@ -12,6 +12,8 @@ public struct Cape: Identifiable, Equatable, Sendable {
     public var cursors: [CapeCursor]
     /// Where the cape was loaded from, if it came from a file.
     public var fileURL: URL?
+    /// Keys of the file this version doesn't know; written back unchanged.
+    public var otherKeys: OtherKeys = .none
 
     public var id: String { identifier }
 
@@ -58,11 +60,12 @@ public struct Cape: Identifiable, Equatable, Sendable {
                   isHiDPI: (dict[Key.hiDPI] as? NSNumber)?.boolValue ?? false,
                   cursors: parsed,
                   fileURL: fileURL)
+        otherKeys = OtherKeys(dict, known: Key.all)
     }
 
     /// The property list as written to a `.cape` file.
     public var propertyList: [String: Any] {
-        [
+        otherKeys.merged(with: [
             Key.version: Self.formatVersion,
             Key.minimumVersion: Self.formatVersion,
             Key.identifier: identifier,
@@ -72,7 +75,7 @@ public struct Cape: Identifiable, Equatable, Sendable {
             Key.hiDPI: isHiDPI,
             Key.cloud: false,
             Key.cursors: Dictionary(uniqueKeysWithValues: cursors.map { ($0.identifier, $0.propertyList) }),
-        ]
+        ])
     }
 
     public func propertyListData() throws -> Data {
@@ -89,6 +92,8 @@ public struct Cape: Identifiable, Equatable, Sendable {
         static let hiDPI = "HiDPI"
         static let cloud = "Cloud"
         static let cursors = "Cursors"
+        static let all: Set<String> = [version, minimumVersion, identifier, name, author, capeVersion,
+                                       hiDPI, cloud, cursors]
     }
 }
 

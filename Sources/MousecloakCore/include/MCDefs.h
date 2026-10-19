@@ -62,6 +62,12 @@ extern const NSString *MCCursorDictionaryFrameDuratiomKey;
 // Optional (this fork): each frame's own duration in seconds, when they differ.
 // FrameDuration then holds their average.
 extern const NSString *MCCursorDictionaryFrameDurationsKey;
+// Optional (this fork), for left-handed mode: whether to mirror the cursor (missing: the
+// pointer list decides), and images with their hot spot to show instead of mirroring.
+extern const NSString *MCCursorDictionaryMirrorForLeftHandedKey;
+extern const NSString *MCCursorDictionaryLeftHandedRepresentationsKey;
+extern const NSString *MCCursorDictionaryLeftHandedHotSpotXKey;
+extern const NSString *MCCursorDictionaryLeftHandedHotSpotYKey;
 //extern const NSString *MCCursorDictionaryRepeatCountKey;
 extern const NSString *MCCursorDictionaryHotSpotXKey;
 extern const NSString *MCCursorDictionaryHotSpotYKey;

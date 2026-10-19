@@ -144,8 +144,14 @@ BOOL applyCapeForIdentifier(NSDictionary *cursor, NSString *identifier, BOOL res
         return NO;
     }
 
-    BOOL lefty = MCFlag(MCPreferencesHandednessKey);
-    BOOL pointer = MCCursorIsPointer(identifier);
+    BOOL lefty = MCFlag(MCPreferencesHandednessKey) && !restore;
+    // Left-handed mode: the cursor's own left-handed images if it has them; otherwise
+    // mirrored when the cape says so, or, without a say, when it is a pointer.
+    NSArray *leftReps = cursor[MCCursorDictionaryLeftHandedRepresentationsKey];
+    BOOL ownImages = lefty && [leftReps isKindOfClass:[NSArray class]] && leftReps.count > 0;
+    NSNumber *mirrorFlag = cursor[MCCursorDictionaryMirrorForLeftHandedKey];
+    BOOL mirror = lefty && !ownImages
+        && ([mirrorFlag isKindOfClass:[NSNumber class]] ? mirrorFlag.boolValue : MCCursorIsPointer(identifier));
     NSNumber *frameCount    = cursor[MCCursorDictionaryFrameCountKey];
     NSNumber *frameDuration = cursor[MCCursorDictionaryFrameDuratiomKey];
     //    NSNumber *repeatCount   = cursor[MCCursorDictionaryRepeatCountKey];
@@ -154,10 +160,14 @@ BOOL applyCapeForIdentifier(NSDictionary *cursor, NSString *identifier, BOOL res
                                           [cursor[MCCursorDictionaryHotSpotYKey] doubleValue]);
     CGSize size             = CGSizeMake([cursor[MCCursorDictionaryPointsWideKey] doubleValue],
                                          [cursor[MCCursorDictionaryPointsHighKey] doubleValue]);
-    NSArray *reps           = cursor[MCCursorDictionaryRepresentationsKey];
+    NSArray *reps           = ownImages ? leftReps : cursor[MCCursorDictionaryRepresentationsKey];
     NSMutableArray *images  = [NSMutableArray array];
 
-    if (lefty && !restore && pointer) {
+    if (ownImages) {
+        MMLog("Left-handed images for %s", identifier.UTF8String);
+        NSNumber *x = cursor[MCCursorDictionaryLeftHandedHotSpotXKey], *y = cursor[MCCursorDictionaryLeftHandedHotSpotYKey];
+        hotSpot = (x && y) ? CGPointMake(x.doubleValue, y.doubleValue) : CGPointMake(size.width - hotSpot.x - 1, hotSpot.y);
+    } else if (mirror) {
         MMLog("Lefty mode for %s", identifier.UTF8String);
         hotSpot.x = size.width - hotSpot.x - 1;
     }
@@ -172,7 +182,7 @@ BOOL applyCapeForIdentifier(NSDictionary *cursor, NSString *identifier, BOOL res
         }
         rep = rep.retaggedSRGBSpace;
 
-        if (!lefty || restore || !pointer) {
+        if (!mirror) {
             // special case if array has a type of CGImage already there is no need to convert it
             if (type == CGImageGetTypeID()) {
                 images[images.count] = object;
@@ -258,6 +268,18 @@ BOOL applyCape(NSDictionary *dictionary) {
         NSUInteger failed = 0;
         for (NSString *key in cursors) {
             NSDictionary *cape = cursors[key];
+            // A variant such as IBeamS with an entry of its own takes its base's mirror
+            // setting unless it has its own, so IBeam and IBeamS look alike in left-handed
+            // mode. (Not the base's left-handed images: they may not fit. A variant without
+            // an entry gets the base's whole entry anyway, below.)
+            NSString *base = MCBaseCursorForExtra(key);
+            NSDictionary *baseCape = base ? cursors[base] : nil;
+            if (baseCape && !cape[MCCursorDictionaryMirrorForLeftHandedKey] && !cape[MCCursorDictionaryLeftHandedRepresentationsKey]) {
+                NSMutableDictionary *inherited = [[cape mutableCopy] autorelease];
+                if (baseCape[MCCursorDictionaryMirrorForLeftHandedKey])
+                    inherited[MCCursorDictionaryMirrorForLeftHandedKey] = baseCape[MCCursorDictionaryMirrorForLeftHandedKey];
+                cape = inherited;
+            }
             MMLog("Hooking for %s", key.UTF8String);
             
             BOOL success = applyCapeForIdentifier(cape, key, NO);

@@ -115,10 +115,7 @@ final class Library {
         capes = byIdentifier.values.sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
         unreadable = failed
         duplicates = extra.sorted { $0.lastPathComponent < $1.lastPathComponent }
-        problems = Dictionary(uniqueKeysWithValues: capes.compactMap { cape in
-            let found = cape.problems
-            return found.isEmpty ? nil : (cape.id, found)
-        })
+        updateProblems()
         appliedIdentifier = EnginePreferences.appliedCapeIdentifier
         // Every cape keeps the state it came in with: capes from before the history existed
         // (or added in Finder) get theirs now.
@@ -130,6 +127,18 @@ final class Library {
             if history.differsFromOriginal(file, identifier: cape.identifier) { edited.insert(cape.identifier) }
         }
         editedIdentifiers = edited
+    }
+
+    /// Per cape, the cursors with problems; in left-handed mode also uneven mirroring.
+    func updateProblems() {
+        let leftHanded = EnginePreferences.leftHanded
+        problems = Dictionary(uniqueKeysWithValues: capes.compactMap { cape in
+            var found = cape.problems
+            if leftHanded {
+                for (identifier, problem) in cape.unevenMirroring { found[identifier, default: []].append(problem) }
+            }
+            return found.isEmpty ? nil : (cape.id, found)
+        })
     }
 
     // MARK: - Applying

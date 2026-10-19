@@ -111,36 +111,8 @@ x86_64 build.
       - `.tar.zst`: the system's libarchive has no built-in zstd.
 - [ ] **Frame chooser follow-ups.** Drag across the filmstrip to select ranges; show the
       gap pattern of the kept frames; open it straight from the library's problem banner.
-- [ ] **Per-cursor control over left-handed mirroring.** Today only the pointers in
-      `MCPointerCursorIdentifiers` (and their variants) are mirrored. Capes like Kiriko
-      draw the I-beam (and others) as arrow-like shapes too, so mirroring only some of them
-      looks odd. Plan:
-      - A new optional key per cursor in the `Cursors` entry, e.g. `MirrorForLeftHanded`:
-        missing = as today (the pointer list decides), `true` = always mirror, `false` =
-        never mirror (symmetric artwork, or artwork with text).
-      - Stored **only in the cape file**, never in user settings: the agent
-        (`mousecloak --listen`) applies the cape at login from the file alone, and the
-        setting travels with the cape. Cape authors and users set it the same way, in the
-        editor: per cursor "Mirror for left-handed: Automatic / Yes / No".
-      - Optional per-cursor left-handed artwork: a cursor can carry its own left-handed
-        representations and hot spot (e.g. `LeftHandedRepresentations`,
-        `LeftHandedHotSpotX/Y`), used instead of mirroring where a mirrored image looks
-        wrong (text, a hand, a shadow cast to one side). The editor needs a "Left-handed"
-        image slot per cursor, alongside the scales.
-      - Engine (`apply.m`): per cursor, use left-handed artwork if present, else the flag,
-        else the pointer list. Mirroring flips the hot spot (x → width − x), as it does
-        for pointers today. On macOS 27, `IBeamS`/`ArrowS` inherit the flag and artwork of
-        `IBeam`/`Arrow` unless they have their own.
-      - Problem banner: point out uneven mirroring, e.g. Arrow mirrored but an arrow-like
-        I-beam not.
-      - Compatibility (checked in the original's `MCCursor.m`/`MCCursorLibrary.m`): the
-        original reads only the keys it knows and ignores the rest, and rejects a cape only
-        when `MinimumVersion` > 2.0, so keep that at 2.0. But its editor writes only its own
-        keys, so re-saving there drops the new ones; note that in CHANGES.md.
-      - **Prerequisite:** CapeKit drops unknown keys too (`Cape.propertyList` and
-        `CapeCursor.propertyList` rebuild the dictionaries). Keep unknown top-level and
-        per-cursor keys when saving, so our editor doesn't lose fields added later or by
-        other tools.
+- [ ] **Left-handed follow-ups.** Set the mirror mode for several cursors at once (Kiriko
+      needs it for about ten); test own left-handed images on macOS 27.
 - [ ] **Generate missing scales**, e.g. 1x from 2x, with a clear warning that resampled
       images look worse.
 - [ ] **Discover cursor variants instead of listing them.** `CGSCursorNameForSystemCursor(i)`

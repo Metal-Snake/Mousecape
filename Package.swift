@@ -42,7 +42,7 @@ let package = Package(
         ),
         .testTarget(
             name: "MousecapeTests",
-            dependencies: ["Mousecape", "CapeKit"]
+            dependencies: ["Mousecape", "CapeKit", "MousecloakCore"]
         ),
     ]
 )

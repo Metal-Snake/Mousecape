@@ -28,6 +28,18 @@ public struct CapeCursor: Identifiable, Equatable, Sendable {
     public var size: CGSize
     public var representations: [Data]
 
+    /// Left-handed mode: true mirrors this cursor, false leaves it as it is, nil lets the
+    /// pointer list decide (`CursorNames.isPointer`). Ignored when the cursor has its own
+    /// left-handed images.
+    public var mirrorForLeftHanded: Bool?
+    /// Images to show in left-handed mode instead of mirroring, one per scale like
+    /// `representations` (same size and frames). Empty when the cursor has none.
+    public var leftHandedRepresentations: [Data] = []
+    /// The hot spot for `leftHandedRepresentations`; nil means the mirrored hot spot.
+    public var leftHandedHotSpot: CGPoint?
+    /// Keys of the file this version doesn't know; written back unchanged.
+    public var otherKeys: OtherKeys = .none
+
     public var id: String { identifier }
     public var name: String { CursorNames.name(for: identifier) }
     public var isAnimated: Bool { frameCount > 1 }
@@ -67,6 +79,12 @@ public struct CapeCursor: Identifiable, Equatable, Sendable {
                   hotSpot: CGPoint(x: number(Key.hotSpotX) ?? 0, y: number(Key.hotSpotY) ?? 0),
                   size: CGSize(width: width, height: height),
                   representations: reps)
+        mirrorForLeftHanded = (dict[Key.mirrorForLeftHanded] as? NSNumber)?.boolValue
+        leftHandedRepresentations = dict[Key.leftHandedRepresentations] as? [Data] ?? []
+        if let x = number(Key.leftHandedHotSpotX), let y = number(Key.leftHandedHotSpotY) {
+            leftHandedHotSpot = CGPoint(x: x, y: y)
+        }
+        otherKeys = OtherKeys(dict, known: Key.all)
     }
 
     var propertyList: [String: Any] {
@@ -80,7 +98,15 @@ public struct CapeCursor: Identifiable, Equatable, Sendable {
             Key.representations: representations,
         ]
         if let frameDurations { dict[Key.frameDurations] = frameDurations }
-        return dict
+        if let mirrorForLeftHanded { dict[Key.mirrorForLeftHanded] = mirrorForLeftHanded }
+        if !leftHandedRepresentations.isEmpty {
+            dict[Key.leftHandedRepresentations] = leftHandedRepresentations
+            if let leftHandedHotSpot {
+                dict[Key.leftHandedHotSpotX] = leftHandedHotSpot.x
+                dict[Key.leftHandedHotSpotY] = leftHandedHotSpot.y
+            }
+        }
+        return otherKeys.merged(with: dict)
     }
 
     /// The frames, top to bottom, from the smallest representation at least `scale` times the
@@ -126,5 +152,12 @@ public struct CapeCursor: Identifiable, Equatable, Sendable {
         static let pointsWide = "PointsWide"
         static let pointsHigh = "PointsHigh"
         static let representations = "Representations"
+        static let mirrorForLeftHanded = "MirrorForLeftHanded"
+        static let leftHandedRepresentations = "LeftHandedRepresentations"
+        static let leftHandedHotSpotX = "LeftHandedHotSpotX"
+        static let leftHandedHotSpotY = "LeftHandedHotSpotY"
+        static let all: Set<String> = [frameCount, frameDuration, frameDurations, hotSpotX, hotSpotY, pointsWide,
+                                       pointsHigh, representations, mirrorForLeftHanded, leftHandedRepresentations,
+                                       leftHandedHotSpotX, leftHandedHotSpotY]
     }
 }

@@ -24,12 +24,18 @@ bundled third-party libraries are gone.
 ## What stays compatible
 
 - **Cape format.** `.cape` files are read and written in the same format (version 2.0),
-  under the same type identifier `com.alexzielenski.mousecape.cape`. One optional key is
-  new: `FrameDurations` in a cursor, each frame's own duration in seconds, written only
-  for imported animations whose frames last differently long. `FrameDuration` still
-  holds their average, which the original Mousecape (ignoring the new key) uses; this
-  fork's engine picks the frames by time instead. The original's editor drops the key
-  when it saves.
+  under the same type identifier `com.alexzielenski.mousecape.cape`, and `MinimumVersion`
+  stays 2.0. A few optional keys per cursor are new; the original Mousecape reads only
+  the keys it knows (checked in its `MCCursor.m`/`MCCursorLibrary.m`), so it opens such
+  capes and ignores them, but its editor drops them when it saves:
+  - `FrameDurations`: each frame's own duration in seconds, written only for imported
+    animations whose frames last differently long. `FrameDuration` still holds their
+    average, which the original uses; this fork's engine picks the frames by time instead.
+  - `MirrorForLeftHanded`, `LeftHandedRepresentations`, `LeftHandedHotSpotX/Y`: how the
+    cursor looks in left-handed mode (see [Left-handed mode per cursor](#left-handed-mode-per-cursor)).
+- **Unknown keys are kept.** Saving in this fork's editor writes back every key of the cape
+  and its cursors that it doesn't know, so fields of later versions or other tools
+  survive. (The original's editor rebuilt the file from the keys it knew.)
 - **Library.** `~/Library/Application Support/Mousecape/capes`, the same folder.
 - **Preferences.** The engine and the app keep using the `com.alexzielenski.Mousecape`
   preferences domain (applied cape, cursor scale, left-handed mode), so an existing setup
@@ -323,6 +329,30 @@ Rebuilt from scratch. It works on a draft and saves explicitly:
   their edges and corners (SwiftUI sheets can't by themselves), and reopen at the last
   size used.
 - **No undo** within the editor. The original had undo.
+
+## Left-handed mode per cursor
+
+Left-handed mode used to mirror a fixed list of pointers (arrow, hands, busy, …). Capes
+that draw other cursors as arrows too, like Kiriko's I-beam, looked half mirrored. Each
+cursor can now say how it looks in left-handed mode; the setting is stored only in the
+cape file, so it travels with the cape and the agent applies it at login like the rest.
+
+- **Editor:** per cursor, **Left-handed mode**: *Automatic* (the pointer list decides, as
+  before; the label says which way), *Mirror*, *Don't Mirror*, or *Own Images*. Own images
+  start as the mirrored images and get their own wells per scale and their own hot spot,
+  to replace where mirroring looks wrong (text, a hand, a shadow cast to one side). The
+  preview has a **Left-handed** switch that shows the cursor as left-handed mode does;
+  clicks there set the hot spot of what's shown.
+- **Engine:** per cursor, its own left-handed images if it has them, else the cape's
+  mirror setting, else the pointer list. Mirroring flips the hot spot as before. A variant
+  such as IBeamS without an entry takes the base's whole entry; with an entry of its own
+  but no setting, it takes the base's mirror setting.
+- **Problem banner:** in left-handed mode, cursors that look like pointers (hot spot in
+  the top left) but stay unmirrored while the arrow is mirrored are pointed out, with
+  the way to fix it.
+- Tested on macOS 15.6: a cape with an automatic arrow, an I-beam set to *Mirror*, an open
+  hand set to *Don't Mirror* (normally mirrored) and a pointing hand with own images
+  registers exactly that (checked through a cursor dump: images and hot spots).
 
 ## Windows cursors
 

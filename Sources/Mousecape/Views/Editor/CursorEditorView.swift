@@ -2,12 +2,17 @@ import SwiftUI
 import UniformTypeIdentifiers
 import CapeKit
 
-/// Edits one cursor: preview with hot spot, geometry, animation, and one image per scale.
+/// Edits one cursor: preview with hot spot, geometry, animation, one image per scale, and
+/// how it looks in left-handed mode.
 struct CursorEditorView: View {
     @Binding var cursor: CapeCursor
 
     @State private var importError: String?
     @State private var choosingFrames = false
+    /// Shows the cursor as left-handed mode does.
+    @State private var previewLeftHanded = false
+    /// The cursor as left-handed mode shows it, worked out once per change.
+    @State private var leftHandedCursor: CapeCursor?
 
     private let previewBox: CGFloat = 200
 
@@ -20,6 +25,7 @@ struct CursorEditorView: View {
                     geometryForm
                 }
                 imageWells
+                leftHandedSection
                 problems
             }
             .padding(20)
@@ -57,14 +63,14 @@ struct CursorEditorView: View {
         VStack(spacing: 6) {
             ZStack {
                 CheckerboardBackground()
-                CursorPreview(cursor: cursor, zoom: zoom, showsHotSpot: true)
+                CursorPreview(cursor: previewLeftHanded ? (leftHandedCursor ?? cursor) : cursor,
+                              zoom: zoom, showsHotSpot: true)
                     .overlay {
                         // Clicking inside the cursor moves the hot spot there.
                         Color.clear
                             .contentShape(Rectangle())
                             .onTapGesture(coordinateSpace: .local) { location in
-                                cursor.hotSpot = CGPoint(x: (location.x / zoom).rounded(),
-                                                         y: (location.y / zoom).rounded())
+                                setHotSpot(CGPoint(x: (location.x / zoom).rounded(), y: (location.y / zoom).rounded()))
                             }
                     }
                     .border(Color.accentColor.opacity(0.35), width: 1)
@@ -74,6 +80,23 @@ struct CursorEditorView: View {
             Text("Click to set the hot spot")
                 .font(.caption)
                 .foregroundStyle(.secondary)
+            Toggle("Left-handed", isOn: $previewLeftHanded)
+                .toggleStyle(.switch)
+                .controlSize(.mini)
+                .font(.caption)
+                .help("Show the cursor as left-handed mode does")
+        }
+        .task(id: cursor) { leftHandedCursor = cursor.leftHanded }
+    }
+
+    /// A click in the preview: in the left-handed preview it sets the left-handed hot spot
+    /// (own images) or the hot spot it mirrors from.
+    private func setHotSpot(_ point: CGPoint) {
+        guard previewLeftHanded else { cursor.hotSpot = point; return }
+        switch cursor.leftHandedLook {
+        case .ownImages: cursor.leftHandedHotSpot = point
+        case .mirrored: cursor.hotSpot = CGPoint(x: cursor.size.width - point.x - 1, y: point.y)
+        case .unchanged: cursor.hotSpot = point
         }
     }
 
@@ -163,6 +186,112 @@ struct CursorEditorView: View {
         }
     }
 
+    // MARK: - Left-handed mode
+
+    private enum LeftHandedMode: Hashable {
+        case automatic, mirror, dontMirror, ownImages
+    }
+
+    private var leftHandedMode: Binding<LeftHandedMode> {
+        Binding {
+            if cursor.hasOwnLeftHandedImages { return .ownImages }
+            switch cursor.mirrorForLeftHanded {
+            case true?: return .mirror
+            case false?: return .dontMirror
+            case nil: return .automatic
+            }
+        } set: { mode in
+            if mode != .ownImages {
+                cursor.leftHandedRepresentations = []
+                cursor.leftHandedHotSpot = nil
+            }
+            switch mode {
+            case .automatic: cursor.mirrorForLeftHanded = nil
+            case .mirror: cursor.mirrorForLeftHanded = true
+            case .dontMirror: cursor.mirrorForLeftHanded = false
+            case .ownImages:
+                cursor.mirrorForLeftHanded = nil
+                if !cursor.useMirroredImagesAsLeftHanded() {
+                    importError = String(localized: "The images of \(cursor.name) could not be read, so they could not be mirrored.")
+                }
+            }
+        }
+    }
+
+    private var leftHandedSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Left-handed mode")
+                .font(.headline)
+            Picker("Left-handed mode", selection: leftHandedMode) {
+                Text(CursorNames.isPointer(cursor.identifier) ? "Automatic (Mirror)" : "Automatic (Don't Mirror)")
+                    .tag(LeftHandedMode.automatic)
+                Text("Mirror").tag(LeftHandedMode.mirror)
+                Text("Don't Mirror").tag(LeftHandedMode.dontMirror)
+                Text("Own Images").tag(LeftHandedMode.ownImages)
+            }
+            .pickerStyle(.segmented)
+            .labelsHidden()
+            .fixedSize()
+            Text(leftHandedExplanation)
+                .font(.callout)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+            if cursor.hasOwnLeftHandedImages {
+                HStack(alignment: .top, spacing: 12) {
+                    ForEach(CapeCursor.supportedScales, id: \.self) { scale in
+                        ImageWell(scale: scale,
+                                  image: cursor.leftHandedRepresentation(for: scale),
+                                  frameCount: cursor.frameCount,
+                                  expected: cursor.expectedPixelSize(for: scale),
+                                  onDrop: { url in addLeftHandedImage(from: url, scale: scale) },
+                                  onChoose: { chooseImage(scale: scale, leftHanded: true) },
+                                  onRemove: { cursor.setLeftHandedRepresentation(nil, for: scale) })
+                    }
+                }
+                LabeledContent("Left-handed hot spot") {
+                    HStack {
+                        numberField("X", value: leftHandedHotSpot.x)
+                        Text(",")
+                        numberField("Y", value: leftHandedHotSpot.y)
+                    }
+                }
+                .fixedSize()
+            }
+        }
+    }
+
+    private var leftHandedExplanation: String {
+        switch leftHandedMode.wrappedValue {
+        case .automatic:
+            String(localized: "Pointers (arrow, hands, busy and the like) are mirrored, the others are left as they are.")
+        case .mirror:
+            String(localized: "Mirrored in left-handed mode, hot spot included, e.g. for an I-beam drawn as an arrow.")
+        case .dontMirror:
+            String(localized: "Left as it is in left-handed mode, e.g. for symmetric artwork or artwork with text.")
+        case .ownImages:
+            String(localized: "These images are shown in left-handed mode instead. They start as the mirrored images; replace the ones where mirroring looks wrong (text, a hand, a shadow cast to one side).")
+        }
+    }
+
+    private var leftHandedHotSpot: Binding<CGPoint> {
+        Binding(get: { cursor.leftHandedHotSpot ?? cursor.mirroredHotSpot },
+                set: { cursor.leftHandedHotSpot = $0 })
+    }
+
+    private func addLeftHandedImage(from url: URL, scale: Int) {
+        guard let data = try? Data(contentsOf: url),
+              let (png, pixels) = CapeCursor.normalizedPNG(from: data) else {
+            importError = String(localized: "“\(url.lastPathComponent)” is not an image Mousecape can read.")
+            return
+        }
+        let expected = cursor.expectedPixelSize(for: scale)
+        guard pixels == expected else {
+            importError = String(localized: "The \(scale)x image must be \(Int(expected.width)) × \(Int(expected.height)) px; “\(url.lastPathComponent)” is \(Int(pixels.width)) × \(Int(pixels.height)) px.")
+            return
+        }
+        cursor.setLeftHandedRepresentation(png, for: scale)
+    }
+
     @ViewBuilder
     private var problems: some View {
         let problems = cursor.problems
@@ -186,12 +315,13 @@ struct CursorEditorView: View {
         }
     }
 
-    private func chooseImage(scale: Int) {
+    private func chooseImage(scale: Int, leftHanded: Bool = false) {
         let panel = NSOpenPanel()
-        panel.allowedContentTypes = [.image] + ["cur", "ani"].compactMap { UTType(filenameExtension: $0) }
-        panel.message = String(localized: "Choose the \(scale)x image for \(cursor.name)")
+        panel.allowedContentTypes = leftHanded ? [.image] : [.image] + ["cur", "ani"].compactMap { UTType(filenameExtension: $0) }
+        panel.message = leftHanded ? String(localized: "Choose the left-handed \(scale)x image for \(cursor.name)")
+                                   : String(localized: "Choose the \(scale)x image for \(cursor.name)")
         if panel.runModal() == .OK, let url = panel.url {
-            addImage(from: url, scale: scale)
+            if leftHanded { addLeftHandedImage(from: url, scale: scale) } else { addImage(from: url, scale: scale) }
         }
     }
 

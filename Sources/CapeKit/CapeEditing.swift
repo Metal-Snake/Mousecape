@@ -42,12 +42,25 @@ extension CapeCursor {
     /// A copy with only the given frames (0-based, in the order given), each shown for
     /// `frameDuration`. Nil if an index is out of range or an image can't be decoded.
     public func keepingFrames(_ indices: [Int], frameDuration: Double) -> CapeCursor? {
-        guard !indices.isEmpty, indices.allSatisfy({ (0..<frameCount).contains($0) }),
-              let sRGB = CGColorSpace(name: CGColorSpace.sRGB) else { return nil }
-        let count = indices.count
+        guard !indices.isEmpty, indices.allSatisfy({ (0..<frameCount).contains($0) }) else { return nil }
+        guard let rebuilt = Self.sheets(representations, frameCount: frameCount, keeping: indices),
+              let leftHanded = Self.sheets(leftHandedRepresentations, frameCount: frameCount, keeping: indices)
+        else { return nil }
+        var copy = self
+        copy.frameDurations = nil                               // the frames are new
+        copy.representations = rebuilt
+        copy.leftHandedRepresentations = leftHanded
+        copy.frameCount = indices.count
+        copy.frameDuration = frameDuration
+        return copy
+    }
 
+    /// Each sheet rebuilt from the frames at `indices`, in that order.
+    private static func sheets(_ sheets: [Data], frameCount: Int, keeping indices: [Int]) -> [Data]? {
+        guard let sRGB = CGColorSpace(name: CGColorSpace.sRGB) else { return nil }
+        let count = indices.count
         var rebuilt: [Data] = []
-        for data in representations {
+        for data in sheets {
             guard let sheet = NSBitmapImageRep(data: data)?.cgImage else { return nil }
             let frameHeight = sheet.height / frameCount
             guard frameHeight > 0,
@@ -65,12 +78,7 @@ extension CapeCursor {
                   let png = NSBitmapImageRep(cgImage: image).representation(using: .png, properties: [:]) else { return nil }
             rebuilt.append(png)
         }
-        var copy = self
-        copy.frameDurations = nil                               // the frames are new
-        copy.representations = rebuilt
-        copy.frameCount = count
-        copy.frameDuration = frameDuration
-        return copy
+        return rebuilt
     }
 
     /// A copy without the transparent margin around the artwork: cut to the area any frame
@@ -201,6 +209,21 @@ extension CapeCursor {
                 problems.append(.heightDoesNotMatchFrames(pixels, expected: Int(expectedHeight)))
             }
         }
+        for data in leftHandedRepresentations {
+            guard let pixels = Self.pixelSize(of: data) else {
+                problems.append(.unreadableImage)
+                continue
+            }
+            let scale = Double(pixels.width) / size.width
+            if scale.rounded() != scale || !Self.supportedScales.contains(Int(scale))
+                || abs(Double(pixels.height) - size.height * scale * Double(frameCount)) > 0.5 {
+                problems.append(.leftHandedImageDoesNotFit(pixels))
+            }
+        }
+        if let spot = leftHandedHotSpot, hasOwnLeftHandedImages,
+           spot.x < 0 || spot.y < 0 || spot.x > size.width || spot.y > size.height {
+            problems.append(.hotSpotOutside)
+        }
         return problems
     }
 
@@ -239,6 +262,8 @@ public enum CursorProblem: Equatable, Sendable, CustomStringConvertible {
     case frameCountOutOfRange
     case framesWillBeReduced(from: Int, to: Int)
     case timedByDurations(from: Int, to: Int)
+    case notMirroredLikeArrow
+    case leftHandedImageDoesNotFit(CGSize)
     case hotSpotOutside
     case unreadableImage
     case unexpectedWidth(CGSize)
@@ -248,7 +273,7 @@ public enum CursorProblem: Equatable, Sendable, CustomStringConvertible {
     /// around (a reduced animation, a hot spot off the image).
     public var isError: Bool {
         switch self {
-        case .framesWillBeReduced, .timedByDurations, .hotSpotOutside: false
+        case .framesWillBeReduced, .timedByDurations, .hotSpotOutside, .notMirroredLikeArrow: false
         default: true
         }
     }
@@ -263,6 +288,10 @@ public enum CursorProblem: Equatable, Sendable, CustomStringConvertible {
             String(localized: "macOS shows at most \(CapeCursor.maximumFrameCount) frames; the \(from) frames are reduced to \(to) when applied.")
         case .timedByDurations(let from, let to):
             String(localized: "The \(from) frames have different durations, but macOS shows every frame equally long: when applied, they become \(to) frames picked by time, so the timing stays.")
+        case .notMirroredLikeArrow:
+            String(localized: "Looks like a pointer (hot spot top left), but isn't mirrored in left-handed mode while the arrow is. Edit → Left-handed mode → Mirror.")
+        case .leftHandedImageDoesNotFit(let px):
+            String(localized: "A left-handed image is \(Int(px.width)) × \(Int(px.height)) px, which doesn't fit the cursor's size and frames.")
         case .hotSpotOutside:
             String(localized: "The hot spot lies outside the cursor.")
         case .unreadableImage:
