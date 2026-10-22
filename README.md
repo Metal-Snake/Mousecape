@@ -9,12 +9,14 @@ the original cursor engine is kept and fixed where it broke on current macOS, th
 around it is rewritten in SwiftUI.
 
 - macOS 14 Sonoma or later, Apple silicon only; tested on macOS 15.6 and 27.0.1
+  ([TESTING.md](TESTING.md))
 - Builds with the Xcode Command Line Tools alone (no Xcode project)
 - No third-party dependencies, no network access
 
 > **Work in progress.** Everything below works and is tested, but expect rough edges.
-> [CHANGES.md](CHANGES.md) lists what changed from the original and what has been
-> tested; [TODO.md](TODO.md) what is still open.
+> [CHANGES.md](CHANGES.md) lists what changed from the original, [TESTING.md](TESTING.md)
+> what has been tested and [TODO.md](TODO.md) what is still open.
+> [NOTES.md](NOTES.md) collects what is known about how macOS handles cursors.
 
 ## How it works
 
@@ -126,8 +128,9 @@ there is one (`Scripts/make-signing-certificate.sh` creates it), so every build 
 same identity; otherwise it signs ad-hoc. Either way the app isn't notarized: on first
 launch, right-click it and choose **Open**.
 
-`Scripts/cursor-size-probe.swift` measures the size macOS really draws cursors at (for
-testing on new macOS versions).
+`Scripts/cursor-size-probe.swift` measures the size macOS really draws cursors at, and
+`Examples/ArrowS-Test.cape` shows whether a macOS version uses `ArrowS`. Both are for
+testing new macOS versions (see [TESTING.md](TESTING.md)).
 
 ### Layout
 
@@ -140,6 +143,7 @@ testing on new macOS versions).
 | `Tests` | Swift Testing suites, and `TestSupport` with the file builders they share |
 | `Resources` | Info.plist, app icon |
 | `Scripts` | Building, signing, the cursor size probe |
+| `Examples` | The Svanslös cape and the ArrowS test cape |
 
 ### Safety
 
@@ -147,6 +151,21 @@ Capes and themes come from anywhere, so Mousecape treats them as untrusted: iden
 that would leave the library folder are refused, image sizes and animation lengths are
 bounded before decoding, and links in archives may not point outside the theme. See
 **Hardening** in [CHANGES.md](CHANGES.md).
+
+## Credits
+
+- [Alex Zielenski](https://github.com/alexzielenski/Mousecape) wrote Mousecape and its
+  cursor engine, which this fork still uses.
+- [Max Rudberg](http://maxrudberg.com/) made the Svanslös example cape.
+- [Mousecape-swiftUI](https://github.com/sdmj76/Mousecape-swiftUI) (sdmj76) had the idea
+  of restoring the cursor size after display changes on macOS 27. Its licence forbids
+  reusing its code, so none was taken.
+- [Cursie](https://github.com/kwd421/macOS_Cursie) (kwd421) suggested asking the window server
+  for its cursor names, choosing frames by time and reading localised file names in
+  Windows themes. No code was taken.
+- [macOS27-Cursors](https://github.com/Juwan-Hwang/macOS27-Cursors) (Juwan-Hwang) mapped
+  the cursor identifiers to Apple's resource names, which Mousecape now shows. Its cape
+  of Apple's own cursors isn't included.
 
 ## LICENSE
 

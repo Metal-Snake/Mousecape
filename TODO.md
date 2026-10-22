@@ -1,35 +1,14 @@
 # TODO
 
-Open work, known issues and ideas for this fork. CHANGES.md records what is already done
-and what has been tested.
-
-## Still to verify
-
-- [ ] **A real login with a cape applied**, ideally on macOS 27. The agent's part is
-      checked on macOS 15.6 by restarting it (as at login) and by switching the display
-      resolution (as when plugging in a monitor): cape and cursor size come back both
-      times. A real logout and login with an applied cape hasn't been done yet.
-- [ ] **Images in the editor:** drop a PNG from Finder into a scale well, and use
-      "Choose Image…". Hot spot clicks, frame choosing and saving are checked.
-- [ ] **Windows cursors in the editor:** dropping a `.cur`/`.ani` on an image well. The
-      import itself is checked with a real theme (zip, folder, single file).
-- [ ] **MightyMouse import** with a real `.MightyMouse` file (none at hand).
-- [ ] **Left-handed mode with the macOS cursors on macOS 27.** Mirroring a cape works
-      there (confirmed 2026-10-18). Mirroring the macOS cursors without a cape is checked
-      on macOS 15.6 (reset, Settings switch, agent at start and on display changes), not
-      yet on macOS 27.
-- [ ] **Wait backup in a fresh session.** Reset now backs up before restoring, so the first
-      apply after a login should save the real beach ball. After the next login on macOS 27,
-      apply a cape and check `mousecloak --list`: the Wait backup should read 24x24 pt,
-      15 fr (the 30-frame system cursor, reduced), not 28x40.
-- [ ] **macOS 26.** Tested on 15.6 and 27.0.1 only. The engine relies on private
-      CGS/CoreCursor calls that any macOS version can change.
+Open work, known issues and ideas for this fork. [CHANGES.md](CHANGES.md) records what is
+already done, [TESTING.md](TESTING.md) what has been tested and what still needs a test on
+a real Mac.
 
 ## Known issues
 
 - [ ] **Hidden deprecation warnings.** The engine builds with
       `-Wno-deprecated-declarations`, which hides three warnings:
-      `kUTTypePNG` in `MCDefs.m:73` and `MCDefs.m:94` (use `UTTypePNG`), and
+      `kUTTypePNG` in `MCDefs.m:83` and `MCDefs.m:104` (use `UTTypePNG`), and
       `NSAlphaFirstBitmapFormat` in `create.m:191`. Fix them and remove the flag.
 - [ ] **Blocking work on the main thread.**
   - Applying runs there, so a large cape can freeze the UI for a moment.
@@ -40,15 +19,15 @@ and what has been tested.
 - [ ] **Empty tiles while previews decode.** Show a placeholder or the cursor name
       instead of an empty square.
 - [ ] **Backups live for the whole login session.** The window server won't let a later
-      process remove them, so the first backup in a session is the one that counts. If
+      process remove them ([NOTES.md](NOTES.md#registrations-last-for-the-session)), so the
+      first backup in a session is the one that counts. If
       another tool changed the cursors before Mousecape's first apply, that is what reset
       brings back. Logging out clears it.
 - [ ] **No undo** in the editor, or for deleting a cape. The original had both.
 - [ ] **`mousecloak --create` asks questions on stdin** (`scanf` in `create.m`), so it
       cannot be scripted. Add options such as `--name` and `--author`.
-- [ ] **Login Items shows the agent as "mousecloak"**, not Mousecape: for a plain launch
-      agent macOS names the program, and `AssociatedBundleIdentifiers` only counts for
-      apps with an Apple team ID. Cosmetic; a Developer ID would fix it.
+- [ ] **Login Items shows the agent as "mousecloak"**, not Mousecape
+      ([NOTES.md](NOTES.md#login-agent)). Cosmetic; a Developer ID would fix it.
 - [ ] **Original Mousecape installed alongside.** Both apps claim the
       `com.alexzielenski.mousecape.cape` type. The original's last release (1813) is
       Intel-only, so this only matters on Macs with Rosetta, where it's untested which app
@@ -111,20 +90,19 @@ x86_64 build.
       - `.tar.zst`: the system's libarchive has no built-in zstd.
 - [ ] **Frame chooser follow-ups.** Drag across the filmstrip to select ranges; show the
       gap pattern of the kept frames; open it straight from the library's problem banner.
-- [ ] **Left-handed follow-ups.** Set the mirror mode for several cursors at once (Kiriko
-      needs it for about ten); test own left-handed images on macOS 27.
+- [ ] **Set the left-handed mode for several cursors at once.** Kiriko needs it for about
+      ten.
 - [ ] **Generate missing scales**, e.g. 1x from 2x, with a clear warning that resampled
       images look worse.
-- [ ] **Discover cursor variants instead of listing them.** `CGSCursorNameForSystemCursor(i)`
-      returns the window server's names of its own cursors (learnt from Cursie; shown by
-      `mousecloak --list`). macOS 15.6: the 9 standard ones. macOS 27.0.1: the same plus
-      `ArrowS` and `IBeamS`, which is exactly what the fork handles today; the extra
-      names Cursie lists (`CopyDrag`, `ResizeUp`, …) don't exist there. When a future
-      macOS adds more, use this list for backup, reset and syncing instead of the fixed one.
+- [ ] **Discover cursor variants instead of listing them.** `CGSCursorNameForSystemCursor`
+      returns the window server's own cursor names (learnt from Cursie). Up to macOS
+      27.0.1 that is exactly the set the fork handles today
+      ([NOTES.md](NOTES.md#system-cursor-names)). When a future macOS adds more, use this
+      list for backup, reset and syncing instead of the fixed one.
 - [ ] **Menu bar extra** for switching capes quickly.
 - [ ] **Accessibility pointer size.** Mousecape's size and the system's pointer size
       (System Settings → Accessibility → Display → Pointer size) are the same setting
-      underneath. Show that in Settings, or drop Mousecape's own slider.
+      underneath. Say so in Settings, or drop Mousecape's own slider.
 - [ ] **Library search and sorting** for big libraries.
 - [ ] **Hot spot fine-tuning** with the arrow keys in the editor preview.
 - [ ] **Quick Look preview and thumbnail** for `.cape` files in Finder. These are app
@@ -140,7 +118,7 @@ x86_64 build.
 - [ ] **Push.** The `modernize` branch has not been pushed to `Metal-Snake/Mousecape`.
       It stays local until decided otherwise.
 - [ ] **Upstream.** `git fetch upstream` (alexzielenski/Mousecape) now and then. As of
-      2026-10-18 it has no commits after `184f87b`.
+      2026-10-22 it has no commits after `184f87b`.
 
 Standing rule: keep the original licence's non-commercial clause and Alex Zielenski's
 notice in every distribution. No paid builds, no donations tied to downloads.

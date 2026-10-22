@@ -2,7 +2,7 @@
 
 Places to get cursor themes for Mousecape. None of these are part of this project: check
 each theme's licence before you share or change it, and only download from sources you
-trust. Mousecape imports three kinds of files:
+trust. Mousecape imports four kinds of files:
 
 - **Capes** (`.cape`): open them, drag them onto the window, or use File → Import.
 - **Windows cursors** (`.cur`, `.ani`): import a theme folder, its `install.inf`, an
@@ -73,19 +73,4 @@ so are most `.MightyMouse` files.
 |---|---|---|
 | [Macintosh Repository: Mighty Mouse](https://www.macintoshrepository.org/33199-mighty-mouse) | The app's disk images plus `Mighty_Mouse_Cursors.zip` (8.8 MB) and `More_Cursors.zip` | Archive of the original downloads; the only source for cursor sets found so far |
 
-## Good test cases
-
-Themes that exercise less common paths in Mousecape:
-
-- **Many frames:** animated `.ani` themes from the RW Designer library can have more
-  than 24 frames, which macOS can't show and Mousecape reduces.
-- **Left-handed variants:** Bibata's `-Right` packages are drawn for left-handed use;
-  compare them with Mousecape's own mirroring.
-- **Large collections:** Microtribute/mac-cursors and KingJayan/mousecape-cursors import
-  dozens of capes at once.
-- **File names with UUIDs:** GinoXiscatti/MacOS-Cursors-Collection, for the library's
-  renaming to `<identifier>.cape`.
-- **Size folders and `.7z`:** windows-cursors-modern keeps each size (`x1` … `x5`) in a
-  folder of its own; the import should take the largest.
-- **Long Linux animations:** Bibata's busy cursors have 54 frames, apple_cursor's 40.
-- **MightyMouse import:** the Macintosh Repository cursor packs, once unpacked.
+Themes that are useful for testing Mousecape are listed in [TESTING.md](TESTING.md#test-themes).

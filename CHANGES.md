@@ -2,6 +2,8 @@
 
 What this fork changes compared to [alexzielenski/Mousecape](https://github.com/alexzielenski/Mousecape)
 at commit `184f87b` ("bump version, copyright", July 2024), the last upstream commit.
+What has been tested is in [TESTING.md](TESTING.md); what was learnt about macOS along the
+way is in [NOTES.md](NOTES.md).
 
 ## Summary
 
@@ -51,10 +53,9 @@ them. Found by reading the original code and by testing on macOS 15.6 and 27.0.1
 
 ### Animations with more than 24 frames
 
-The window server refuses cursors with more than 24 frames: registering 25 or more fails
-with `kCGErrorFailure`. The limit is the same for every cursor name (standard, variant,
-core or made-up), size, pixel density and registration flag tested on macOS 15.6. macOS registers its own cursors another way, so its Wait cursor
-(the beach ball) has 30 frames, and so do capes made from it.
+The window server refuses cursors with more than 24 frames
+([frame limit](NOTES.md#frame-limit)). macOS registers its own cursors another way, so its
+Wait cursor (the beach ball) has 30 frames, and so do capes made from it.
 
 **Original:** a cursor over 24 frames was rejected with a line in the log, and the
 whole apply stopped at that point ("Bailing out"). Cursors handled before it stayed
@@ -91,20 +92,16 @@ of the last cape stayed until logout.
 
 **This fork:** the backup is reduced like any long animation, so it succeeds. Reset backs
 up before it restores: without backups nothing has been applied in the session yet, so
-the cursors on screen are still the system's. (Backing up afterwards, as at first, saved
-the stand-in described next instead of the real beach ball.) In a login session whose
-backups were made by an older version, reset falls back to the system's busy cursor, an
-arrow with a beach ball: close, but not identical.
+the cursors on screen are still the system's. If the session has no Wait backup anyway
+(for example because the original Mousecape made the session's backups), reset falls back
+to the system's busy cursor, an arrow with a beach ball: close, but not identical.
 
 ### Cursors outside the standard set stayed after a reset
 
 Some capes register cursors the original doesn't know, such as
-`com.apple.coregraphics.ArrowS` and `IBeamS`.
-- **macOS 15:** the system doesn't register them, and they don't change what is shown.
-- **macOS 27:** the system registers them itself at login, with the same images as
-  `Arrow` and `IBeam`. A registered `ArrowS` shadows `Arrow` completely, even when the
-  arrow is read back, and `IBeamS` does the same to `IBeam`. A cape that only replaces
-  `Arrow` would therefore not show on macOS 27 at all.
+`com.apple.coregraphics.ArrowS` and `IBeamS`. On macOS 27 the system registers these
+itself, and they shadow `Arrow` and `IBeam` ([ArrowS and IBeamS](NOTES.md#arrows-and-ibeams)):
+a cape that only replaces `Arrow` would not show there at all.
 
 **Original:** they were never backed up or reset. On macOS 27 the arrow of such a cape
 stayed on screen after a reset, and after applying another cape.
@@ -115,22 +112,19 @@ arrow/I-beam from the standard cursor's backup when the system never had them. T
 take the current Arrow, because on macOS 27 that would read back the variant itself.
 On macOS 27 the system's own `ArrowS`/`IBeamS` are backed up at the first apply of a
 login session, and a cape without them gives them its `Arrow`/`IBeam`, so such capes
-show from the start. Confirmed on macOS 27.0.1: reset brings back the standard arrow and
-I-beam. Applying a
-cape without them gives leftover variants the cape's own arrow/I-beam. Any other cursor
-outside the standard set is remembered when applied (`MCAppliedExtraCursors`) and
-handled the same way.
+show from the start. Applying a cape without them gives leftover variants the cape's own
+arrow/I-beam. Any other cursor outside the standard set is remembered when applied
+(`MCAppliedExtraCursors`) and handled the same way.
 
 ### Cleanup that never worked
 
 **Original:** after restoring, the engine tried to unregister its backups and other
-cursors. The window server only lets the process that registered a cursor remove it,
-and that is always an earlier process, so every one of these calls failed silently.
-Backups therefore live for the whole login session, and the first backup in a session
-is the one that counts.
+cursors. The window server only lets the process that registered a cursor remove it
+([registrations](NOTES.md#registrations-last-for-the-session)), and that is always an
+earlier process, so every one of these calls failed silently.
 
-**This fork:** nothing relies on unregistering; cursors are overwritten instead. The
-session-long backups are documented in TODO.md.
+**This fork:** nothing relies on unregistering; cursors are overwritten instead. Backups
+still last for the whole login session, a known issue in [TODO.md](TODO.md).
 
 ### Reset claimed success when nothing changed
 
@@ -187,7 +181,7 @@ every login, overriding the pointer size from System Settings → Accessibility.
 current size stays. On display changes the agent restores the preferred size instead of
 re-reading the current one, because macOS 27 resets the scale to 1x there. The idea comes
 from the Mousecape-swiftUI fork; the implementation is our own, because that fork's licence
-doesn't allow its code to be reused.
+doesn't allow its code to be reused (see Credits in [README.md](README.md#credits)).
 
 ## Cursor engine (`Sources/MousecloakCore`)
 
@@ -203,7 +197,8 @@ The Objective-C sources of `mousecloak` moved unchanged in substance (history ke
 - **Frames picked by time.** A cursor with `FrameDurations` (frames that last differently
   long) is applied as frames picked by time, the same way as Choose Frames → By Time,
   instead of every n-th frame at the average duration: the window server takes one
-  duration for all frames, so this keeps the timing. Other cursors are applied as before.
+  duration for all frames, so this keeps the timing. Other cursors are applied as in the
+  original.
 - Still compiled with manual retain/release (`-fno-objc-arc`), as before.
 - Deprecation warnings are silenced for this target (see TODO.md).
 
@@ -229,14 +224,13 @@ The Objective-C sources of `mousecloak` moved unchanged in substance (history ke
   display changes.
 - It is a plain launch agent: the app writes
   `~/Library/LaunchAgents/io.github.metal-snake.Mousecape.listener.plist` (pointing at
-  `mousecloak` in the app bundle) and loads it with `launchctl`. An earlier version of this
-  fork registered it through `SMAppService`; for an app without an Apple team ID (ad-hoc or
-  self-signed), launchd pinned that registration to the exact build and refused the agent
-  after every update ("needs LWCR update"), and re-registering didn't help. A plain agent
-  isn't pinned, so updates just work.
+  `mousecloak` in the app bundle) and loads it with `launchctl`. It doesn't use
+  `SMAppService`: for an app without an Apple team ID, launchd pins such an agent to the
+  exact build and refuses it after an update ([login agent](NOTES.md#login-agent)). A plain
+  agent isn't pinned, so updates just work.
 - Turned on and off in **Settings → Apply cape at login** instead of the **Install Helper
   Tool** menu item. If it is switched off under System Settings → Login Items, Settings
-  links there. macOS lists it as "mousecloak".
+  links there. macOS lists it as "mousecloak" (see TODO.md).
 - At launch the app makes sure the plist points at the app's current location. The label
   follows the bundle identifier, so a copy under another identifier (a test build) gets
   an agent of its own instead of taking this one over.
@@ -270,13 +264,12 @@ New SwiftUI app. Compared with the original:
   that need attention.
   The editor flags the same cursors in its list and lists them under Cape Details (a
   click selects the cursor), left-handed hints included.
-- **Smoother previews.** Cursor images are decoded off the main thread and cached. Each
-  cape gets fresh tiles, so switching capes never shows the previous cape's images.
+- **Smoother previews.** Cursor images are decoded off the main thread and cached.
   Coming back to the app reads the library again only if the folder changed.
 - **No re-apply at launch.** The original re-applied the current cape every time the app
   launched. The new app leaves that to the agent.
-- **Cursor names** follow the names macOS gives the cursor resources (HIServices,
-  SkyLight). Several of the original's names were misleading: "Camera" is the
+- **Cursor names** follow the names macOS gives the cursor resources
+  ([cursor names](NOTES.md#cursor-names)). Several of the original's names were misleading: "Camera" is the
   screenshot window cursor, "Link" is Make Alias, "Busy" is Busy but Clickable,
   "IBeam H." is the vertical I-beam, and the window resize cursors are Resize North,
   Resize Southeast and so on. The small coregraphics placeholders macOS keeps next to the real
@@ -337,13 +330,13 @@ Rebuilt from scratch. It works on a draft and saves explicitly:
 
 ## Left-handed mode per cursor
 
-Left-handed mode used to mirror a fixed list of pointers (arrow, hands, busy, …). Capes
-that draw other cursors as arrows too, like Kiriko's I-beam, looked half mirrored. Each
+The original's left-handed mode mirrors a fixed list of pointers (arrow, hands, busy, …).
+Capes that draw other cursors as arrows too, like Kiriko's I-beam, looked half mirrored. Each
 cursor can now say how it looks in left-handed mode; the setting is stored only in the
 cape file, so it travels with the cape and the agent applies it at login like the rest.
 
 - **Editor:** per cursor, **Left-handed mode**: *Automatic* (the pointer list decides, as
-  before; the label says which way), *Mirror*, *Don't Mirror*, or *Own Images*. Own images
+  in the original; the label says which way), *Mirror*, *Don't Mirror*, or *Own Images*. Own images
   start as the mirrored images and get their own wells per scale and their own hot spot,
   to replace where mirroring looks wrong (text, a hand, a shadow cast to one side). The
   preview has a **Left-handed** switch that shows the cursor as left-handed mode does;
@@ -355,9 +348,6 @@ cape file, so it travels with the cape and the agent applies it at login like th
 - **Problem banner:** in left-handed mode, cursors that look like pointers (hot spot in
   the top left) but stay unmirrored while the arrow is mirrored are pointed out, with
   the way to fix it.
-- Tested on macOS 15.6: a cape with an automatic arrow, an I-beam set to *Mirror*, an open
-  hand set to *Don't Mirror* (normally mirrored) and a pointing hand with own images
-  registers exactly that (checked through a cursor dump: images and hot spots).
 
 ## Windows cursors
 
@@ -388,13 +378,10 @@ New: Windows cursor themes import as capes.
   of empty space around it. Imports cut the transparent margin off: to the area any frame
   at any scale draws into, faint shadows included, plus one point, with the hot spot
   always inside. The size then says what's there and the editor shows the artwork filling
-  its preview. Applies to Xcursor imports too. Nothing changes on screen: measured with
-  `Scripts/cursor-size-probe.swift`, macOS 15.6 and 27.0.1 draw cursors at their
-  registered size times the cursor scale (System Settings → Accessibility → Display →
-  Pointer size), with no size limit up to 64 × 64 points.
+  its preview. Applies to Xcursor imports too. Nothing changes on screen, since macOS
+  draws a cursor at its registered size ([cursor size](NOTES.md#cursor-size)).
 - **Importing a theme again** asks whether to replace the cape from the earlier import
-  (same identifier) or keep both; keeping both adds a number to the name, as every
-  theme import did before.
+  (same identifier) or keep both; keeping both adds a number to the name.
 - **Editor:** dropping a `.cur` or `.ani` on a cursor's image well replaces the whole
   cursor (images, size, hot spot, frames).
 - Written from the published file formats; no code from other projects.
@@ -417,8 +404,8 @@ BSDs), import as capes.
   default pointer size there, are shown one pixel per point, unscaled. For most themes
   that's the 24-pixel images, and measured against Apple's own arrow, 24 points match
   macOS. Older themes made only at size 48 (e.g. Obsidian, a normal-sized arrow on a
-  48-pixel canvas) become 48 points, as large as on Linux; scaling them down to 24 made
-  them half as large. Higher scales use the file's images of a multiple of that size when
+  48-pixel canvas) become 48 points, as large as on Linux. Higher scales use the file's
+  images of a multiple of that size when
   it has them (Xcursor files usually carry 16 to 96 pixels), else larger ones scaled down;
   a theme with only one size gets 1x only.
 - **Animation:** frames with their own delays (in milliseconds), handled like `.ani`
@@ -460,10 +447,19 @@ reads them treats them as untrusted:
 ## New code
 
 - **`Sources/CapeKit`:** reads and writes `.cape` files, splits sprite sheets into frames,
-  holds the editing model and validation, and reads Windows cursors. Pure Swift with no
-  private API.
-- **Tests:** `Tests/CapeKitTests` cover the cape format, frames, scales and validation.
-  `Tests/MousecapeTests` cover saving, renaming and duplicating in a throwaway library.
+  holds the editing model and validation, compares capes for the history, applies the
+  left-handed rules, and imports Windows and Xcursor themes. Pure Swift with no private
+  API.
+- **Tests:** `Tests/CapeKitTests` cover the cape format, frames and frame timing, editing
+  and validation, diffs, left-handed rules, margin trimming, identifiers and both theme
+  importers. `Tests/MousecapeTests` cover the library and its history in a throwaway
+  folder, theme import from folders and archives, and that the engine and CapeKit agree on
+  the rules both have. `Tests/TestSupport` builds the test files they share.
+- **`Scripts`:** `build-app.sh` builds, bundles and signs the app;
+  `make-signing-certificate.sh` creates a self-signed certificate so builds keep one
+  identity; `cursor-size-probe.swift` measures the size macOS draws cursors at.
+- **`Examples/ArrowS-Test.cape`:** replaces only `ArrowS` with a magenta arrow marked "S",
+  to see which of the two a macOS version shows (see [TESTING.md](TESTING.md)).
 - **`MOUSECAPE_LIBRARY`:** this environment variable points the app at another library
   folder, for testing.
 
@@ -479,37 +475,6 @@ reads them treats them as untrusted:
 - `Mousecape/com.maxrudberg.svanslosbluehazard.cape` → `Examples/`.
 - The app icon from the asset catalog to `Resources/AppIcon.iconset`. The artwork is
   unchanged.
-
-## Tested
-
-On macOS 15.6 (Apple silicon) and 27.0.1:
-- Applying and resetting capes, from the app and with `mousecloak`, including capes with
-  more than 24 frames and with `ArrowS`/`IBeamS`.
-- Opening `.cape` files from Finder (the window stays open on macOS 27).
-
-On macOS 15.6:
-- The login agent re-applies the cape and cursor size when it starts (as at login) and
-  after a display change (simulated by switching the resolution).
-- Capture Current Cursors: the capture has no problems and applies.
-- The editor: setting the hot spot by click, Choose Frames, saving; resizable sheets.
-- Windows cursors: a theme `.zip`, a theme folder and a single `.cur` import; the
-  converted animated theme applies.
-
-Not yet: a real logout/login with a cape applied, dropping images into the editor,
-MightyMouse import, macOS 26.
-
-## Other projects looked at
-
-- **Mousecape-swiftUI** (sdmj76): source of the macOS 27 cursor-scale idea; its licence
-  forbids reusing its code, so nothing was taken.
-- **Cursie** (kwd421): its licence matches Mousecape's (non-commercial, keep the notice).
-  No code was taken; ideas recorded in TODO.md (cursor name discovery, time-based frame
-  reduction, localised file names, agent through `open -b`). Tested its advice to reset
-  through System Settings → Accessibility → Pointer → Reset Colors: on macOS 15.6 and
-  27.0.1 alike it restores only the arrow and the I-beam (and their `S` variants), so
-  Mousecape's own reset stays the way back.
-- **macOS27-Cursors** (Juwan-Hwang): a cape of Apple's own macOS 27 cursors, so not
-  taken. Its name mapping (docs/MAPPING.md) is where the cursor names above come from.
 
 ## Licence
 
