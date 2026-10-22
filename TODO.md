@@ -112,11 +112,12 @@ x86_64 build.
 
 ## Housekeeping
 
-- [ ] **Example capes.** `Default_macOS 15.cape` and `Default_macOS 26.cape` contain
-      Apple's cursor artwork, and `Kiriko.cape` is by ArakiCC under unknown terms. Keep
-      them local (not committed) unless their redistribution is cleared.
-- [ ] **Push.** The `modernize` branch has not been pushed to `Metal-Snake/Mousecape`.
-      It stays local until decided otherwise.
+- [ ] **Example capes.** `Examples/Local/` holds `Default_macOS 15.cape` and
+      `Default_macOS 26.cape`, with Apple's cursor artwork, and `Kiriko.cape`, by ArakiCC
+      under unknown terms. The folder is ignored by git. Keep them local unless their
+      redistribution is cleared.
+- [ ] **Push.** Nothing has been pushed to `Metal-Snake/Mousecape` yet. It stays local
+      until decided otherwise.
 - [ ] **Upstream.** `git fetch upstream` (alexzielenski/Mousecape) now and then. As of
       2026-10-22 it has no commits after `184f87b`.
 

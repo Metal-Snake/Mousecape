@@ -9,3 +9,6 @@ dist/
 
 # Editor settings
 .vscode/
+
+# Example capes whose redistribution isn't cleared (kept locally only)
+Examples/Local/

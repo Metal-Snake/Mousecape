@@ -47,6 +47,16 @@ a manual test. What these tests found out about macOS is in [NOTES.md](NOTES.md)
       "Choose Image…".
 - [ ] **Windows cursors in the editor:** drop a `.cur`/`.ani` on an image well.
 - [ ] **MightyMouse import** with a real `.MightyMouse` file (none at hand).
+- [ ] **Linux (Xcursor) themes:** import a theme folder and a `.tar.xz`, then apply the
+      cape. Covered by `swift test` only.
+- [ ] **Archives other than `.zip`:** `.7z` and `.tar.*` are covered by `swift test` only,
+      `.rar` not at all (`tar` can't create one for a test).
+- [ ] **Frames picked by time:** apply a cape with `FrameDurations` (e.g. an imported
+      `.ani` with uneven step durations) and compare the animation with Choose Frames →
+      By Time.
+- [ ] **History:** compare two states, Restore This Version, Remove Saved States… and
+      Revert to Original… in the app. Covered by `swift test` only.
+- [ ] **Importing a theme again:** replace the earlier import, and keep both.
 - [ ] **macOS 26.** Tested on 15.6 and 27.0.1 only.
 
 ## Tools
