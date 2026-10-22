@@ -28,13 +28,11 @@ final class Library {
     var history: CapeHistory { CapeHistory(folder: versionsFolder, moveToTrash: moveToTrash) }
 
     /// `versionsFolder` defaults to `Versions` next to the library folder, outside it so
-    /// the original Mousecape and the agent never see the copies. Originals kept by an
-    /// earlier version in `Originals` next to it move there.
+    /// the original Mousecape and the agent never see the copies.
     init(folder: URL = Library.defaultFolder, versionsFolder: URL? = nil) {
         self.folder = folder
         self.versionsFolder = versionsFolder
             ?? folder.deletingLastPathComponent().appending(path: "Versions", directoryHint: .isDirectory)
-        history.migrateOriginals(from: folder.deletingLastPathComponent().appending(path: "Originals", directoryHint: .isDirectory))
         reload()
     }
 

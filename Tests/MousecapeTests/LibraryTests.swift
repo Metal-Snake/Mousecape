@@ -128,20 +128,6 @@ final class LibraryTests {
         #expect(library.editedIdentifiers.isEmpty)
     }
 
-    @Test func movesOriginalsOfEarlierVersion() throws {
-        let legacy = base.appending(path: "Originals")
-        try FileManager.default.createDirectory(at: legacy, withIntermediateDirectories: true)
-        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-        try Cape(identifier: "test.theme", name: "Imported", author: "").propertyListData()
-            .write(to: legacy.appending(path: "test.theme.cape"))
-        try Cape(identifier: "test.theme", name: "Edited", author: "").propertyListData()
-            .write(to: folder.appending(path: "test.theme.cape"))
-        let library = makeLibrary()
-        #expect(!FileManager.default.fileExists(atPath: legacy.path))
-        #expect(try names(library.versions(of: try #require(library.capes.first))) == ["Imported"])
-        #expect(library.editedIdentifiers == ["test.theme"])
-    }
-
     @Test func keepsEveryReplacedState() throws {
         let library = makeLibrary()
         var cape = try importedAndEdited(library)

@@ -119,23 +119,6 @@ struct CapeHistory {
         try FileManager.default.moveItem(at: source, to: destination)
     }
 
-    /// Moves the originals an earlier version kept in `Originals/<identifier>.cape` here.
-    func migrateOriginals(from legacy: URL) {
-        let files = (try? FileManager.default.contentsOfDirectory(at: legacy, includingPropertiesForKeys: nil,
-                                                                   options: .skipsHiddenFiles)) ?? []
-        for file in files where file.pathExtension == "cape" {
-            let identifier = file.deletingPathExtension().lastPathComponent
-            guard let capeFolder = try? capeFolder(for: identifier) else { continue }
-            let original = capeFolder.appending(path: Self.originalName)
-            if FileManager.default.fileExists(atPath: original.path) { continue }
-            try? FileManager.default.createDirectory(at: capeFolder, withIntermediateDirectories: true)
-            try? FileManager.default.moveItem(at: file, to: original)
-        }
-        if ((try? FileManager.default.contentsOfDirectory(atPath: legacy.path)) ?? []).isEmpty {
-            try? FileManager.default.removeItem(at: legacy)
-        }
-    }
-
     static func sameContents(_ a: URL, _ b: URL) -> Bool {
         let sizeA = (try? a.resourceValues(forKeys: [.fileSizeKey]))?.fileSize
         let sizeB = (try? b.resourceValues(forKeys: [.fileSizeKey]))?.fileSize
