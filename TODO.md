@@ -43,8 +43,9 @@ a real Mac.
 
 ## Build and release
 
-Apple silicon only, on purpose: macOS 27 no longer runs on Intel Macs, so there is no
-x86_64 build.
+Apple silicon only, on purpose. Apple's support for Intel Macs ends soon, and fewer of
+them are in use every year, so this version puts no more work into the old architecture:
+there is no x86_64 build.
 
 - [ ] **CI.** A GitHub Actions workflow running `swift test` and `Scripts/build-app.sh` on
       a macOS runner.
@@ -112,12 +113,6 @@ x86_64 build.
 
 ## Housekeeping
 
-- [ ] **Example capes.** `Examples/Local/` holds `Default_macOS 15.cape` and
-      `Default_macOS 26.cape`, with Apple's cursor artwork, and `Kiriko.cape`, by ArakiCC
-      under unknown terms. The folder is ignored by git. Keep them local unless their
-      redistribution is cleared.
-- [ ] **Push.** Nothing has been pushed to `Metal-Snake/Mousecape` yet. It stays local
-      until decided otherwise.
 - [ ] **Upstream.** `git fetch upstream` (alexzielenski/Mousecape) now and then. As of
       2026-10-22 it has no commits after `184f87b`.
 
