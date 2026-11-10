@@ -101,7 +101,6 @@ struct LibraryView: View {
                         isEdited: model.library.editedIdentifiers.contains(cape.identifier),
                         problems: model.library.problems[cape.id] ?? [:])
                     .tag(cape.id)
-                    .contextMenu { contextMenu(for: cape) }
             }
             if !model.library.duplicates.isEmpty {
                 Section("Duplicate identifiers") {
@@ -124,9 +123,20 @@ struct LibraryView: View {
                 }
             }
         }
+        // A double click (or Return) applies the cape, as in the original by default.
+        .contextMenu(forSelectionType: Cape.ID.self) { ids in
+            if let cape = cape(for: ids) { contextMenu(for: cape) }
+        } primaryAction: { ids in
+            if let cape = cape(for: ids) { model.apply(cape) }
+        }
         .onDeleteCommand {
             model.capeToDelete = model.selectedCape
         }
+    }
+
+    private func cape(for ids: Set<Cape.ID>) -> Cape? {
+        guard ids.count == 1, let id = ids.first else { return nil }
+        return model.library.capes.first { $0.id == id }
     }
 
     @ViewBuilder

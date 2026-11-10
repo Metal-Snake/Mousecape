@@ -19,6 +19,8 @@ a manual test. What these tests found out about macOS is in [NOTES.md](NOTES.md)
 
 **On macOS 15.6:**
 
+- Double-clicking a cape in the sidebar applies it; a single click only selects it, and
+  the context menu still works.
 - Re-apply at launch: with the macOS cursors on screen but a cape marked as applied,
   starting the app applies that cape (checked with `mousecloak --list`).
 - The login agent re-applies the cape and the cursor size when it starts (as at login)

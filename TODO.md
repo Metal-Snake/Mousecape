@@ -22,11 +22,6 @@ a real Mac.
 - [ ] **`mousecloak --create` asks questions on stdin** (`scanf` in `create.m`), so it
       cannot be scripted. Add options such as `--name` and `--author`.
 
-## Decisions
-
-- [ ] **Library click preferences.** The original's click and double-click actions were
-      not ported. Port them or drop them for good.
-
 ## Build and release
 
 Apple silicon only, on purpose. Apple's support for Intel Macs ends soon, and fewer of

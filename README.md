@@ -58,7 +58,7 @@ to replace it or keep both.
 
 ### Applying and checking
 
-Select a cape and click **Apply** (⌘↩); **Cape → Reset to Default Cursors** (⇧⌘R) brings
+Select a cape and click **Apply** (⌘↩), or double-click it; **Cape → Reset to Default Cursors** (⇧⌘R) brings
 the macOS cursors back. When Mousecape starts, it applies the cape marked as applied
 again, in case the cursors on screen have changed since. A cape with problems gets a badge in the sidebar, and its page
 says what happens to which cursor: macOS shows at most 24 frames of an animation, so

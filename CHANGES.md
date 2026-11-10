@@ -277,8 +277,8 @@ New SwiftUI app. Compared with the original:
   "IBeam H." is the vertical I-beam, and the window resize cursors are Resize North,
   Resize Southeast and so on. The small coregraphics placeholders macOS keeps next to the real
   cursors are marked "(Legacy)". Identifiers and the cape format are unchanged.
-- **Not ported:** the library click and double-click action preferences
-  (`MCLibraryClickAction`, `MCDoubleAction`).
+- **Double click applies** a cape in the sidebar, as the original did by default. Its
+  setting to make a double click edit instead (`MCDoubleAction`) is not ported.
 
 ## Cape editor
 
