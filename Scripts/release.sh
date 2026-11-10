@@ -21,6 +21,9 @@ cd "$ROOT"
 
 die() { echo "error: $*" >&2; exit 1; }
 
+# Named explicitly: as a fork, gh would otherwise pick the parent, alexzielenski/Mousecape.
+REPO="Metal-Snake/Mousecape"
+
 VERSION="$(sed -n 's/^## \[\([0-9][0-9.]*\)\] - .*/\1/p' CHANGELOG.md | head -n 1)"
 [ -n "$VERSION" ] || die "no released version in CHANGELOG.md"
 TAG="v$VERSION"
@@ -62,8 +65,7 @@ it until then. Requires macOS 14 or later on Apple silicon.
 Mousecape is free for personal, non-commercial use only; see [LICENSE](LICENSE).
 EOF
 # Relative links (CHANGES.md, LICENSE) don't resolve in release notes: point them at the tag.
-REPO_URL="https://github.com/Metal-Snake/Mousecape"
-sed -i '' -E "s#\]\(([A-Za-z0-9_./-]+)\)#](${REPO_URL}/blob/${TAG}/\1)#g" "$NOTES"
+sed -i '' -E "s#\]\(([A-Za-z0-9_./-]+)\)#](https://github.com/${REPO}/blob/${TAG}/\1)#g" "$NOTES"
 
 echo "==> Tests…"
 swift test
@@ -82,4 +84,4 @@ git tag -a "$TAG" -m "Mousecape $VERSION"
 git push origin master "$TAG"
 
 echo "==> GitHub release…"
-gh release create "$TAG" "$ASSET" --verify-tag --title "Mousecape $VERSION" --notes-file "$NOTES"
+gh release create "$TAG" "$ASSET" --repo "$REPO" --verify-tag --title "Mousecape $VERSION" --notes-file "$NOTES"
