@@ -18,11 +18,6 @@ a real Mac.
 - [ ] **Sidebar jumps after an import:** the list scrolls so that the top row is cut off.
 - [ ] **Empty tiles while previews decode.** Show a placeholder or the cursor name
       instead of an empty square.
-- [ ] **Backups live for the whole login session.** The window server won't let a later
-      process remove them ([NOTES.md](NOTES.md#registrations-last-for-the-session)), so the
-      first backup in a session is the one that counts. If
-      another tool changed the cursors before Mousecape's first apply, that is what reset
-      brings back. Logging out clears it.
 - [ ] **No undo** in the editor, or for deleting a cape. The original had both.
 - [ ] **`mousecloak --create` asks questions on stdin** (`scanf` in `create.m`), so it
       cannot be scripted. Add options such as `--name` and `--author`.

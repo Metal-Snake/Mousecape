@@ -19,8 +19,16 @@ last differently long can only keep their timing by repeating frames.
 ## Registrations last for the session
 
 Only the process that registered a cursor can unregister it. Every later process fails,
-silently. So backups made by the first apply of a login session stay until logout, and
-cursors are overwritten rather than removed.
+silently. So cursors are overwritten rather than removed, and registrations stay until
+logout.
+
+This shapes how reset works. The engine registers its backups as
+`com.alexzielenski.mousecape.<identifier>`, the same names the original Mousecape uses,
+and backs up only when no backup exists yet. The first backup of a login session is
+therefore the one every reset brings back. The engine can't tell whether the cursors on
+screen at that moment are macOS's own: if another tool (the original Mousecape, Cursie, …)
+changed them earlier in the session, reset brings back that tool's cursors. Logging out
+and in again starts over.
 
 ## ArrowS and IBeamS
 

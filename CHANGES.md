@@ -124,7 +124,8 @@ cursors. The window server only lets the process that registered a cursor remove
 earlier process, so every one of these calls failed silently.
 
 **This fork:** nothing relies on unregistering; cursors are overwritten instead. Backups
-still last for the whole login session, a known issue in [TODO.md](TODO.md).
+still last for the whole login session, with the consequences described in
+[NOTES.md](NOTES.md#registrations-last-for-the-session).
 
 ### Reset claimed success when nothing changed
 
