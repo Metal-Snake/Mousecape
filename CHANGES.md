@@ -267,8 +267,10 @@ New SwiftUI app. Compared with the original:
   click selects the cursor), left-handed hints included.
 - **Smoother previews.** Cursor images are decoded off the main thread and cached.
   Coming back to the app reads the library again only if the folder changed.
-- **No re-apply at launch.** The original re-applied the current cape every time the app
-  launched. The new app leaves that to the agent.
+- **Re-apply at launch,** as in the original: when the app starts, it applies the cape
+  marked as applied again, so the cursors on screen match the mark even when another tool
+  or macOS has reset them. A cape whose cursors were only partly accepted applies without
+  an alert; its page lists the problems.
 - **Cursor names** follow the names macOS gives the cursor resources
   ([cursor names](NOTES.md#cursor-names)). Several of the original's names were misleading: "Camera" is the
   screenshot window cursor, "Link" is Make Alias, "Busy" is Busy but Clickable,

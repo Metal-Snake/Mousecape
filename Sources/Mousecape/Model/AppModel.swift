@@ -44,6 +44,24 @@ final class AppModel {
         perform { try library.reapply() }
     }
 
+    private var appliedAtLaunch = false
+
+    /// Applies the cape marked as applied again, once per launch, as the original did. The
+    /// cursors on screen can differ from that mark (another tool, or macOS, reset them), and
+    /// the agent may be off. A cape that is only partly applied isn't reported here: the
+    /// cape view already lists its problems, and an alert at every launch would not help.
+    func applyAtLaunch() {
+        guard !appliedAtLaunch else { return }
+        appliedAtLaunch = true
+        guard let cape = library.appliedCape else { return }
+        do {
+            try library.apply(cape)
+        } catch LibraryError.partiallyApplied {
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
     // MARK: - Importing
 
     /// Imports capes, MightyMouse files and Windows or Linux cursor themes (from the open

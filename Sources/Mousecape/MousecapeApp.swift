@@ -10,6 +10,7 @@ struct MousecapeApp: App {
             LibraryView(model: model)
                 .frame(minWidth: 900, minHeight: 620)   // room for the editor sheet
                 .onAppear { appDelegate.model = model }
+                .task { model.applyAtLaunch() }     // once the window appears
         }
         .defaultSize(width: 1000, height: 680)
         // Opened files go to AppDelegate.application(_:open:). Left to SwiftUI, the

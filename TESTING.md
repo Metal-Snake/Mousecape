@@ -19,6 +19,8 @@ a manual test. What these tests found out about macOS is in [NOTES.md](NOTES.md)
 
 **On macOS 15.6:**
 
+- Re-apply at launch: with the macOS cursors on screen but a cape marked as applied,
+  starting the app applies that cape (checked with `mousecloak --list`).
 - The login agent re-applies the cape and the cursor size when it starts (as at login)
   and after a display change (simulated by switching the resolution). It keeps running
   across rebuilds without the app being opened.

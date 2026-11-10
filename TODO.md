@@ -21,18 +21,9 @@ a real Mac.
 - [ ] **No undo** in the editor, or for deleting a cape. The original had both.
 - [ ] **`mousecloak --create` asks questions on stdin** (`scanf` in `create.m`), so it
       cannot be scripted. Add options such as `--name` and `--author`.
-- [ ] **Login Items shows the agent as "mousecloak"**, not Mousecape
-      ([NOTES.md](NOTES.md#login-agent)). Cosmetic; a Developer ID would fix it.
-- [ ] **Original Mousecape installed alongside.** Both apps claim the
-      `com.alexzielenski.mousecape.cape` type. The original's last release (1813) is
-      Intel-only, so this only matters on Macs with Rosetta, where it's untested which app
-      opens `.cape` files.
 
 ## Decisions
 
-- [ ] **Re-apply at launch?** The original re-applied the cape whenever the app started;
-      this fork leaves that to the agent. Maybe bring it back when the agent is off.
-- [ ] **Closing the window quits the app** (single `Window` scene). Keep it or not?
 - [ ] **Library click preferences.** The original's click and double-click actions were
       not ported. Port them or drop them for good.
 
