@@ -4,7 +4,9 @@ Mousecape is a cursor manager for macOS 14+, Apple silicon only. This fork keeps
 around it in Swift/SwiftUI. It uses SwiftPM only: no Xcode project and no third-party
 dependencies.
 
-README.md is for users. CHANGES.md records what differs from upstream `184f87b`.
+README.md is for users. CHANGELOG.md lists the changes per version (Keep a Changelog,
+SemVer, starting at 3.0.0). CHANGES.md records in detail what 3.0.0 changed from upstream
+`184f87b`.
 TESTING.md records what has been tested on a real Mac and what still has to be. NOTES.md
 holds what is known about how macOS handles cursors. TODO.md holds open work, known issues
 and pending decisions. EXAMPLES.md lists where to find capes and themes. Read the relevant
@@ -19,6 +21,7 @@ swift build                       # debug build of all targets
 swift test                        # all suites (Swift Testing, not XCTest)
 swift test --filter CapeKitTests  # one target; --filter also takes a test name
 Scripts/build-app.sh [--zip]      # release build → dist/Mousecape.app (signed, see script header)
+Scripts/release.sh                # test, build, tag vX.Y.Z, push, GitHub release (newest CHANGELOG version)
 MOUSECAPE_LIBRARY=/some/dir …     # point the app at a throwaway library folder
 ```
 
@@ -95,8 +98,9 @@ Capes, themes and archives are untrusted input (see "Hardening" in CHANGES.md):
   releases by hand. The target also hides deprecation warnings (a known issue in TODO.md).
 - Commit messages have a short imperative subject, sometimes with an area prefix
   (`Engine:`, `Editor:`, `README:`, `TODO:`), and a body explaining what and why. When you
-  change behaviour, update CHANGES.md (and README.md if users would notice) in the same
-  commit. Tick off or add TODO.md items as needed. New findings about macOS go in NOTES.md.
+  change behaviour, add an entry under `[Unreleased]` in CHANGELOG.md (and update
+  README.md if users would notice) in the same commit. CHANGES.md stays the record of
+  3.0.0; correct it only where it is wrong. Tick off or add TODO.md items as needed. New findings about macOS go in NOTES.md.
 
 ## Things not to do
 

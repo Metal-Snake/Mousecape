@@ -1,7 +1,8 @@
 # Changes from the original
 
 What this fork changes compared to [alexzielenski/Mousecape](https://github.com/alexzielenski/Mousecape)
-at commit `184f87b` ("bump version, copyright", July 2024), the last upstream commit.
+at commit `184f87b` ("bump version, copyright", July 2024), the last upstream commit, as of
+version 3.0.0. Changes after that are in [CHANGELOG.md](CHANGELOG.md).
 What has been tested is in [TESTING.md](TESTING.md); what was learnt about macOS along the
 way is in [NOTES.md](NOTES.md).
 
@@ -17,7 +18,8 @@ bundled third-party libraries are gone.
 | App | Objective-C, XIB, AppKit | SwiftUI |
 | Build | Xcode project | SwiftPM + `Scripts/build-app.sh`, Command Line Tools only |
 | Background helper | Login item app (`mousecloakHelper`, `SMLoginItemSetEnabled`) | Launch agent (`mousecloak --listen` in `~/Library/LaunchAgents`) |
-| Updates | Sparkle | None |
+| Updates | Sparkle | None; [GitHub releases](https://github.com/Metal-Snake/Mousecape/releases) |
+| Version | 1820 at `184f87b` (last release: 1813) | 3.0.0 and later, [Semantic Versioning](https://semver.org) |
 | Bundle identifier | `com.alexzielenski.Mousecape` | `io.github.metal-snake.Mousecape` |
 | Architectures | Universal (arm64, x86_64) | Apple silicon only |
 | Tests | None | Swift Testing (`swift test`) |

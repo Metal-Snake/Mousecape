@@ -8,17 +8,22 @@
 # the build is ad-hoc signed. SIGN_IDENTITY overrides both (a certificate name or SHA-1, or
 # "-" for ad-hoc).
 #
+# The version comes from CHANGELOG.md, the build number from the commit count.
+#
 # Usage:
 #   Scripts/build-app.sh            # just the .app
 #   Scripts/build-app.sh --zip      # + dist/Mousecape.app.zip
 #
 set -euo pipefail
 
-VERSION="2.0.0"     # CFBundleShortVersionString
-BUILD="1"           # CFBundleVersion
-
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
+
+# The version is the newest release in CHANGELOG.md, so it lives in one place. The build
+# number counts the commits, so it grows with every change.
+VERSION="$(sed -n 's/^## \[\([0-9][0-9.]*\)\] - .*/\1/p' CHANGELOG.md | head -n 1)"   # CFBundleShortVersionString
+BUILD="$(git rev-list --count HEAD)"                                                # CFBundleVersion
+[ -n "$VERSION" ] || { echo "No released version in CHANGELOG.md" >&2; exit 1; }
 
 MAKE_ZIP=0
 [ "${1:-}" = "--zip" ] && MAKE_ZIP=1

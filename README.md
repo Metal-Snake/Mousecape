@@ -14,9 +14,24 @@ around it is rewritten in SwiftUI.
 - No third-party dependencies, no network access
 
 > **Work in progress.** Everything below works and is tested, but expect rough edges.
-> [CHANGES.md](CHANGES.md) lists what changed from the original, [TESTING.md](TESTING.md)
+> [CHANGELOG.md](CHANGELOG.md) lists the changes per version, [CHANGES.md](CHANGES.md)
+> every difference from the original, [TESTING.md](TESTING.md)
 > what has been tested and [TODO.md](TODO.md) what is still open.
 > [NOTES.md](NOTES.md) collects what is known about how macOS handles cursors.
+
+## Installing
+
+Download `Mousecape-<version>.zip` from the
+[releases](https://github.com/Metal-Snake/Mousecape/releases), unzip it, move
+Mousecape.app to Applications, and run once in Terminal:
+
+```
+xattr -cr /Applications/Mousecape.app
+```
+
+The app is signed with a self-signed certificate, not notarized by Apple, so macOS blocks
+it until then. There are no automatic updates; [CHANGELOG.md](CHANGELOG.md) says what each
+version changes.
 
 ## How it works
 
@@ -130,8 +145,12 @@ Scripts/build-app.sh --zip       # → also dist/Mousecape.app.zip
 
 `build-app.sh` signs with a "Mousecape Code Signing" certificate from your keychain when
 there is one (`Scripts/make-signing-certificate.sh` creates it), so every build keeps the
-same identity; otherwise it signs ad-hoc. Either way the app isn't notarized: on first
-launch, right-click it and choose **Open**.
+same identity; otherwise it signs ad-hoc. The version comes from the newest release in
+[CHANGELOG.md](CHANGELOG.md), the build number from the number of commits.
+
+To release, move the `[Unreleased]` entries in CHANGELOG.md into a new version section,
+commit, and run `Scripts/release.sh`. It tests, builds, tags `vX.Y.Z`, pushes and creates
+the GitHub release with that section as its notes.
 
 `Scripts/cursor-size-probe.swift` measures the size macOS really draws cursors at, and
 `Examples/ArrowS-Test.cape` shows whether a macOS version uses `ArrowS`. Both are for
@@ -147,7 +166,7 @@ testing new macOS versions (see [TESTING.md](TESTING.md)).
 | `Sources/Mousecape` | The SwiftUI app: library, history, editor, theme import |
 | `Tests` | Swift Testing suites, and `TestSupport` with the file builders they share |
 | `Resources` | Info.plist, app icon |
-| `Scripts` | Building, signing, the cursor size probe |
+| `Scripts` | Building, signing, releasing, the cursor size probe |
 | `Examples` | The Svanslös cape and the ArrowS test cape |
 
 ### Safety

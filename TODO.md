@@ -30,10 +30,8 @@ there is no x86_64 build.
 
 - [ ] **CI.** A GitHub Actions workflow running `swift test` and `Scripts/build-app.sh` on
       a macOS runner.
-- [ ] **Releases.** Tag, zip and upload a GitHub release. Notarization needs a paid
-      Developer ID; until then, document right-click → Open.
-- [ ] **Version scheme.** `build-app.sh` says 2.0.0; the last upstream release was
-      build 1813. Decide on a scheme and keep the version in one place.
+- [ ] **Notarization** needs a paid Developer ID. Until then, users run `xattr -cr` after
+      downloading (README, release notes).
 - [ ] **Updates.** None at the moment. The original's Sparkle setup was dropped: it was an
       old submodule that needs Xcode to build, and its feed pointed to the original's
       appcast, so it would have offered the original's Intel-only builds. Options, from
