@@ -94,6 +94,34 @@ void CGImageWriteToFile(CGImageRef image, CFStringRef path) {
     CFRelease(destination);
 }
 
+// The most pixels an image from a cape may have to be decoded; the same limit as
+// CursorSheet.maximumPixels in CapeKit (a 10x sheet of a 64-point cursor, 120 frames).
+const NSUInteger MCMaximumImagePixels = 640 * 640 * 120;
+
+// PNG data for an image as a cape stores it. Capes hold PNG or TIFF (captured cursors are
+// TIFF); PNG is returned as it is, anything else converted. Nil if the data isn't an image
+// or is larger than MCMaximumImagePixels, checked from its header before decoding.
+NSData *MCPNGDataFromImageData(id data) {
+    if (![data isKindOfClass:[NSData class]])
+        return nil;
+    static const unsigned char signature[8] = { 0x89, 'P', 'N', 'G', '\r', '\n', 0x1A, '\n' };
+    if ([data length] >= sizeof(signature) && memcmp([data bytes], signature, sizeof(signature)) == 0)
+        return data;
+
+    CGImageSourceRef source = CGImageSourceCreateWithData((CFDataRef)data, NULL);
+    if (!source)
+        return nil;
+    NSDictionary *properties = [(NSDictionary *)CGImageSourceCopyPropertiesAtIndex(source, 0, NULL) autorelease];
+    CFRelease(source);
+    NSUInteger width = [properties[(NSString *)kCGImagePropertyPixelWidth] unsignedIntegerValue];
+    NSUInteger height = [properties[(NSString *)kCGImagePropertyPixelHeight] unsignedIntegerValue];
+    if (width == 0 || height == 0 || width > MCMaximumImagePixels / height)
+        return nil;
+
+    NSBitmapImageRep *rep = [NSBitmapImageRep imageRepWithData:data];
+    return [rep representationUsingType:NSBitmapImageFileTypePNG properties:@{}];
+}
+
 NSData *pngDataForImage(id image) {
     if ([image isKindOfClass:[NSBitmapImageRep class]]) {
         return [(NSBitmapImageRep *)image TIFFRepresentationUsingCompression:NSTIFFCompressionLZW factor:1.0];

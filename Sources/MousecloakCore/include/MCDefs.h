@@ -83,6 +83,8 @@ extern NSString *UUID(void);
 extern NSDictionary *capeWithIdentifier(NSString *identifier);
 extern void CGImageWriteToFile(CGImageRef image, CFStringRef path);
 extern NSData *pngDataForImage(id image);
+extern const NSUInteger MCMaximumImagePixels;
+extern NSData *MCPNGDataFromImageData(id data);
 extern NSString *MMGet(NSString *prompt);
 
 extern CGError MCIsCursorRegistered(CGSConnectionID cid, char *cursorName, bool *registered);

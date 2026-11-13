@@ -17,6 +17,10 @@ func pointerRuleMatchesEngine(identifier: String) {
     #expect(MCCursorIsPointer(identifier) == CursorNames.isPointer(identifier))
 }
 
+@Test func imageSizeLimitMatchesEngine() {
+    #expect(Int(MCMaximumImagePixels) == CursorSheet.maximumPixels)
+}
+
 @Test func coreAliasesMatchEngine() {
     for (alias, base) in CursorNames.coreAliases {
         #expect(MCBaseCursorForCoreAlias(alias) == base)

@@ -352,7 +352,7 @@ BOOL dumpCursorsToFolder(NSString *path, BOOL (^progress)(NSUInteger current, NS
         MMLog("Gathering data for %s", key.UTF8String);
         NSDictionary *cape = processedCapeWithIdentifier(key);
         
-        [[cape[MCCursorDictionaryRepresentationsKey] lastObject] writeToFile:[[path stringByAppendingPathComponent:key] stringByAppendingPathExtension:@"png"] atomically: NO];
+        [MCPNGDataFromImageData([cape[MCCursorDictionaryRepresentationsKey] lastObject]) writeToFile:[[path stringByAppendingPathComponent:key] stringByAppendingPathExtension:@"png"] atomically: NO];
         i++;
     }
     
@@ -372,7 +372,7 @@ BOOL dumpCursorsToFolder(NSString *path, BOOL (^progress)(NSUInteger current, NS
         
         MMLog("Gathering data for %s", key.UTF8String);
         
-        [[cape[MCCursorDictionaryRepresentationsKey] lastObject] writeToFile:[[path stringByAppendingPathComponent:key] stringByAppendingPathExtension:@"png"] atomically:NO];
+        [MCPNGDataFromImageData([cape[MCCursorDictionaryRepresentationsKey] lastObject]) writeToFile:[[path stringByAppendingPathComponent:key] stringByAppendingPathExtension:@"png"] atomically:NO];
     }
     
     if (progress) {
@@ -396,10 +396,15 @@ extern void exportCape(NSDictionary *cape, NSString *destination) {
             MMLog(BOLD RED "Skipping cursor %s: not usable as a file name" RESET, key.description.UTF8String);
             continue;
         }
+        // Capes store PNG or TIFF; the files are named .png, so they have to be PNG.
         NSArray *reps = cursors[key][MCCursorDictionaryRepresentationsKey];
         for (NSUInteger idx = 0; idx < reps.count; idx++) {
-            NSData *data = reps[idx];
-            [data writeToFile:[destination stringByAppendingPathComponent:[NSString stringWithFormat:@"%@_%lu.png", key, (unsigned long)idx]] atomically:NO];
+            NSData *png = MCPNGDataFromImageData(reps[idx]);
+            if (!png) {
+                MMLog(BOLD RED "Skipping image %lu of %s: not a readable image" RESET, (unsigned long)idx, key.UTF8String);
+                continue;
+            }
+            [png writeToFile:[destination stringByAppendingPathComponent:[NSString stringWithFormat:@"%@_%lu.png", key, (unsigned long)idx]] atomically:NO];
         }
     }
 }

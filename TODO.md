@@ -6,9 +6,6 @@ a real Mac.
 
 ## Known issues
 
-- [ ] **`mousecloak --export` writes TIFF data into `.png` files.** It saves each image of
-      the cape as it is stored, and captured capes (Capture Current Cursors, `--dump`)
-      store TIFF. Convert to PNG when exporting. From the original.
 - [ ] **Blocking work on the main thread.**
   - Applying runs there, so a large cape can freeze the UI for a moment.
   - A library reload parses every cape fully (often several MB each). It happens only
