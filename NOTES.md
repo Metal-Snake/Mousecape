@@ -66,7 +66,23 @@ largest size tried.
   whatever the file's resolution. Linux (libXcursor) defaults to size 24, and 24 points
   match Apple's own arrow.
 
-## Reset Colors
+## Which image macOS shows
+
+A cursor registers one image per pixel density. macOS 27.0.1 accepts any density, not
+only the 1x, 2x, 5x and 10x of the cape editor, and shows the smallest image that is at
+least as dense as the screen needs: the display's backing scale times the cursor scale.
+Measured with a test arrow that has a different colour at 1x, 2x, 3x, 4x, 5x and 10x, on a
+5K Studio Display and a 4K monitor in a scaled mode (both 2x backing):
+
+| Cursor scale | 1 | 1.25 | 1.5 | 1.75 | 2 | 2.5 | 3 | 4 |
+|---|---|---|---|---|---|---|---|---|
+| Needed density | 2 | 2.5 | 3 | 3.5 | 4 | 5 | 6 | 8 |
+| Image shown | 2x | 3x | 3x | 4x | 4x | 5x | 10x | 10x |
+
+Every one looked sharp. Densities that aren't whole numbers work too: MaCursor themes
+with 25.6-point cursors in 26-pixel images show completely and click where they point.
+The 1x image only matters on displays without Retina.
+
 
 System Settings → Accessibility → Pointer → Reset Colors (suggested by Cursie) restores only the arrow
 and the I-beam (and their `S` variants). It is no way back from a cape.

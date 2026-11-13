@@ -23,6 +23,11 @@ a manual test. What these tests found out about macOS is in [NOTES.md](NOTES.md)
   show its resize cursors, and the cursor over the Dock is right. A newly applied cape
   shows without moving the mouse. (On macOS 15.8.2 the Dock's resize cursor stays
   Apple's; not followed up, since older versions are no longer a focus.)
+- Image densities ([NOTES.md](NOTES.md#which-image-macos-shows)): a test arrow with 1x to
+  10x images in different colours shows which one macOS picks at each cursor scale. Capes
+  with 3x images (MaCursor's Softglow) and with fractional point sizes (Anya) apply without
+  an error, look sharp, keep their transparency, and click where they point, although
+  Mousecape marks them red.
 
 **On macOS 15.6:**
 
