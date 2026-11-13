@@ -275,11 +275,11 @@ BOOL applyCape(NSDictionary *dictionary) {
         NSUInteger failed = 0;
         for (NSString *key in cursors) {
             NSDictionary *cape = cursors[key];
-            // A variant such as IBeamS with an entry of its own takes its base's mirror
-            // setting unless it has its own, so IBeam and IBeamS look alike in left-handed
-            // mode. (Not the base's left-handed images: they may not fit. A variant without
-            // an entry gets the base's whole entry anyway, below.)
-            NSString *base = MCBaseCursorForExtra(key);
+            // A variant such as IBeamS (or core cursor 1) with an entry of its own takes its
+            // base's mirror setting unless it has its own, so IBeam and IBeamS look alike in
+            // left-handed mode. (Not the base's left-handed images: they may not fit. A
+            // variant without an entry gets the base's whole entry anyway, below.)
+            NSString *base = MCBaseCursorForExtra(key) ?: MCBaseCursorForCoreAlias(key);
             NSDictionary *baseCape = base ? cursors[base] : nil;
             if (baseCape && !cape[MCCursorDictionaryMirrorForLeftHandedKey] && !cape[MCCursorDictionaryLeftHandedRepresentationsKey]) {
                 NSMutableDictionary *inherited = [[cape mutableCopy] autorelease];
@@ -306,6 +306,17 @@ BOOL applyCape(NSDictionary *dictionary) {
             if (registered && !cursors[extra] && base && cursors[base]) {
                 MMLog("Using %s for %s", base.UTF8String, extra.UTF8String);
                 applyCapeForIdentifier(cursors[base], extra, NO);
+            }
+        }
+
+        // Core cursors 0 and 1 are the arrow and the I-beam by number. Without entries of
+        // their own they get the cape's, so an app asking by number sees the cape too. A
+        // reset brings them back with the other core cursors.
+        for (NSString *alias in @[@"com.apple.cursor.0", @"com.apple.cursor.1"]) {
+            NSString *base = MCBaseCursorForCoreAlias(alias);
+            if (!cursors[alias] && cursors[base]) {
+                MMLog("Using %s for %s", base.UTF8String, alias.UTF8String);
+                applyCapeForIdentifier(cursors[base], alias, NO);
             }
         }
 

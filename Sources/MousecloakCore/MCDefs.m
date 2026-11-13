@@ -247,6 +247,16 @@ NSString *MCBaseCursorForExtra(NSString *identifier) {
     return MCCursorIsStandard(base) ? base : nil;
 }
 
+// Core cursors 0 and 1 are the arrow and the I-beam under their numbers: for those, Arrow
+// and IBeam. Apps ask for the named cursors; a request by number should show the cape too.
+NSString *MCBaseCursorForCoreAlias(NSString *identifier) {
+    if ([identifier isEqualToString:@"com.apple.cursor.0"])
+        return @"com.apple.coregraphics.Arrow";
+    if ([identifier isEqualToString:@"com.apple.cursor.1"])
+        return @"com.apple.coregraphics.IBeam";
+    return nil;
+}
+
 // The cursors left-handed mode mirrors: everything that points with its tip. Arrow comes
 // first, so variants registered later in a session are mirrored from the right images.
 NSArray *MCPointerCursorIdentifiers() {
@@ -281,8 +291,9 @@ BOOL MCIsSafeIdentifier(NSString *identifier) {
 
 BOOL MCCursorIsPointer(NSString *identifier) {
     // A variant such as ArrowS is a pointer when its base is: on macOS 27 ArrowS is the
-    // arrow people see, so left-handed mode has to mirror it too.
-    NSString *base = MCBaseCursorForExtra(identifier);
+    // arrow people see, so left-handed mode has to mirror it too. Core cursor 0 is the
+    // arrow as well.
+    NSString *base = MCBaseCursorForExtra(identifier) ?: MCBaseCursorForCoreAlias(identifier);
     return [MCPointerCursorIdentifiers() containsObject:identifier]
         || (base && [MCPointerCursorIdentifiers() containsObject:base]);
 }

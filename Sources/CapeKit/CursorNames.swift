@@ -15,6 +15,8 @@ public enum CursorNames {
         "com.apple.coregraphics.Move": "Move",
         "com.apple.coregraphics.Wait": "Wait",
         "com.apple.coregraphics.Empty": "Empty",
+        "com.apple.cursor.0": "Arrow (Core)",
+        "com.apple.cursor.1": "I-Beam (Core)",
         "com.apple.cursor.2": "Make Alias",
         "com.apple.cursor.3": "Not Allowed",
         "com.apple.cursor.4": "Busy but Clickable",

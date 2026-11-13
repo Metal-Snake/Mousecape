@@ -19,8 +19,17 @@ extension CursorNames {
         pointers.contains(identifier) || baseOfVariant(identifier).map(pointers.contains) == true
     }
 
-    /// `com.apple.coregraphics.Arrow` for `…ArrowS`: the variants newer macOS versions add.
+    /// Core cursors 0 and 1: the arrow and the I-beam by number. A cape without entries of
+    /// its own gives them its Arrow and IBeam when applied (`MCBaseCursorForCoreAlias`).
+    public static let coreAliases = [
+        "com.apple.cursor.0": "com.apple.coregraphics.Arrow",
+        "com.apple.cursor.1": "com.apple.coregraphics.IBeam",
+    ]
+
+    /// The cursor `identifier` stands in for: `com.apple.coregraphics.Arrow` for `…ArrowS`
+    /// (the variants newer macOS versions add) and for core cursor 0.
     public static func baseOfVariant(_ identifier: String) -> String? {
+        if let base = coreAliases[identifier] { return base }
         guard identifier.hasPrefix("com.apple.coregraphics."), identifier.hasSuffix("S") else { return nil }
         let base = String(identifier.dropLast())
         return all[base] != nil ? base : nil
@@ -109,7 +118,8 @@ extension CapeCursor {
 
 extension Cape {
     /// How a cursor of this cape looks in left-handed mode, as the engine applies it: a
-    /// variant such as IBeamS without a setting of its own takes its base's mirror setting.
+    /// variant such as IBeamS (or core cursor 1) without a setting of its own takes its
+    /// base's mirror setting.
     public func leftHandedLook(of cursor: CapeCursor) -> CapeCursor.LeftHandedLook {
         guard cursor.mirrorForLeftHanded == nil, !cursor.hasOwnLeftHandedImages,
               let base = CursorNames.baseOfVariant(cursor.identifier),

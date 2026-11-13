@@ -53,6 +53,15 @@ The names Mousecape shows follow the names macOS gives the cursor resources in H
 and SkyLight. The mapping comes from macOS27-Cursors (`docs/MAPPING.md`). Next to the real
 cursors, macOS keeps small coregraphics placeholders, which Mousecape marks "(Legacy)".
 
+There are two sets of system cursors. The named ones (`com.apple.coregraphics.Arrow`,
+`…IBeam`, `…Wait`, …) are registered by the window server under their names. The core
+cursors (`com.apple.cursor.0` to `…43`) are numbered; apps ask for them by number, and
+macOS draws them from the PDFs in HIServices' `cursors` folder. A cape replaces core
+cursor N by registering an image as `com.apple.cursor.N`; a reset brings all of them back
+at once (`CoreCursorUnregisterAll`). Core cursors 0 and 1 are the arrow and the I-beam,
+with no PDF of their own. Whether any app asks for them by number is unknown; MaCursor
+registers its arrow and I-beam under those numbers too, and Mousecape does the same.
+
 ## Cursor size
 
 Measured with `Scripts/cursor-size-probe.swift`: macOS draws a cursor at its registered

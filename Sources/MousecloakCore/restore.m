@@ -161,8 +161,8 @@ BOOL resetAllCursors() {
             CoreCursorSet(CGSMainConnectionID(), x);
         }
 
-        // Without a backup of Wait (older versions could not back up its long animation),
-        // take the system's busy cursor, which the core cursors just brought back.
+        // Without a backup of Wait (the original Mousecape could not back up its long
+        // animation), take the system's busy cursor, which the core cursors just brought back.
         if (!waitRestored) {
             NSDictionary *busy = capeWithIdentifier(@"com.apple.cursor.4");
             if (busy) {

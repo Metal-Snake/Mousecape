@@ -181,6 +181,7 @@ func acceptsAnyDensity(width: Int, height: Int) {
     var cape = Cape.untitled(author: "Metal Snake")
     #expect(cape.identifier.hasPrefix("local.metalsnake.untitled."))
     #expect(cape.missingCursorIdentifiers.first == "com.apple.coregraphics.Arrow")
+    #expect(!cape.missingCursorIdentifiers.contains("com.apple.cursor.0"))   // applying fills it
 
     cape.addCursor(identifier: "com.apple.cursor.13")
     cape.addCursor(identifier: "com.apple.coregraphics.Arrow")

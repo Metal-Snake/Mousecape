@@ -111,6 +111,8 @@ private func cursor(_ identifier: String, hotSpot: CGPoint = CGPoint(x: 1, y: 1)
     // A variant takes its base's setting, as in the engine.
     cape.cursors.append(try cursor("com.apple.coregraphics.IBeamS", hotSpot: CGPoint(x: 1, y: 1)))
     #expect(cape.unevenMirroring.isEmpty)
+    cape.cursors.append(try cursor("com.apple.cursor.1", hotSpot: CGPoint(x: 1, y: 1)))   // so does core cursor 1
+    #expect(cape.unevenMirroring.isEmpty)
     // Nothing to say when the arrow isn't mirrored either.
     cape.cursors[1].mirrorForLeftHanded = nil
     cape.cursors[0].mirrorForLeftHanded = false

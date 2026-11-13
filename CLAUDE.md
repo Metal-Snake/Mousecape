@@ -71,6 +71,7 @@ checks that they agree. If you change one side, change the other in the same com
 - the identifier rule: `MCIsSafeIdentifier` ↔ `Cape.isValidIdentifier`
 - the pointer list for left-handed mirroring: `MCPointerCursorIdentifiers` ↔ `CursorNames.pointers`
 - frame choice by time: `MCFramesByTime` ↔ `FrameSelection.byTime`
+- core cursors 0 and 1 as the arrow and the I-beam: `MCBaseCursorForCoreAlias` ↔ `CursorNames.coreAliases`
 
 ## Security posture
 

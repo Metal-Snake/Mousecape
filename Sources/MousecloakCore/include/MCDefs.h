@@ -94,4 +94,5 @@ extern BOOL MCIsSafeIdentifier(NSString *identifier);
 extern NSArray *MCPointerCursorIdentifiers(void);
 extern BOOL MCCursorIsStandard(NSString *identifier);
 extern NSString *MCBaseCursorForExtra(NSString *identifier);
+extern NSString *MCBaseCursorForCoreAlias(NSString *identifier);
 #endif

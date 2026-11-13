@@ -10,6 +10,20 @@ import MousecloakCore
     #expect(CursorNames.pointers == engine)
 }
 
+/// Every named cursor, variants and core cursors 0 and 1 included: the engine and CapeKit
+/// agree on which ones left-handed mode mirrors.
+@Test(arguments: CursorNames.all.keys.sorted())
+func pointerRuleMatchesEngine(identifier: String) {
+    #expect(MCCursorIsPointer(identifier) == CursorNames.isPointer(identifier))
+}
+
+@Test func coreAliasesMatchEngine() {
+    for (alias, base) in CursorNames.coreAliases {
+        #expect(MCBaseCursorForCoreAlias(alias) == base)
+    }
+    #expect(MCBaseCursorForCoreAlias("com.apple.cursor.2") == nil)
+}
+
 @Test(arguments: ["local.ArakiCC.Kiriko", "With Spaces", "a..b", "a~b", "../../Evil", "a/b", ".hidden", "", "a:b",
                   "~/Documents", "~", "~Documents",
                   "back\\slash", "line\nbreak", String(repeating: "x", count: 201)])

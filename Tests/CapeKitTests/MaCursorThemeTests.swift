@@ -43,6 +43,18 @@ import TestSupport
     #expect(theme.skipped == ["../escape", "com.apple.coregraphics.IBeam"])
 }
 
+@Test func leavesOutCoreCursorsThatCopyArrowAndIBeam() throws {
+    let arrow = maCursorEntry(hotSpot: (6, 4))
+    let file = maCursorFile(cursors: [
+        "com.apple.coregraphics.Arrow": arrow,
+        "com.apple.cursor.0": arrow,                                 // a copy: left out
+        "com.apple.coregraphics.IBeam": maCursorEntry(),
+        "com.apple.cursor.1": maCursorEntry(hotSpot: (8, 8)),       // its own hot spot: kept
+    ])
+    let ids = try MaCursorTheme(data: file).cursors.map(\.identifier).sorted()
+    #expect(ids == ["com.apple.coregraphics.Arrow", "com.apple.coregraphics.IBeam", "com.apple.cursor.1"])
+}
+
 @Test func rejectsFilesThatAreNoThemes() {
     #expect(throws: MaCursorError.notATheme) { try MaCursorTheme(data: Data("no plist".utf8)) }
     #expect(throws: MaCursorError.noCursorsFound) { try MaCursorTheme(data: maCursorFile(cursors: [:])) }

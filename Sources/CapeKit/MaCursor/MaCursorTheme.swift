@@ -3,7 +3,8 @@ import Foundation
 /// A MaCursor theme (`.cursor`). Its format grew out of Mousecape's: the file is a cape
 /// under other names: `ThemeName`, `Creator` and `ThemeVersion` instead of `CapeName`,
 /// `Author` and `CapeVersion`, plus a `UUID`. Its cursors have the same keys as a cape's,
-/// with one sprite sheet per scale. Written from the files MaCursor ships; no code from it
+/// with one sprite sheet per scale. Core cursors 0 and 1 that copy Arrow and IBeam are left
+/// out. Written from the files MaCursor ships; no code from it
 /// (it is GPL-3.0).
 public struct MaCursorTheme: CursorThemeConvertible {
     public var name: String
@@ -37,6 +38,15 @@ public struct MaCursorTheme: CursorThemeConvertible {
                 continue
             }
             cursors.append(cursor)
+        }
+        // MaCursor writes core cursors 0 and 1 as copies of Arrow and IBeam. Applying gives
+        // them those anyway, so exact copies are left out.
+        let parsed = cursors
+        cursors.removeAll { cursor in
+            guard let base = CursorNames.coreAliases[cursor.identifier],
+                  var original = parsed.first(where: { $0.identifier == base }) else { return false }
+            original.identifier = cursor.identifier
+            return original == cursor
         }
         guard !cursors.isEmpty else { throw MaCursorError.noCursorsFound }
         self.cursors = cursors

@@ -31,6 +31,9 @@ a manual test. What these tests found out about macOS is in [NOTES.md](NOTES.md)
 
 **On macOS 15.6:**
 
+- Core cursors 0 and 1: applying a cape with only an arrow registers its images as
+  `com.apple.cursor.0` too, mirrored like the arrow in left-handed mode; a reset removes
+  that registration again (both checked with `mousecloak --dump`).
 - The editor lists Softglow's 3x images under the wells; Softglow is no longer marked
   red.
 - MaCursor themes: all 87 `.cursor` files in MaCursor's repository convert; 13 of them get

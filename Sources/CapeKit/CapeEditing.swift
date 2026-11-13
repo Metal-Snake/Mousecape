@@ -329,11 +329,12 @@ extension Cape {
              name: name, author: author, version: 1, isHiDPI: true, cursors: cursors)
     }
 
-    /// System cursors this cape does not replace yet, in display order.
+    /// System cursors this cape does not replace yet, in display order. Not core cursors 0
+    /// and 1: applying gives them the cape's Arrow and IBeam anyway.
     public var missingCursorIdentifiers: [String] {
         let used = Set(cursors.map(\.identifier))
         return CursorNames.all.keys
-            .filter { !used.contains($0) }
+            .filter { !used.contains($0) && CursorNames.coreAliases[$0] == nil }
             .sorted {
                 let ra = CursorNames.rank(of: $0), rb = CursorNames.rank(of: $1)
                 if ra != rb { return ra < rb }

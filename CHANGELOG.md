@@ -13,6 +13,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   File → Import.
 - The editor shows images at densities other than 1x, 2x, 5x and 10x (such as 3x), and
   lets you remove them.
+- Applying a cape also gives core cursors 0 and 1, the arrow and the I-beam by number,
+  the cape's arrow and I-beam, mirrored like them in left-handed mode, unless the cape
+  has its own. Capes that do have them show them as "Arrow (Core)" and "I-Beam (Core)".
 
 ### Changed
 
@@ -20,6 +23,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   enough for the screen, including 3x, 4x and fractional densities, so capes with such
   images are no longer marked as broken. Only frames that don't fit the image height
   are.
+- Importing a MaCursor theme leaves out core cursors 0 and 1 when they are exact copies
+  of its arrow and I-beam.
 
 ## [3.0.0] - 2026-11-10
 
