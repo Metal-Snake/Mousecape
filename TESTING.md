@@ -17,6 +17,13 @@ a manual test. What these tests found out about macOS is in [NOTES.md](NOTES.md)
 - Cursor sizes, measured with `Scripts/cursor-size-probe.swift`.
 - Reset Colors in System Settings, to compare with Mousecape's reset.
 
+**On macOS 27.0.1:**
+
+- With a cape applied, browsers show the cape's pointing hand over links, window edges
+  show its resize cursors, and the cursor over the Dock is right. A newly applied cape
+  shows without moving the mouse. (On macOS 15.8.2 the Dock's resize cursor stays
+  Apple's; not followed up, since older versions are no longer a focus.)
+
 **On macOS 15.6:**
 
 - Double-clicking a cape in the sidebar applies it; a single click only selects it, and

@@ -80,6 +80,8 @@ there is no x86_64 build.
       ([NOTES.md](NOTES.md#system-cursor-names)). When a future macOS adds more, use this
       list for backup, reset and syncing instead of the fixed one.
 - [ ] **Menu bar extra** for switching capes quickly.
+- [ ] **Cursor trails:** a line that follows the pointer and shrinks back into it when it
+      stops (MaCursor has one; GPL-3.0, so only the idea).
 - [ ] **Accessibility pointer size.** Mousecape's size and the system's pointer size
       (System Settings → Accessibility → Display → Pointer size) are the same setting
       underneath. Say so in Settings, or drop Mousecape's own slider.
