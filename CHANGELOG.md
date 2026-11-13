@@ -28,6 +28,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- The sidebar scrolls to a cape the app selects, after an import for example, instead of
+  leaving it outside the visible part of the list.
 - `mousecloak --export` writes real PNG files. Images stored as TIFF, as in captured
   cursors, were written into `.png` files unchanged.
 

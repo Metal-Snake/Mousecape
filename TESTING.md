@@ -33,6 +33,8 @@ a manual test. What these tests found out about macOS is in [NOTES.md](NOTES.md)
 
 - `mousecloak --export` of a cursor capture (TIFF images) and of Svanslös (PNG) writes
   only PNG files, one per image.
+- The sidebar scrolls to an imported cape that lands outside the visible part (at the
+  top or the bottom of a long list); clicking a visible row doesn't move the list.
 - Core cursors 0 and 1: applying a cape with only an arrow registers its images as
   `com.apple.cursor.0` too, mirrored like the arrow in left-handed mode; a reset removes
   that registration again (both checked with `mousecloak --dump`).
@@ -85,6 +87,9 @@ a manual test. What these tests found out about macOS is in [NOTES.md](NOTES.md)
 - [ ] **History:** compare two states, Restore This Version, Remove Saved States… and
       Revert to Original… in the app. Covered by `swift test` only.
 - [ ] **Importing a theme again:** replace the earlier import, and keep both.
+- [ ] **Sidebar after an import on macOS 27.** It used to scroll so that the top row was
+      cut off. On macOS 15.6 that didn't happen; the list now scrolls to the imported
+      cape. Check that the top row stays whole on macOS 27.
 - [ ] **macOS 26.** Tested on 15.6 and 27.0.1 only.
 
 ## Tools

@@ -95,6 +95,18 @@ struct LibraryView: View {
     }
 
     private var sidebar: some View {
+        ScrollViewReader { proxy in
+            capeList
+                // A cape the app selects (an import, a new cape, a duplicate) may be outside
+                // the visible part; bring it into view, moving the list as little as needed.
+                .onChange(of: model.selection) { _, id in
+                    guard let id else { return }
+                    proxy.scrollTo(id)
+                }
+        }
+    }
+
+    private var capeList: some View {
         List(selection: $model.selection) {
             ForEach(model.library.capes) { cape in
                 CapeRow(cape: cape, isApplied: cape.identifier == model.library.appliedIdentifier,

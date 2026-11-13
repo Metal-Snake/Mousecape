@@ -11,7 +11,9 @@ a real Mac.
   - A library reload parses every cape fully (often several MB each). It happens only
     when the folder changed, but a big library still stalls. Load the metadata first and
     the images on demand.
-- [ ] **Sidebar jumps after an import:** the list scrolls so that the top row is cut off.
+- [ ] **Importing several duplicates at once asks only once.** While "Replace …?" waits for
+      the first theme already in the library, further ones are added as a second copy
+      ("Ignite 2") without asking. Ask for each, one after the other.
 - [ ] **Empty tiles while previews decode.** Show a placeholder or the cursor name
       instead of an empty square.
 - [ ] **No undo** in the editor, or for deleting a cape. The original had both.
