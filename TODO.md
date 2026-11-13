@@ -94,6 +94,22 @@ there is no x86_64 build.
       `.appex` build.
 - [ ] **New screenshot** for the README.
 
+## Low priority
+
+Ideas from MaCursor's engine (GPL-3.0: the idea only, our own code). Only once everything
+above is done, or a real problem calls for them.
+
+- [ ] **Reset from a stored copy of the system cursors**, not from backups registered in
+      the window server ([NOTES.md](NOTES.md#registrations-last-for-the-session)). Once per
+      boot (`kern.bootsessionuuid`): reset the core cursors, capture the system cursors at
+      scale 16 into a file, and reset and apply from that file. Captures that come back as
+      red placeholders fall back to Apple's PDFs in HIServices' `cursors` folder (which
+      has no arrow, I-beam or wait cursor). Takes away most of the "first backup of a
+      session counts" limitation.
+- [ ] **Guard against a cursor scale stuck at 16.** Capturing sets the scale to 16 and back;
+      if it stops halfway, the scale stays at 16. Treat 16 as "not the user's choice" when
+      reading the scale, as MaCursor does.
+
 ## Housekeeping
 
 - [ ] **Upstream.** `git fetch upstream` (alexzielenski/Mousecape) now and then. As of
