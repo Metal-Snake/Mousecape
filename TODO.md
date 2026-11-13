@@ -90,7 +90,6 @@ there is no x86_64 build.
 - [ ] **Quick Look preview and thumbnail** for `.cape` files in Finder. These are app
       extensions, which SwiftPM cannot build; it would need an Xcode project or a manual
       `.appex` build.
-- [ ] **New screenshot** for the README.
 
 ## Low priority
 

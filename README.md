@@ -13,6 +13,14 @@ around it is rewritten in SwiftUI.
 - Builds with the Xcode Command Line Tools alone (no Xcode project)
 - No third-party dependencies, no network access
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/library-dark.png">
+  <img alt="The library: capes in the sidebar, the applied cape's cursors on the right, with a note that two animations are reduced when applied" src="docs/screenshots/library-light.png">
+</picture>
+
+<sub>The screenshots show [Bibata Modern Classic](https://github.com/ful1e5/Bibata_Cursor)
+by ful1e5 (GPL-3.0), imported from its Linux release, next to the Svanslös example cape.</sub>
+
 > **Work in progress.** Everything below works and is tested, but expect rough edges.
 > [CHANGELOG.md](CHANGELOG.md) lists the changes per version, [CHANGES.md](CHANGES.md)
 > every difference from the original, [TESTING.md](TESTING.md)
@@ -91,8 +99,13 @@ cursors. Log out and in again to get the macOS cursors.
 Add cursors with **+**, then drop a PNG into each scale well (1x, 2x, 5x, 10x). The first
 image sets the cursor's size; click the large preview to set the hot spot, where the click
 lands. macOS uses images at any density, so images from other tools at 3x or 4x stay in
-the cape; the editor lists them under the wells. The editor shows the same warnings as the library, per cursor and under Cape
-Details.
+the cape; the editor lists them under the wells. The editor shows the same warnings as the
+library, per cursor and under Cape Details.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/editor-dark.png">
+  <img alt="The cape editor: the cursor list on the left, the Wait cursor with its size, hot spot, frames and one image well per scale on the right" src="docs/screenshots/editor-light.png">
+</picture>
 
 ### Animated cursors
 
@@ -104,6 +117,11 @@ keep (every n-th, spread evenly, the first ones, or your own pick), with the ori
 the result playing side by side. Animations imported from Windows or Linux whose frames
 last differently long keep each frame's duration; they are picked **By Time** when
 applied, so the timing stays.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/frames-dark.png">
+  <img alt="Choose Frames: the original and the result side by side, presets above a filmstrip of all 54 frames, every third one kept" src="docs/screenshots/frames-light.png">
+</picture>
 
 ### Left-handed mode
 
@@ -120,6 +138,11 @@ replaced. **Cape → History…** (⌘Y) lists them, compares any two (which cur
 and how, side by side) and restores any of them; restoring keeps the current state too.
 Edited capes are marked with a pencil, and **Revert to Original…** brings back the
 imported version. The history lives in `~/Library/Application Support/Mousecape/Versions`.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/history-dark.png">
+  <img alt="The history of a cape: its original and current state, and what changed between them: the Wait cursor went from 54 to 18 frames" src="docs/screenshots/history-light.png">
+</picture>
 
 ## Command line
 
