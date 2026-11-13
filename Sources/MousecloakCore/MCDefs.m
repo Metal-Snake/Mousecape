@@ -8,6 +8,7 @@
 
 #include "MCDefs.h"
 #import "CGSInternal/CGSCursor.h"
+#import <UniformTypeIdentifiers/UniformTypeIdentifiers.h>
 //NSArray *defaultCursors = nil;
 
 NSString *defaultCursors[] = {
@@ -80,7 +81,7 @@ NSString *MMGet(NSString *prompt) {
 
 void CGImageWriteToFile(CGImageRef image, CFStringRef path) {
 	CFURLRef url = CFURLCreateWithFileSystemPath(NULL, path , kCFURLPOSIXPathStyle, false);
-    CGImageDestinationRef destination = CGImageDestinationCreateWithURL(url, kUTTypePNG, 1, NULL);
+    CGImageDestinationRef destination = CGImageDestinationCreateWithURL(url, (CFStringRef)UTTypePNG.identifier, 1, NULL);
 	CFRelease(url);
 	
     CGImageDestinationAddImage(destination, image, nil);
@@ -101,7 +102,7 @@ NSData *pngDataForImage(id image) {
     // CGImage
     CGImageRef obj = (CGImageRef)image;
     CFMutableDataRef mutableData = CFDataCreateMutable(kCFAllocatorDefault, 0);
-    CGImageDestinationRef dest = CGImageDestinationCreateWithData(mutableData, kUTTypePNG, 1, NULL);
+    CGImageDestinationRef dest = CGImageDestinationCreateWithData(mutableData, (CFStringRef)UTTypePNG.identifier, 1, NULL);
     CGImageDestinationAddImage(dest, obj, NULL);
     CGImageDestinationFinalize(dest);
     

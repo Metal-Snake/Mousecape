@@ -23,7 +23,7 @@ static NSArray *sheetsWithFrames(NSArray *sheets, NSUInteger frameCount, const N
         size_t width = CGImageGetWidth(sheet);
         size_t frameHeight = CGImageGetHeight(sheet) / frameCount;
         CGContextRef ctx = CGBitmapContextCreate(NULL, width, frameHeight * count, 8, 0, space,
-                                                 kCGImageAlphaPremultipliedLast);
+                                                 (CGBitmapInfo)kCGImageAlphaPremultipliedLast);
         if (!ctx || frameHeight == 0) {
             if (ctx) CGContextRelease(ctx);
             result = nil;

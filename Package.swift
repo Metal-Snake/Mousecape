@@ -13,12 +13,12 @@ let package = Package(
             name: "MousecloakCore",
             cSettings: [
                 .unsafeFlags(["-fno-objc-arc"]),
-                .unsafeFlags(["-Wno-deprecated-declarations"]),
             ],
             linkerSettings: [
                 .linkedFramework("Cocoa"),
                 .linkedFramework("ApplicationServices"),
                 .linkedFramework("SystemConfiguration"),
+                .linkedFramework("UniformTypeIdentifiers"),
             ]
         ),
         // Reading .cape files and rendering cursor frames. Pure Swift, no private API.

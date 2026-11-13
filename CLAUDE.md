@@ -96,7 +96,7 @@ Capes, themes and archives are untrusted input (see "Hardening" in CHANGES.md):
 - Use Swift Testing (`@Test`, `#expect`, parameterized `arguments:`). Put shared file
   builders in `TestSupport`, not in copies.
 - Objective-C in `MousecloakCore` uses manual retain/release. Balance retains and
-  releases by hand. The target also hides deprecation warnings (a known issue in TODO.md).
+  releases by hand. The target builds without warnings; keep it that way.
 - Commit messages have a short imperative subject, sometimes with an area prefix
   (`Engine:`, `Editor:`, `README:`, `TODO:`), and a body explaining what and why. When you
   change behaviour, add an entry under `[Unreleased]` in CHANGELOG.md (and update

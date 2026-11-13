@@ -6,10 +6,9 @@ a real Mac.
 
 ## Known issues
 
-- [ ] **Hidden deprecation warnings.** The engine builds with
-      `-Wno-deprecated-declarations`, which hides three warnings:
-      `kUTTypePNG` in `MCDefs.m:83` and `MCDefs.m:104` (use `UTTypePNG`), and
-      `NSAlphaFirstBitmapFormat` in `create.m:191`. Fix them and remove the flag.
+- [ ] **`mousecloak --export` writes TIFF data into `.png` files.** It saves each image of
+      the cape as it is stored, and captured capes (Capture Current Cursors, `--dump`)
+      store TIFF. Convert to PNG when exporting. From the original.
 - [ ] **Blocking work on the main thread.**
   - Applying runs there, so a large cape can freeze the UI for a moment.
   - A library reload parses every cape fully (often several MB each). It happens only
