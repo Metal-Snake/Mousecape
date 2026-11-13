@@ -49,6 +49,8 @@ there is no x86_64 build.
 - [ ] **Localization**, German first. String catalogs (`.xcstrings`) need
       `xcstringstool`, which the Command Line Tools don't include. Use plain
       `Localizable.strings` with SwiftPM resources instead, or compile the catalog on CI.
+- [ ] **Export a cape as a MaCursor theme** (`.cursor`). Import exists
+      (`MaCursorTheme`); writing is the same mapping the other way round.
 - [ ] **Export a cape to a folder of PNGs.** The engine can already do this
       (`exportCape`, `mousecloak --export`); only the UI is missing. Also allow dragging a
       cape out of the window to share it.

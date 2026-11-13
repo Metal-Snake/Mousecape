@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Import of MaCursor themes (`.cursor`): open them, drop them on the window, or use
+  File → Import.
+
 ## [3.0.0] - 2026-11-10
 
 The first release of this fork, after the original's last release (build 1813). The cursor

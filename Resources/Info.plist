@@ -71,6 +71,18 @@
                 <string>com.microsoft.ani</string>
             </array>
         </dict>
+        <dict>
+            <key>CFBundleTypeName</key>
+            <string>MaCursor Theme</string>
+            <key>CFBundleTypeRole</key>
+            <string>Viewer</string>
+            <key>LSHandlerRank</key>
+            <string>Alternate</string>
+            <key>LSItemContentTypes</key>
+            <array>
+                <string>com.writronic.macursor.cursor</string>
+            </array>
+        </dict>
     </array>
     <!-- Same type identifier as the original app, so existing .cape files keep working. -->
     <key>UTExportedTypeDeclarations</key>
@@ -96,6 +108,25 @@
     </array>
     <key>UTImportedTypeDeclarations</key>
     <array>
+        <!-- MaCursor's own type, as MaCursor declares it, for "Open With". -->
+        <dict>
+            <key>UTTypeIdentifier</key>
+            <string>com.writronic.macursor.cursor</string>
+            <key>UTTypeDescription</key>
+            <string>MaCursor Theme</string>
+            <key>UTTypeConformsTo</key>
+            <array>
+                <string>public.xml</string>
+                <string>com.apple.property-list</string>
+            </array>
+            <key>UTTypeTagSpecification</key>
+            <dict>
+                <key>public.filename-extension</key>
+                <array>
+                    <string>cursor</string>
+                </array>
+            </dict>
+        </dict>
         <dict>
             <key>UTTypeIdentifier</key>
             <string>com.alexzielenski.mightymouse</string>

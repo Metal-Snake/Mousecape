@@ -28,6 +28,7 @@ final class AppModel {
 
     static let capeType = UTType(filenameExtension: "cape") ?? .propertyList
     static let mightyMouseType = UTType(filenameExtension: "MightyMouse") ?? .propertyList
+    static let maCursorType = UTType(filenameExtension: MaCursorTheme.fileExtension) ?? .propertyList
 
     // MARK: - Applying
 
@@ -85,6 +86,10 @@ final class AppModel {
                 importMightyMouse(url)
                 continue
             }
+            if url.pathExtension.lowercased() == MaCursorTheme.fileExtension {
+                importTheme { try MaCursorTheme(contentsOf: url).makeCape(author: String(localized: "MaCursor theme")) }
+                continue
+            }
             do {
                 if let existing = try library.existingCape(forFileAt: url),
                    existing.fileURL?.standardizedFileURL != url.standardizedFileURL {
@@ -125,10 +130,10 @@ final class AppModel {
 
     func showImportPanel() {
         let panel = NSOpenPanel()
-        panel.allowedContentTypes = [Self.capeType, Self.mightyMouseType] + ThemeImport.contentTypes
+        panel.allowedContentTypes = [Self.capeType, Self.mightyMouseType, Self.maCursorType] + ThemeImport.contentTypes
         panel.canChooseDirectories = true
         panel.allowsMultipleSelection = true
-        panel.message = String(localized: "Choose capes, MightyMouse files, or Windows or Linux cursor themes (a theme folder or an archive of one, .inf, .cur or .ani)")
+        panel.message = String(localized: "Choose capes, MightyMouse files, MaCursor themes, or Windows or Linux cursor themes (a theme folder or an archive of one, .inf, .cur or .ani)")
         panel.prompt = String(localized: "Import")
         if panel.runModal() == .OK { importFiles(panel.urls) }
     }

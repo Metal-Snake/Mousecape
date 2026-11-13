@@ -26,6 +26,11 @@ a manual test. What these tests found out about macOS is in [NOTES.md](NOTES.md)
 
 **On macOS 15.6:**
 
+- MaCursor themes: all 87 `.cursor` files in MaCursor's repository convert; 13 of them get
+  warnings about image sizes the cape format doesn't know. Two opened with "Open With"
+  land in a throwaway library with name and author; MD3E Cursors applies, its 280-frame
+  Wait cursor reduced to 24.
+
 - Double-clicking a cape in the sidebar applies it; a single click only selects it, and
   the context menu still works.
 - Re-apply at launch: with the macOS cursors on screen but a cape marked as applied,

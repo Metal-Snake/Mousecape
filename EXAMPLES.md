@@ -2,13 +2,14 @@
 
 Places to get cursor themes for Mousecape. None of these are part of this project: check
 each theme's licence before you share or change it, and only download from sources you
-trust. Mousecape imports four kinds of files:
+trust. Mousecape imports five kinds of files:
 
 - **Capes** (`.cape`): open them, drag them onto the window, or use File → Import.
 - **Windows cursors** (`.cur`, `.ani`): import a theme folder, its `install.inf`, an
   archive of it, or single files.
 - **Linux cursors** (Xcursor, files without extension): import a theme folder, an archive
   of it, or single files.
+- **MaCursor themes** (`.cursor`): converted on import.
 - **MightyMouse** (`.MightyMouse`): converted on import.
 
 Archives can be `.zip`, `.7z`, `.rar`, `.tar`, `.tar.gz`, `.tar.bz2` or `.tar.xz`; only
@@ -63,6 +64,12 @@ above come from Linux and have a Linux package too, with sharper images and more
 | [ful1e5/Google_Cursor](https://github.com/ful1e5/Google_Cursor/releases) | GoogleDot | GPL-3.0 |
 | [ful1e5/banana-cursor](https://github.com/ful1e5/banana-cursor/releases) | A banana | `banana-all.tar.xz` holds several themes; Mousecape imports the first |
 | [gnome-look.org: Cursors](https://www.gnome-look.org/browse?cat=107) | Thousands of themes (the same catalogue as pling.com and store.kde.org) | Mixed quality and licences |
+
+## MaCursor themes
+
+| Link | What | Notes |
+|---|---|---|
+| [writronic/MaCursor: themes](https://github.com/writronic/MaCursor/tree/main/themes) | About 90 `.cursor` themes from MaCursor's gallery | Many are conversions of capes and themes listed above; licences as for those. A few use image sizes the cape format doesn't know (3x, 4x), which Mousecape flags |
 
 ## MightyMouse
 

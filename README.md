@@ -62,6 +62,7 @@ reads:
 - **Windows cursor themes**: a theme folder, its `install.inf`, or `.cur`/`.ani` files
 - **Linux cursor themes** (Xcursor, as used by GNOME, KDE and others): a theme folder or
   Xcursor files
+- **MaCursor themes** (`.cursor`)
 - **MightyMouse** files (`.MightyMouse`)
 
 Themes can also come as archives (`.zip`, `.7z`, `.rar`, `.tar.gz`, `.tar.xz`, …); they
@@ -190,6 +191,9 @@ bounded before decoding, and links in archives may not point outside the theme. 
 - [macOS27-Cursors](https://github.com/Juwan-Hwang/macOS27-Cursors) (Juwan-Hwang) mapped
   the cursor identifiers to Apple's resource names, which Mousecape now shows. Its cape
   of Apple's own cursors isn't included.
+- [MaCursor](https://github.com/writronic/MaCursor) (writronic): Mousecape reads its
+  `.cursor` themes. The format was worked out from its files; MaCursor is GPL-3.0, so no
+  code was taken.
 
 ## LICENSE
 

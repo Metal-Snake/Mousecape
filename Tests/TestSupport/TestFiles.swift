@@ -84,3 +84,22 @@ public func xcursorFile(_ images: [XcursorTestImage]) -> Data {
     }
     return data
 }
+
+/// A MaCursor theme (`.cursor`): a property list like a cape's under MaCursor's own names.
+/// `cursors` maps identifiers to cape-style cursor entries; nil leaves a key out.
+public func maCursorFile(name: String? = "Test Theme", creator: String? = "Tester", version: Double = 2,
+                         cursors: [String: Any], format: PropertyListSerialization.PropertyListFormat = .xml) -> Data {
+    var theme: [String: Any] = ["Identifier": "TestTheme", "HiDPI": true, "ThemeVersion": version,
+                                "UUID": "114EDCB9-0C84-47D3-BEB2-FF199399DE59", "Cursors": cursors]
+    theme["ThemeName"] = name
+    theme["Creator"] = creator
+    return try! PropertyListSerialization.data(fromPropertyList: theme, format: format, options: 0)
+}
+
+/// A cape-style cursor entry with one sprite sheet per scale (1x and 2x) of `frames` frames.
+public func maCursorEntry(points: Int = 32, frames: Int = 1, hotSpot: (Double, Double) = (4, 2)) -> [String: Any] {
+    ["FrameCount": frames, "FrameDuration": 0.05, "HotSpotX": hotSpot.0, "HotSpotY": hotSpot.1,
+     "PointsWide": Double(points), "PointsHigh": Double(points),
+     "Representations": [pngImage(width: points, height: points * frames),
+                         pngImage(width: points * 2, height: points * 2 * frames)]]
+}
