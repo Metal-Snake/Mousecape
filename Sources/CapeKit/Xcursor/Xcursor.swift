@@ -135,7 +135,7 @@ public enum Xcursor {
                                           durations: base.map { max($0.delay, 1) }, unit: 0.001)
 
         var representations: [Data] = []
-        for scale in CapeCursor.supportedScales where scale == 1 || baseSize * scale <= largestSize {
+        for scale in CapeCursor.standardScales where scale == 1 || baseSize * scale <= largestSize {
             // The smallest size at least as large as needed, with the same frames.
             let source = scale == 1 ? base : bySize.keys.sorted()
                 .first { $0 >= baseSize * scale && bySize[$0]!.count == base.count }

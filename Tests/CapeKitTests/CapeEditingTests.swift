@@ -40,9 +40,6 @@ func cursor(size: CGSize = CGSize(width: 20, height: 24), frames: Int = 1) -> Ca
     var c = cursor()
     #expect(c.problems == [.noImages])
 
-    c.setRepresentation(png(width: 30, height: 24), for: 1)          // 1.5x: no supported scale
-    #expect(c.problems == [.unexpectedWidth(CGSize(width: 30, height: 24))])
-
     c.representations = [png(width: 40, height: 40)]                // 2x, but frames need 48 px
     #expect(c.problems == [.heightDoesNotMatchFrames(CGSize(width: 40, height: 40), expected: 48)])
 
@@ -51,6 +48,40 @@ func cursor(size: CGSize = CGSize(width: 20, height: 24), frames: Int = 1) -> Ca
     c.hotSpot = CGPoint(x: 30, y: 0)
     #expect(c.problems.contains(.framesWillBeReduced(from: 25, to: 13)))
     #expect(c.problems.contains(.hotSpotOutside))
+}
+
+// macOS takes images at any density (NOTES.md): only frames that don't fit are a problem.
+@Test(arguments: [(60, 72), (80, 96), (30, 36)])                    // 3x, 4x, 1.5x
+func acceptsAnyDensity(width: Int, height: Int) {
+    var c = cursor()
+    c.representations = [png(width: width, height: height)]
+    #expect(c.problems.isEmpty)
+}
+
+@Test func acceptsFractionalDensitiesAPixelOff() {
+    // As in MaCursor themes: 24.8 × 24 points in 25 pixels, five frames of 24 pixels.
+    var c = cursor(size: CGSize(width: 24.8, height: 24), frames: 5)
+    c.representations = [png(width: 25, height: 120)]
+    #expect(c.problems.isEmpty)
+    c.representations = [png(width: 25, height: 130)]               // 26 per frame: too high
+    #expect(c.problems == [.heightDoesNotMatchFrames(CGSize(width: 25, height: 130), expected: 121)])
+    c.representations = [png(width: 25, height: 121)]               // frames don't split evenly
+    #expect(!c.problems.isEmpty)
+}
+
+@Test func listsImagesAtOtherDensities() throws {
+    var c = cursor()
+    let triple = png(width: 60, height: 72)
+    c.setRepresentation(png(width: 20, height: 24), for: 1)
+    c.setRepresentation(png(width: 40, height: 48), for: 2)
+    c.representations.append(triple)
+    #expect(c.otherRepresentations == [triple])
+    #expect(try #require(c.density(of: triple)) == 3)
+    c.setRepresentation(nil, for: 2)                                // wells leave the others alone
+    #expect(c.otherRepresentations == [triple])
+    c.removeRepresentation(triple)
+    #expect(c.representations.count == 1)
+    #expect(c.otherRepresentations.isEmpty)
 }
 
 @Test func normalizesImagesToPNG() throws {

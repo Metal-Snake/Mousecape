@@ -90,7 +90,8 @@ cursors. Log out and in again to get the macOS cursors.
 **File → New Cape** (⌘N) opens the editor; **Cape → Edit…** (⌘E) edits an existing one.
 Add cursors with **+**, then drop a PNG into each scale well (1x, 2x, 5x, 10x). The first
 image sets the cursor's size; click the large preview to set the hot spot, where the click
-lands. The editor shows the same warnings as the library, per cursor and under Cape
+lands. macOS uses images at any density, so images from other tools at 3x or 4x stay in
+the cape; the editor lists them under the wells. The editor shows the same warnings as the library, per cursor and under Cape
 Details.
 
 ### Animated cursors

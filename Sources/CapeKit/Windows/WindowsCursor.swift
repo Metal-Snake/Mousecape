@@ -34,7 +34,7 @@ public enum WindowsCursor {
 
         // Every frame drawn into one sheet per scale. Scales above the source's own
         // resolution would only add blur.
-        let scales = CapeCursor.supportedScales.filter { $0 == 1 || pointWidth * Double($0) <= Double(source.width) }
+        let scales = CapeCursor.standardScales.filter { $0 == 1 || pointWidth * Double($0) <= Double(source.width) }
         var representations: [Data] = []
         for scale in scales {
             let width = Int(pointWidth) * scale, height = Int(pointHeight) * scale

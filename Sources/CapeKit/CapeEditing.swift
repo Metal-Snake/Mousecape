@@ -4,8 +4,10 @@ import ImageIO
 /// Editing support: building capes from images and checking that they will apply.
 
 extension CapeCursor {
-    /// The pixel densities a cape can carry (the original editor's 1x, 2x, 5x and 10x wells).
-    public static let supportedScales = [1, 2, 5, 10]
+    /// The pixel densities of the editor's image wells (the original editor's 1x, 2x, 5x and
+    /// 10x). macOS takes images at any density and shows the smallest one dense enough for
+    /// the screen (NOTES.md), so a cape may hold others too, like 3x or 4x.
+    public static let standardScales = [1, 2, 5, 10]
 
     /// The window server refuses more frames than this.
     public static let maximumFrameCount = 24
@@ -167,12 +169,9 @@ extension CapeCursor {
                 problems.append(.unreadableImage)
                 continue
             }
-            let scale = Double(pixels.width) / size.width
-            let expectedHeight = size.height * scale * Double(frameCount)
-            if scale.rounded() != scale || !Self.supportedScales.contains(Int(scale)) {
-                problems.append(.unexpectedWidth(pixels))
-            } else if abs(Double(pixels.height) - expectedHeight) > 0.5 {
-                problems.append(.heightDoesNotMatchFrames(pixels, expected: Int(expectedHeight)))
+            if !sheetFits(pixels) {
+                let expected = size.height * Double(pixels.width) / size.width * Double(frameCount)
+                problems.append(.heightDoesNotMatchFrames(pixels, expected: Int(expected.rounded())))
             }
         }
         for data in leftHandedRepresentations {
@@ -180,17 +179,54 @@ extension CapeCursor {
                 problems.append(.unreadableImage)
                 continue
             }
-            let scale = Double(pixels.width) / size.width
-            if scale.rounded() != scale || !Self.supportedScales.contains(Int(scale))
-                || abs(Double(pixels.height) - size.height * scale * Double(frameCount)) > 0.5 {
-                problems.append(.leftHandedImageDoesNotFit(pixels))
-            }
+            if !sheetFits(pixels) { problems.append(.leftHandedImageDoesNotFit(pixels)) }
         }
         if let spot = leftHandedHotSpot, hasOwnLeftHandedImages,
            spot.x < 0 || spot.y < 0 || spot.x > size.width || spot.y > size.height {
             problems.append(.hotSpotOutside)
         }
         return problems
+    }
+
+    /// Whether a sheet of `pixels` holds the frames at the density its width gives. Any
+    /// density counts, as macOS takes any; the frames must split the height evenly, each
+    /// as high as the cursor at that density. Other tools write fractional densities (a
+    /// 25.6-point cursor in 26 pixels), so those may be a pixel off.
+    func sheetFits(_ pixels: CGSize) -> Bool {
+        guard size.width > 0, size.height > 0, pixels.width > 0, frameCount > 0 else { return false }
+        let density = pixels.width / size.width
+        let frameHeight = pixels.height / Double(frameCount)
+        let tolerance = density.rounded() == density ? 0.5 : 1
+        return frameHeight.rounded() == frameHeight && abs(frameHeight - size.height * density) <= tolerance
+    }
+
+    /// Pixels per point of an image: its width over the cursor's width.
+    public func density(of data: Data) -> Double? {
+        guard size.width > 0, let pixels = Self.pixelSize(of: data) else { return nil }
+        return pixels.width / size.width
+    }
+
+    /// Images at densities without a well in the editor (3x, 4x, fractional ones), sparsest
+    /// first.
+    public var otherRepresentations: [Data] {
+        representations.filter { !Self.hasStandardScale($0, pointWidth: size.width) }
+    }
+
+    /// Left-handed images at densities without a well, like `otherRepresentations`.
+    public var otherLeftHandedRepresentations: [Data] {
+        leftHandedRepresentations.filter { !Self.hasStandardScale($0, pointWidth: size.width) }
+    }
+
+    public mutating func removeRepresentation(_ data: Data) {
+        representations.removeAll { $0 == data }
+    }
+
+    public mutating func removeLeftHandedRepresentation(_ data: Data) {
+        leftHandedRepresentations.removeAll { $0 == data }
+    }
+
+    static func hasStandardScale(_ data: Data, pointWidth: Double) -> Bool {
+        scale(of: data, pointWidth: pointWidth).map(standardScales.contains) ?? false
     }
 
     /// Image data from any format NSImage reads, as PNG in sRGB (what the engine expects).
@@ -228,7 +264,6 @@ public enum CursorProblem: Equatable, Sendable, CustomStringConvertible {
     case leftHandedImageDoesNotFit(CGSize)
     case hotSpotOutside
     case unreadableImage
-    case unexpectedWidth(CGSize)
     case heightDoesNotMatchFrames(CGSize, expected: Int)
 
     /// True when the cursor won't apply or will look wrong; false for things macOS works
@@ -267,8 +302,6 @@ public enum CursorProblem: Equatable, Sendable, CustomStringConvertible {
             String(localized: "The hot spot lies outside the cursor.")
         case .unreadableImage:
             String(localized: "An image cannot be read.")
-        case .unexpectedWidth(let px):
-            String(localized: "An image is \(Int(px.width)) px wide, which is not 1, 2, 5 or 10 times the cursor width.")
         case .heightDoesNotMatchFrames(let px, let expected):
             String(localized: "An image is \(Int(px.height)) px high; the frames need \(expected) px.")
         }

@@ -11,6 +11,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Import of MaCursor themes (`.cursor`): open them, drop them on the window, or use
   File → Import.
+- The editor shows images at densities other than 1x, 2x, 5x and 10x (such as 3x), and
+  lets you remove them.
+
+### Changed
+
+- Images at any pixel density count as valid. macOS shows the smallest image dense
+  enough for the screen, including 3x, 4x and fractional densities, so capes with such
+  images are no longer marked as broken. Only frames that don't fit the image height
+  are.
 
 ## [3.0.0] - 2026-11-10
 

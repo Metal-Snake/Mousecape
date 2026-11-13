@@ -31,6 +31,8 @@ a manual test. What these tests found out about macOS is in [NOTES.md](NOTES.md)
 
 **On macOS 15.6:**
 
+- The editor lists Softglow's 3x images under the wells; Softglow is no longer marked
+  red.
 - MaCursor themes: all 87 `.cursor` files in MaCursor's repository convert; 13 of them get
   warnings about image sizes the cape format doesn't know. Two opened with "Open With"
   land in a throwaway library with name and author; MD3E Cursors applies, its 280-frame

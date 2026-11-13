@@ -93,8 +93,9 @@ private func cursor(_ identifier: String, hotSpot: CGPoint = CGPoint(x: 1, y: 1)
 
 @Test func flagsLeftHandedImagesThatDontFit() throws {
     var arrow = try cursor("com.apple.coregraphics.Arrow")
-    arrow.leftHandedRepresentations = [try sheet(side: 20, filled: 2)]
-    #expect(arrow.problems.contains(.leftHandedImageDoesNotFit(CGSize(width: 20, height: 20))))
+    // 20 pixels wide is 1.25x, which macOS takes, but then a frame is 20 pixels high, not 40.
+    arrow.leftHandedRepresentations = [pngImage(width: 20, height: 40)]
+    #expect(arrow.problems.contains(.leftHandedImageDoesNotFit(CGSize(width: 20, height: 40))))
 }
 
 @Test func findsArrowLikeCursorsLeftUnmirrored() throws {

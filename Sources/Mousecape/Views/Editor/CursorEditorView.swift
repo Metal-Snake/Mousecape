@@ -175,17 +175,48 @@ struct CursorEditorView: View {
                 .font(.callout)
                 .foregroundStyle(.secondary)
             HStack(alignment: .top, spacing: 12) {
-                ForEach(CapeCursor.supportedScales, id: \.self) { scale in
-                    ImageWell(scale: scale,
+                ForEach(CapeCursor.standardScales, id: \.self) { scale in
+                    ImageWell(label: "\(scale)x",
+                              detail: pixelText(cursor.expectedPixelSize(for: scale)),
                               image: cursor.representation(for: scale),
                               frameCount: cursor.frameCount,
-                              expected: cursor.expectedPixelSize(for: scale),
                               onDrop: { url in addImage(from: url, scale: scale) },
                               onChoose: { chooseImage(scale: scale) },
                               onRemove: { cursor.setRepresentation(nil, for: scale) })
                 }
             }
+            otherDensities(cursor.otherRepresentations, remove: { cursor.removeRepresentation($0) })
         }
+    }
+
+    /// Images at densities without a well (3x, 4x, or fractional ones from other tools).
+    /// macOS uses them like the others, so they are shown and can be removed.
+    @ViewBuilder
+    private func otherDensities(_ images: [Data], remove: @escaping (Data) -> Void) -> some View {
+        if !images.isEmpty {
+            Text("Other densities. macOS shows the smallest image dense enough for the screen, so these are used too.")
+                .font(.callout)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+            HStack(alignment: .top, spacing: 12) {
+                ForEach(Array(images.enumerated()), id: \.offset) { _, image in
+                    ImageWell(label: densityText(image),
+                              detail: CursorSheet.pixelSize(of: image).map(pixelText) ?? "",
+                              image: image,
+                              frameCount: cursor.frameCount,
+                              onRemove: { remove(image) })
+                }
+            }
+        }
+    }
+
+    private func densityText(_ image: Data) -> String {
+        guard let density = cursor.density(of: image) else { return "?" }
+        return density.formatted(.number.precision(.fractionLength(0...2))) + "x"
+    }
+
+    private func pixelText(_ size: CGSize) -> String {
+        "\(Int(size.width)) × \(Int(size.height)) px"
     }
 
     // MARK: - Left-handed mode
@@ -242,16 +273,18 @@ struct CursorEditorView: View {
                 .fixedSize(horizontal: false, vertical: true)
             if cursor.hasOwnLeftHandedImages {
                 HStack(alignment: .top, spacing: 12) {
-                    ForEach(CapeCursor.supportedScales, id: \.self) { scale in
-                        ImageWell(scale: scale,
+                    ForEach(CapeCursor.standardScales, id: \.self) { scale in
+                        ImageWell(label: "\(scale)x",
+                                  detail: pixelText(cursor.expectedPixelSize(for: scale)),
                                   image: cursor.leftHandedRepresentation(for: scale),
                                   frameCount: cursor.frameCount,
-                                  expected: cursor.expectedPixelSize(for: scale),
                                   onDrop: { url in addLeftHandedImage(from: url, scale: scale) },
                                   onChoose: { chooseImage(scale: scale, leftHanded: true) },
                                   onRemove: { cursor.setLeftHandedRepresentation(nil, for: scale) })
                     }
                 }
+                otherDensities(cursor.otherLeftHandedRepresentations,
+                               remove: { cursor.removeLeftHandedRepresentation($0) })
                 LabeledContent("Left-handed hot spot") {
                     HStack {
                         numberField("X", value: leftHandedHotSpot.x)
@@ -361,13 +394,16 @@ struct CursorEditorView: View {
 }
 
 /// One drop target for the image at a pixel density.
+/// One image of a cursor: a well for a density (filled by drop or choosing), or, without
+/// `onDrop` and `onChoose`, an image at another density that can only be removed.
 private struct ImageWell: View {
-    let scale: Int
+    let label: String
+    /// The pixel size the well expects, or the image has.
+    let detail: String
     let image: Data?
     let frameCount: Int
-    let expected: CGSize
-    let onDrop: (URL) -> Void
-    let onChoose: () -> Void
+    var onDrop: ((URL) -> Void)?
+    var onChoose: (() -> Void)?
     let onRemove: () -> Void
 
     @State private var isTargeted = false
@@ -406,24 +442,25 @@ private struct ImageWell: View {
                                   style: StrokeStyle(lineWidth: isTargeted ? 2 : 1, dash: image == nil ? [4] : []))
             }
             .dropDestination(for: URL.self) { urls, _ in
-                guard let url = urls.first else { return false }
+                guard let onDrop, let url = urls.first else { return false }
                 onDrop(url)
                 return true
-            } isTargeted: { isTargeted = $0 }
+            } isTargeted: { isTargeted = onDrop != nil && $0 }
             .contextMenu {
-                Button("Choose Image…", action: onChoose)
+                if let onChoose { Button("Choose Image…", action: onChoose) }
                 Button("Remove", role: .destructive, action: onRemove)
                     .disabled(image == nil)
             }
-            .onTapGesture(count: 2, perform: onChoose)
+            .onTapGesture(count: 2) { onChoose?() }
 
-            Text("\(scale)x")
+            Text(verbatim: label)
                 .font(.callout.weight(.medium))
-            Text(verbatim: "\(Int(expected.width)) × \(Int(expected.height)) px")
+            Text(verbatim: detail)
                 .font(.caption.monospacedDigit())
                 .foregroundStyle(.secondary)
         }
-        .help("Drop an image, double-click to choose one, right-click to remove")
+        .help(onChoose == nil ? String(localized: "Right-click to remove")
+                              : String(localized: "Drop an image, double-click to choose one, right-click to remove"))
     }
 
     /// The top frame of the sheet, so tall animated sheets don't shrink to a sliver.
