@@ -12,6 +12,10 @@
 # Watched: the original Mousecape and all its forks, Mousecape-swiftUI and its forks,
 # MaCursor and its forks, Cursie and macOS27-Cursors. Needs gh (logged in) and git.
 set -e
+# Where the script was started, before the cd below changes $PWD. The hook falls back to it
+# when Claude Code doesn't set CLAUDE_PROJECT_DIR.
+started_in=$PWD
+self="$(cd "$(dirname "$0")" && pwd)/$(basename "$0")"
 cd "$(dirname "$0")/.."
 HEADS=Scripts/fork-heads.tsv
 
@@ -59,11 +63,11 @@ due)
 hook)
     # Claude Code SessionStart hook: in a session in this repository, add a reminder
     # to the context when the check is due.
-    case "${CLAUDE_PROJECT_DIR:-$PWD}/" in
+    case "${CLAUDE_PROJECT_DIR:-$started_in}/" in
     "$(pwd)"/*) ;;
     *) exit 0 ;;
     esac
-    msg=$("$0" due)
+    msg=$("$self" due)
     [ -n "$msg" ] || exit 0
     printf '{"hookSpecificOutput":{"hookEventName":"SessionStart","additionalContext":"The monthly Mousecape and MaCursor fork check is %s. Tell the user and offer to run it now; how: %s/FORK-CHECK.md."}}\n' \
         "$msg" "$(pwd)"
