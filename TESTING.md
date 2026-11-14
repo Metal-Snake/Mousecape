@@ -16,6 +16,9 @@ a manual test. What these tests found out about macOS is in [NOTES.md](NOTES.md)
 - Left-handed mode with a cape applied.
 - Cursor sizes, measured with `Scripts/cursor-size-probe.swift`.
 - Reset Colors in System Settings, to compare with Mousecape's reset.
+- Unregistering (`Scripts/unregister-probe.swift`, on macOS 15.6 and 27.2.1): a cursor
+  that another, finished process registered can't be removed with the non-global flag,
+  but can with the global one ([NOTES.md](NOTES.md#registrations-last-for-the-session)).
 
 **On macOS 27.0.1:**
 
@@ -40,9 +43,6 @@ a manual test. What these tests found out about macOS is in [NOTES.md](NOTES.md)
   that registration again (both checked with `mousecloak --dump`).
 - The editor lists Softglow's 3x images under the wells; Softglow is no longer marked
   red.
-- Unregistering (`Scripts/unregister-probe.swift`): a cursor that another, finished
-  process registered can't be removed with the non-global flag, but can with the global
-  one ([NOTES.md](NOTES.md#registrations-last-for-the-session)).
 - MaCursor themes: all 87 `.cursor` files in MaCursor's repository convert; 13 of them get
   warnings about image sizes the cape format doesn't know. Two opened with "Open With"
   land in a throwaway library with name and author; MD3E Cursors applies, its 280-frame
@@ -93,8 +93,6 @@ a manual test. What these tests found out about macOS is in [NOTES.md](NOTES.md)
 - [ ] **Sidebar after an import on macOS 27.** It used to scroll so that the top row was
       cut off. On macOS 15.6 that didn't happen; the list now scrolls to the imported
       cape. Check that the top row stays whole on macOS 27.
-- [ ] **Unregistering on macOS 27.** Run `Scripts/unregister-probe.swift` (see its header):
-      does the global remove work there too?
 - [ ] **macOS 26.** Tested on 15.6 and 27.0.1 only.
 
 ## Tools

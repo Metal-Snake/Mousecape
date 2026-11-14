@@ -14,9 +14,9 @@ a real Mac.
 - [ ] **Reset can't remove what it doesn't own** ([NOTES.md](NOTES.md#registrations-last-for-the-session)):
       backups stay for the session, and a variant like `ArrowS` from an earlier cape can
       only be overwritten. Unregistering with the global flag removes registrations of
-      other processes too (measured on macOS 15.6). Removing backups after a reset would
-      end the "first backup of a session counts" limitation. Test on macOS 27 first, and
-      never remove the `ArrowS`/`IBeamS` that macOS registers itself. This may make the
+      other processes too (measured on macOS 15.6 and 27.2.1). Removing backups after a
+      reset would end the "first backup of a session counts" limitation. Never remove the
+      `ArrowS`/`IBeamS` that macOS 27 registers itself. This may make the
       low-priority "reset from a stored copy" below unnecessary.
 - [ ] **Backups stop at the arrow.** `backupAllCursors` skips everything once a backup of
       `Arrow` exists, though `backupCursorForIdentifier` already skips each cursor that has
