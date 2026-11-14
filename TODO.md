@@ -138,26 +138,9 @@ above is done, or a real problem calls for them.
 
 ## Housekeeping
 
-- [ ] **Related projects.** Every few weeks, look for new work in the projects below and
-      note what is worth taking (as an idea, unless the licence allows code). Last checked
-      2026-11-14.
-      - The original: `git fetch upstream` (alexzielenski/Mousecape). No commits after
-        `184f87b`.
-      - Forks of the original with commits of their own:
-        `gh api repos/alexzielenski/Mousecape/forks --paginate`, then compare each with
-        `repos/alexzielenski/Mousecape/compare/master...<owner>:<branch>`. Of 273 forks,
-        these had changes: SnowGlow-aww (macOS 26/27 fixes, faster apply, bug fixes; the
-        findings above), Alex-Simedrea (ArrowS/IBeamS, long animations; nothing new),
-        AdamWawrzynkowskiGF/Mousecape-TahoeSupport, branch `TahoeSupport` (ArrowS by name
-        discovery), saltjsx (a fallback when capturing), doctorllll (Windows import),
-        chornthorn (SwiftUI port). The rest only change build settings.
-      - sdmj76/Mousecape-swiftUI and its forks MoriMeina and isandrel (Windows import, UI):
-        no commits since 2026-08-28.
-      - kwd421/macOS_Cursie: since v1.0.10 only its website.
-      - Juwan-Hwang/macOS27-Cursors: v1.0.1 fixes its Windows `.ani` files and Linux alias
-        links; `docs/MAPPING.md` unchanged.
-      - writronic/MaCursor (GPL-3.0): v2.8.2, the version analysed for the import and the
-        engine ideas below.
+- [ ] **Related projects.** Once a month, check the original Mousecape, MaCursor, the
+      other related projects and all their forks for work worth taking:
+      [FORK-CHECK.md](FORK-CHECK.md).
 
 Standing rule: keep the original licence's non-commercial clause and Alex Zielenski's
 notice in every distribution. No paid builds, no donations tied to downloads.

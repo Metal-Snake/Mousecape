@@ -9,7 +9,8 @@ SemVer, starting at 3.0.0). CHANGES.md records in detail what 3.0.0 changed from
 `184f87b`.
 TESTING.md records what has been tested on a real Mac and what still has to be. NOTES.md
 holds what is known about how macOS handles cursors. TODO.md holds open work, known issues
-and pending decisions. EXAMPLES.md lists where to find capes and themes. Read the relevant
+and pending decisions. EXAMPLES.md lists where to find capes and themes. FORK-CHECK.md
+says how to check related projects and their forks each month. Read the relevant
 part of these before you change behaviour, and keep them current (see below). They
 describe the fork as it is; earlier builds of the fork never left this machine, so don't
 document them.
