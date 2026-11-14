@@ -99,8 +99,9 @@ Capes, themes and archives are untrusted input (see "Hardening" in CHANGES.md):
   builders in `TestSupport`, not in copies.
 - Objective-C in `MousecloakCore` uses manual retain/release. Balance retains and
   releases by hand. The target builds without warnings; keep it that way.
-- Commit messages have a short imperative subject, sometimes with an area prefix
-  (`Engine:`, `Editor:`, `README:`, `TODO:`), and a body explaining what and why. When you
+- Commit messages follow Conventional Commits (https://www.conventionalcommits.org/),
+  with the area as scope: `fix(engine):`, `feat(editor):`, `docs(readme):`,
+  `docs(todo):`, `build(release):`. The body explains what and why. When you
   change behaviour, add an entry under `[Unreleased]` in CHANGELOG.md (and update
   README.md if users would notice) in the same commit. CHANGES.md stays the record of
   3.0.0; correct it only where it is wrong. Tick off or add TODO.md items as needed. New findings about macOS go in NOTES.md.
