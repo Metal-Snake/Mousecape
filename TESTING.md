@@ -20,6 +20,15 @@ a manual test. What these tests found out about macOS is in [NOTES.md](NOTES.md)
   that another, finished process registered can't be removed with the non-global flag,
   but can with the global one ([NOTES.md](NOTES.md#registrations-last-for-the-session)).
 
+**On macOS 27.2.1** (the build released as 3.1.0):
+
+- Applying a cape: the arrow and the I-beam are the cape's in Finder, Safari, Terminal
+  and text fields, also in left-handed mode (mirrored). Reset brings back Apple's.
+- Display changes with the login agent on: after a change of resolution or monitor, the
+  cape and a cursor size above 1x come back.
+- Several duplicates in one import are asked about one after the other.
+- After an import, the sidebar shows the imported cape with the top row whole.
+
 **On macOS 27.0.1:**
 
 - With a cape applied, browsers show the cape's pointing hand over links, window edges
@@ -97,10 +106,7 @@ a manual test. What these tests found out about macOS is in [NOTES.md](NOTES.md)
 - [ ] **History:** compare two states, Restore This Version, Remove Saved States… and
       Revert to Original… in the app. Covered by `swift test` only.
 - [ ] **Importing a theme again:** replace the earlier import, and keep both.
-- [ ] **Sidebar after an import on macOS 27.** It used to scroll so that the top row was
-      cut off. On macOS 15.6 that didn't happen; the list now scrolls to the imported
-      cape. Check that the top row stays whole on macOS 27.
-- [ ] **macOS 26.** Tested on 15.6 and 27.0.1 only.
+- [ ] **macOS 26.** Tested on 15.6 and 27.x only.
 
 ## Tools
 

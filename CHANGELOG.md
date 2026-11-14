@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.1.0] - 2026-11-14
+
 ### Added
 
 - Import of MaCursor themes (`.cursor`): open them, drop them on the window, or use
@@ -117,5 +119,6 @@ difference from the original in detail.
   folder are refused, image sizes and animation lengths are checked before decoding, and
   links in themes that point outside the theme are ignored.
 
-[unreleased]: https://github.com/Metal-Snake/Mousecape/compare/v3.0.0...HEAD
+[unreleased]: https://github.com/Metal-Snake/Mousecape/compare/v3.1.0...HEAD
+[3.1.0]: https://github.com/Metal-Snake/Mousecape/compare/v3.0.0...v3.1.0
 [3.0.0]: https://github.com/Metal-Snake/Mousecape/releases/tag/v3.0.0
