@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- After an update, the login agent runs the new version as soon as the app is started,
+  even when the new version took the old one's place. Before, the old agent kept running
+  until the next login in that case.
+
 ## [3.1.0] - 2026-11-14
 
 ### Added

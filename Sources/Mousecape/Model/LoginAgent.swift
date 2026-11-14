@@ -39,6 +39,15 @@ final class LoginAgent {
         Bundle.main.bundleURL.appending(path: "Contents/MacOS/mousecloak")
     }
 
+    /// This app's build number. The plist carries it (as an environment variable, which
+    /// launchd accepts and the agent ignores), so an update is noticed even when the new
+    /// version sits at the same path as the old one: the running agent would otherwise keep
+    /// the old code until the next login.
+    private static var build: String {
+        Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? ""
+    }
+    private static let buildVariable = "MOUSECAPE_BUILD"
+
     func setEnabled(_ enabled: Bool) {
         lastError = nil
         do {
@@ -59,12 +68,14 @@ final class LoginAgent {
         needsApproval = isEnabled && !Self.isLoaded()
     }
 
-    /// At launch: keeps the plist pointing at this copy of the app (it may have moved) and
-    /// loaded.
+    /// At launch: keeps the plist pointing at this copy and build of the app (it may have
+    /// moved or been updated) and loaded. Installing again restarts the agent.
     func repairIfNeeded() {
         guard FileManager.default.fileExists(atPath: Self.plistURL.path) else { return }
         do {
-            if Self.installedProgram() != Self.agentExecutable.path || !Self.isLoaded() {
+            let installed = Self.installedAgent()
+            if installed?.program != Self.agentExecutable.path || installed?.build != Self.build
+                || !Self.isLoaded() {
                 try install()
             }
         } catch {
@@ -95,6 +106,7 @@ final class LoginAgent {
             "StandardOutPath": Self.logURL.path,
             "StandardErrorPath": Self.logURL.path,
             "AssociatedBundleIdentifiers": [Bundle.main.bundleIdentifier ?? "io.github.metal-snake.Mousecape"],
+            "EnvironmentVariables": [Self.buildVariable: Self.build],
         ]
         let data = try PropertyListSerialization.data(fromPropertyList: plist, format: .xml, options: 0)
         try data.write(to: Self.plistURL, options: .atomic)
@@ -117,12 +129,14 @@ final class LoginAgent {
         launchctl(["print", "gui/\(getuid())/\(label)"]).status == 0
     }
 
-    /// The program path in the installed plist, if there is one.
-    private static func installedProgram() -> String? {
+    /// The program path and the app build in the installed plist, if there is one. A plist
+    /// written before builds were recorded has no build, so it counts as outdated.
+    private static func installedAgent() -> (program: String?, build: String?)? {
         guard let data = try? Data(contentsOf: plistURL),
-              let plist = try? PropertyListSerialization.propertyList(from: data, format: nil) as? [String: Any],
-              let arguments = plist["ProgramArguments"] as? [String] else { return nil }
-        return arguments.first
+              let plist = try? PropertyListSerialization.propertyList(from: data, format: nil) as? [String: Any]
+        else { return nil }
+        let environment = plist["EnvironmentVariables"] as? [String: String]
+        return ((plist["ProgramArguments"] as? [String])?.first, environment?[buildVariable])
     }
 
     @discardableResult

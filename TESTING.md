@@ -43,6 +43,9 @@ a manual test. What these tests found out about macOS is in [NOTES.md](NOTES.md)
 
 **On macOS 15.6:**
 
+- Login agent after an update: the first start of a build whose plist has no build number,
+  or another one, restarts the agent (new process, build in the plist), also with the new
+  build at the old one's path; starting the same build again leaves the agent running.
 - Several duplicates in one import (two `.cape` files and two MaCursor themes already in
   the library): the app asks about each in turn; Cancel, Replace and Keep Both each do
   their part, and the questions stop after the last.
