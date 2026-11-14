@@ -41,6 +41,8 @@ static void UserSpaceChanged(SCDynamicStoreRef	store, CFArrayRef changedKeys, vo
     MMLog("Current user is %s", [(__bridge NSString *)currentConsoleUser UTF8String]);
     
     if (!currentConsoleUser || CFEqual(currentConsoleUser, CFSTR("loginwindow"))) {
+        if (currentConsoleUser)
+            CFRelease(currentConsoleUser);
         return;
     }
     
@@ -54,17 +56,30 @@ static void UserSpaceChanged(SCDynamicStoreRef	store, CFArrayRef changedKeys, vo
     CFRelease(currentConsoleUser);
 }
 
+// Counts display reconfiguration callbacks, so that only the last of a burst applies.
+static NSUInteger reconfigurationCount = 0;
+
+// macOS calls this for every display, both before and after each change. Applying the whole
+// cape each time decoded and registered it several times in a row. Calls before a change
+// are skipped, and the cape is applied once, a moment after the last of the others.
 void reconfigurationCallback(CGDirectDisplayID display,
     	CGDisplayChangeSummaryFlags flags,
     	void *userInfo) {
-    MMLog("Reconfigure user space");
-    applySetupForUser(NSUserName());
-    // Restore the preferred scale instead of re-reading the current one: newer macOS
-    // versions (seen on the macOS 27 beta) reset the scale to 1x on display changes.
-    // Setting another value first makes the window server redraw the cursor.
-    float scale = preferredCursorScale();
-    CGSSetCursorScale(CGSMainConnectionID(), scale + .3);
-    CGSSetCursorScale(CGSMainConnectionID(), scale);
+    if (flags & kCGDisplayBeginConfigurationFlag)
+        return;
+    NSUInteger count = ++reconfigurationCount;
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.5 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+        if (count != reconfigurationCount)
+            return;     // a later callback follows
+        MMLog("Reconfigure user space");
+        applySetupForUser(NSUserName());
+        // Restore the preferred scale instead of re-reading the current one: newer macOS
+        // versions (seen on the macOS 27 beta) reset the scale to 1x on display changes.
+        // Setting another value first makes the window server redraw the cursor.
+        float scale = preferredCursorScale();
+        CGSSetCursorScale(CGSMainConnectionID(), scale + .3);
+        CGSSetCursorScale(CGSMainConnectionID(), scale);
+    });
 }
 
 

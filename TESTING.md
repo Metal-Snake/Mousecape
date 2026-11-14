@@ -34,6 +34,13 @@ a manual test. What these tests found out about macOS is in [NOTES.md](NOTES.md)
 
 **On macOS 15.6:**
 
+- Several duplicates in one import (two `.cape` files and two MaCursor themes already in
+  the library): the app asks about each in turn; Cancel, Replace and Keep Both each do
+  their part, and the questions stop after the last.
+- Display changes: switching the resolution and back makes the login agent apply the cape
+  once per change (it did twice before).
+- `mousecloak --create` with answers piped in: a folder of two cursors gives a cape with
+  both, and with the HiDPI answer.
 - `mousecloak --export` of a cursor capture (TIFF images) and of Svanslös (PNG) writes
   only PNG files, one per image.
 - The sidebar scrolls to an imported cape that lands outside the visible part (at the

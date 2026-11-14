@@ -10,6 +10,10 @@ struct CursorPreview: View {
 
     @Environment(\.displayScale) private var displayScale
     @State private var frames: [CGImage] = []
+    /// Whether the frames have been decoded at least once. Until then a spinner stands in for
+    /// the cursor, so a big cape's tiles aren't empty squares; a cursor that can't be decoded
+    /// shows a sign instead.
+    @State private var loaded = false
 
     private var displaySize: CGSize {
         CGSize(width: cursor.size.width * zoom, height: cursor.size.height * zoom)
@@ -23,6 +27,14 @@ struct CursorPreview: View {
                         .resizable()
                         .interpolation(.high)
                         .frame(width: displaySize.width, height: displaySize.height)
+                } else if !loaded {
+                    ProgressView()
+                        .controlSize(.small)
+                        .frame(width: displaySize.width, height: displaySize.height)
+                } else {
+                    Image(systemName: "questionmark.square.dashed")
+                        .foregroundStyle(.secondary)
+                        .frame(width: displaySize.width, height: displaySize.height)
                 }
                 if showsHotSpot {
                     Circle()
@@ -35,6 +47,7 @@ struct CursorPreview: View {
         }
         .task(id: cursor) {     // the whole cursor, so edited images and frame counts show
             frames = await FrameCache.shared.frames(for: cursor, scale: Int((displayScale * zoom).rounded(.up)))
+            loaded = true
         }
         .accessibilityLabel(cursor.name)
     }

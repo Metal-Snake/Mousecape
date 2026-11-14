@@ -59,8 +59,9 @@ NSDictionary *createCapeFromDirectory(NSString *path) {
     NSString *author = MMGet(@"Author");
     NSString *identifier = MMGet(@"Identifier");
     NSString *name = MMGet(@"Cape Name");
-    MMLog("Cape Version: ");
-    scanf("%lf", &version);
+    // A whole line, as for the other answers: scanf left the newline behind, and the HiDPI
+    // question below then read it as an empty answer.
+    version = MMGet(@"Cape Version").doubleValue;
     NSString *hidpi = MMGet(@"HiDPI? (y/n)");
     
     MMLog("");
@@ -128,7 +129,8 @@ NSDictionary *createCapeFromDirectory(NSString *path) {
         [data setObject:@(fD) forKey:MCCursorDictionaryFrameDuratiomKey];
         
         [data setObject:representations forKey:MCCursorDictionaryRepresentationsKey];
-        [cursors setObject:data forKey:identifier];
+        // Each cursor under its folder's name; the cape's identifier put them all in one.
+        [cursors setObject:data forKey:ident];
     }
     
     if (cursors.count == 0)
@@ -303,6 +305,13 @@ NSDictionary *processedCapeWithIdentifier(NSString *identifier) {
     return dict;
 }
 
+// A dump enlarges and hides the cursor while it captures; this puts both back, on every way
+// out of a dump, including a cancelled one.
+static void finishDump(float originalScale) {
+    CGSSetCursorScale(CGSMainConnectionID(), originalScale);
+    CGSShowCursor(CGSMainConnectionID());
+}
+
 BOOL dumpCursorsToFile(NSString *path, BOOL (^progress)(NSUInteger current, NSUInteger total)) {
     MMLog("Dumping cursors...");
         
@@ -323,6 +332,7 @@ BOOL dumpCursorsToFile(NSString *path, BOOL (^progress)(NSUInteger current, NSUI
             current = i;
 
             if (!progress(current, total)) {
+                finishDump(originalScale);
                 return NO;
             }
         }
@@ -336,6 +346,7 @@ BOOL dumpCursorsToFile(NSString *path, BOOL (^progress)(NSUInteger current, NSUI
             current = i + x;
 
             if (!progress(current, total)) {
+                finishDump(originalScale);
                 return NO;
             }
         }
@@ -366,8 +377,7 @@ BOOL dumpCursorsToFile(NSString *path, BOOL (^progress)(NSUInteger current, NSUI
     cape[MCCursorDictionaryVersionKey] = @(MCCursorCreatorVersion);
     cape[MCCursorDictionaryMinimumVersionKey] = @(MCCursorParserVersion);
     
-    CGSSetCursorScale(CGSMainConnectionID(), originalScale);
-    CGSShowCursor(CGSMainConnectionID());
+    finishDump(originalScale);
     
     return [cape writeToFile:path atomically:NO];
 }
@@ -392,6 +402,7 @@ BOOL dumpCursorsToFolder(NSString *path, BOOL (^progress)(NSUInteger current, NS
         current = i;
         if (progress) {
             if (!progress(current, total)) {
+                finishDump(originalScale);
                 return NO;
             }
         }
@@ -406,6 +417,7 @@ BOOL dumpCursorsToFolder(NSString *path, BOOL (^progress)(NSUInteger current, NS
         current = i + x;
         if (progress) {
             if (!progress(current, total)) {
+                finishDump(originalScale);
                 return NO;
             }
         }
@@ -425,8 +437,7 @@ BOOL dumpCursorsToFolder(NSString *path, BOOL (^progress)(NSUInteger current, NS
         progress(total, total);
     }
 
-    CGSSetCursorScale(CGSMainConnectionID(), originalScale);
-    CGSShowCursor(CGSMainConnectionID());
+    finishDump(originalScale);
 
     return YES;
 }

@@ -12,8 +12,11 @@ final class AppModel {
 
     var selection: Cape.ID?
     var errorMessage: String?
-    /// An import waiting for "Replace?" confirmation.
-    var pendingReplacement: PendingReplacement?
+    /// The import the "Replace?" dialog asks about.
+    private(set) var pendingReplacement: PendingReplacement?
+    /// Further imports that would replace a cape. They are asked about one after the other.
+    private var queuedReplacements: [PendingReplacement] = []
+    private var nextReplacementScheduled = false
     var capeToDelete: Cape?
     /// An edited cape waiting for "Revert to the original?" confirmation.
     var capeToRevert: Cape?
@@ -93,8 +96,8 @@ final class AppModel {
             do {
                 if let existing = try library.existingCape(forFileAt: url),
                    existing.fileURL?.standardizedFileURL != url.standardizedFileURL {
-                    pendingReplacement = PendingReplacement(source: .file(url), existing: existing)
-                    return      // the confirmation dialog continues with confirmReplacement()
+                    askToReplace(PendingReplacement(source: .file(url), existing: existing))
+                    continue    // the dialog continues with confirmReplacement()
                 }
                 let cape = try library.importCape(at: url)
                 selection = cape.id
@@ -107,6 +110,7 @@ final class AppModel {
     func confirmReplacement() {
         guard let pending = pendingReplacement else { return }
         pendingReplacement = nil
+        defer { showNextReplacement() }
         perform {
             switch pending.source {
             case .file(let url):
@@ -125,7 +129,35 @@ final class AppModel {
     func keepBoth() {
         guard let pending = pendingReplacement, case .converted(let cape, let skipped) = pending.source else { return }
         pendingReplacement = nil
+        defer { showNextReplacement() }
         perform { try addConverted(cape, skipped: skipped) }
+    }
+
+    /// Leaves the cape the dialog asks about as it is (Cancel, or the dialog closed).
+    func cancelReplacement() {
+        pendingReplacement = nil
+        showNextReplacement()
+    }
+
+    private func askToReplace(_ replacement: PendingReplacement) {
+        if pendingReplacement == nil && !nextReplacementScheduled {
+            pendingReplacement = replacement
+        } else {
+            queuedReplacements.append(replacement)
+        }
+    }
+
+    /// Asks about the next queued import. The dialog has to close before it can open again,
+    /// so the next question follows a moment later. Calling this more than once for the same
+    /// closing (the button, then the dialog's own dismissal) asks only once.
+    private func showNextReplacement() {
+        guard pendingReplacement == nil, !nextReplacementScheduled, !queuedReplacements.isEmpty else { return }
+        nextReplacementScheduled = true
+        Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(300))
+            nextReplacementScheduled = false
+            pendingReplacement = queuedReplacements.removeFirst()
+        }
     }
 
     func showImportPanel() {
@@ -151,10 +183,9 @@ final class AppModel {
     private func importTheme(_ convert: () throws -> (cape: Cape, skipped: [String])) {
         perform {
             let (cape, skipped) = try convert()
-            if pendingReplacement == nil,
-               let existing = library.capes.first(where: { $0.identifier == cape.identifier }) {
-                pendingReplacement = PendingReplacement(source: .converted(cape, skipped: skipped), existing: existing)
-                return      // the confirmation dialog continues with confirmReplacement() or keepBoth()
+            if let existing = library.capes.first(where: { $0.identifier == cape.identifier }) {
+                askToReplace(PendingReplacement(source: .converted(cape, skipped: skipped), existing: existing))
+                return      // the dialog continues with confirmReplacement() or keepBoth()
             }
             try addConverted(cape, skipped: skipped)
         }

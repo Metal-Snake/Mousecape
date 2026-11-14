@@ -14,18 +14,13 @@ a real Mac.
       `ArrowS`/`IBeamS` that macOS 27 registers itself. This may make the
       low-priority "reset from a stored copy" below unnecessary.
 - [ ] **Backups stop at the arrow.** `backupAllCursors` skips everything once a backup of
-      `Arrow` exists, though `backupCursorForIdentifier` already skips each cursor that has
-      one. If the original Mousecape backed up the arrow earlier in the session, `ArrowS`
-      and `IBeamS` never get a backup. Drop the early return (as SnowGlow-aww and
-      Alex-Simedrea did).
-- [ ] **Display changes re-apply the cape several times.** The reconfiguration callback
-      runs for every display, before and after each change, and applies the whole cape
-      each time. Skip `kCGDisplayBeginConfigurationFlag` and coalesce the rest into one apply
-      (SnowGlow-aww does both).
-- [ ] **A cancelled dump leaves the cursor big and hidden.** `dumpCursorsToFile` and
-      `…ToFolder` set the scale to 16 and hide the cursor, but return early without
-      restoring either when the progress block says stop. The app never stops a dump today;
-      restore both on every exit anyway.
+      `Arrow` exists. If the original Mousecape backed up the arrow earlier in the session,
+      `ArrowS` and `IBeamS` never get a backup. Simply dropping the early return, as
+      SnowGlow-aww and Alex-Simedrea did, isn't safe here: once a cape is applied, the
+      cursors without a backup can be the cape's own (on macOS 15.6, `ArrowS` exists only
+      because a cape registered it), and they would be saved as the system's. Back up an
+      extra cursor late only when no cape put it there (`MCAppliedExtraCursors`); test with
+      the original Mousecape on macOS 27.
 - [ ] **Blocking work on the main thread.**
   - Applying runs there, so a large cape can freeze the UI for a moment. SnowGlow-aww
     decodes each cursor's images on all cores into premultiplied BGRA, the window
@@ -33,16 +28,9 @@ a real Mac.
   - A library reload parses every cape fully (often several MB each). It happens only
     when the folder changed, but a big library still stalls. Load the metadata first and
     the images on demand.
-- [ ] **Importing several duplicates at once asks only once.** While "Replace …?" waits for
-      the first theme already in the library, further ones are added as a second copy
-      ("Ignite 2") without asking. Ask for each, one after the other.
-- [ ] **Empty tiles while previews decode.** Show a placeholder or the cursor name
-      instead of an empty square.
 - [ ] **No undo** in the editor, or for deleting a cape. The original had both.
-- [ ] **`mousecloak --create` asks questions on stdin** (`scanf` in `create.m`), so it
-      cannot be scripted. Add options such as `--name` and `--author`. It also stores every
-      cursor under the cape's identifier instead of the folder's name, so the cape ends up
-      with one cursor, and `scanf` leaves a newline behind that becomes the HiDPI answer.
+- [ ] **`mousecloak --create` asks questions on stdin** (`scanf` in `create.m`). Piped
+      answers work, but options such as `--name` and `--author` would be easier to script.
 
 ## Build and release
 

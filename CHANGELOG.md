@@ -32,6 +32,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   leaving it outside the visible part of the list.
 - `mousecloak --export` writes real PNG files. Images stored as TIFF, as in captured
   cursors, were written into `.png` files unchanged.
+- Importing several capes or themes that are already in the library asks about each, one
+  after the other. Before, the first question stopped the rest of a `.cape` import, and
+  further themes were added as copies without asking.
+- Cursor tiles show a spinner while their images load, and a sign for images that can't
+  be read, instead of an empty square.
+- The login agent applies the cape once per display change. It applied it for every
+  display, before and after each change.
+- `mousecloak --create` keeps every cursor of the folder (it stored them all under the
+  cape's identifier, so one was left), and the HiDPI answer is no longer skipped.
+- A cancelled cursor capture puts back the cursor size and shows the cursor again.
 
 ### Security
 

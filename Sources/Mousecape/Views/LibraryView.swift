@@ -69,7 +69,7 @@ struct LibraryView: View {
             if model.pendingReplacement?.canKeepBoth == true {
                 Button("Keep Both") { model.keepBoth() }
             }
-            Button("Cancel", role: .cancel) { model.pendingReplacement = nil }
+            Button("Cancel", role: .cancel) { model.cancelReplacement() }
         } message: {
             Text("A cape with the same identifier is already in the library.")
         }
@@ -174,7 +174,7 @@ struct LibraryView: View {
     }
 
     private var replaceBinding: Binding<Bool> {
-        Binding(get: { model.pendingReplacement != nil }, set: { if !$0 { model.pendingReplacement = nil } })
+        Binding(get: { model.pendingReplacement != nil }, set: { if !$0 { model.cancelReplacement() } })
     }
 
     private var revertBinding: Binding<Bool> {
