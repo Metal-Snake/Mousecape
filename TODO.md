@@ -56,7 +56,7 @@ there is no x86_64 build.
 
 ## Features and ideas
 
-- [ ] **Localization**, German first. String catalogs (`.xcstrings`) need
+- [ ] **Localization**, String catalogs (`.xcstrings`) need
       `xcstringstool`, which the Command Line Tools don't include. Use plain
       `Localizable.strings` with SwiftPM resources instead, or compile the catalog on CI.
 - [ ] **Export a cape as a MaCursor theme** (`.cursor`). Import exists
