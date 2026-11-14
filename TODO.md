@@ -6,11 +6,6 @@ a real Mac.
 
 ## Known issues
 
-- [ ] **MightyMouse conversion reads past its data.** `createCapeFromMightyMouse` builds a
-      bitmap straight from `CursorData` with the size the file's header claims, without
-      checking that the data is that long. A broken or hostile `.MightyMouse` file, which the
-      app imports, makes the engine read outside the buffer. Check `BytesPerRow` × rows
-      against the data length and skip the cursor otherwise (SnowGlow-aww has this check).
 - [ ] **Reset can't remove what it doesn't own** ([NOTES.md](NOTES.md#registrations-last-for-the-session)):
       backups stay for the session, and a variant like `ArrowS` from an earlier cape can
       only be overwritten. Unregistering with the global flag removes registrations of

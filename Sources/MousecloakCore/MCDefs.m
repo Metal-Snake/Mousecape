@@ -67,9 +67,10 @@ NSString *UUID() {
 NSString *MMGet(NSString *prompt) {
     MMOut("%s: ", prompt.UTF8String);
     
-    char get[255] = {0};
-    
-    fgets(get, 256, stdin);
+    char get[256] = {0};
+
+    // The size passed to fgets has to be the buffer's own; it was one byte larger.
+    fgets(get, sizeof(get), stdin);
     
     // remove newline
     char *pos;

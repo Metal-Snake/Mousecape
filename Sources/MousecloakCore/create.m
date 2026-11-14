@@ -139,60 +139,106 @@ NSDictionary *createCapeFromDirectory(NSString *path) {
     return dictionary;
 }
 
-NSDictionary *createCapeFromMightyMouse(NSDictionary *mightyMouse, NSDictionary *metadata) {
-    if (!mightyMouse)
+// The value if it is a whole number in [min, max], otherwise -1. MightyMouse files are
+// untrusted input, so every value from one is checked for its type and range.
+static NSInteger mightyMouseInteger(id value, NSInteger min, NSInteger max) {
+    if (![value isKindOfClass:[NSNumber class]])
+        return -1;
+    double number = [value doubleValue];
+    if (number != floor(number) || number < min || number > max)
+        return -1;
+    return (NSInteger)number;
+}
+
+// The images of one MightyMouse cursor as TIFF data, or nil when its description is
+// broken. The bitmap is read straight from the file's bytes, so the data has to cover
+// every row the header claims; without this check a broken or hostile file made the engine
+// read past the end of the buffer.
+static NSData *mightyMouseImages(NSDictionary *data) {
+    NSData *rawData = data[@"CursorData"];
+    NSInteger wide   = mightyMouseInteger(data[@"PixelsWide"], 1, MCMaximumImagePixels);
+    NSInteger high   = mightyMouseInteger(data[@"PixelsHigh"], 1, MCMaximumImagePixels);
+    NSInteger frames = mightyMouseInteger(data[@"FrameCount"], 1, MCMaximumImagePixels);
+    NSInteger bps    = mightyMouseInteger(data[@"BitsPerSample"], 1, 32);
+    NSInteger spp    = mightyMouseInteger(data[@"SamplesPerPixel"], 1, 5);
+    NSInteger bpp    = mightyMouseInteger(data[@"BitsPerPixel"], 1, 160);
+    NSInteger bpr    = mightyMouseInteger(data[@"BytesPerRow"], 1, NSIntegerMax / 2);
+    if (![rawData isKindOfClass:[NSData class]] || wide < 0 || high < 0 || frames < 0
+        || bps < 0 || spp < 0 || bpp < 0 || bpr < 0)
         return nil;
-    
+
+    // All frames together within the image size limit, without overflowing on the way.
+    NSInteger maximum = (NSInteger)MCMaximumImagePixels;
+    if (high > maximum / wide || frames > maximum / (wide * high))
+        return nil;
+    NSInteger rows = high * frames;
+    if (bpr < (wide * bpp + 7) / 8 || bpr > (NSInteger)rawData.length / rows)
+        return nil;
+
+    unsigned char *bytes = (unsigned char *)rawData.bytes;
+    NSBitmapImageRep *rep = [[NSBitmapImageRep alloc] initWithBitmapDataPlanes:&bytes
+                                                                    pixelsWide:wide
+                                                                    pixelsHigh:rows
+                                                                 bitsPerSample:bps
+                                                               samplesPerPixel:spp
+                                                                      hasAlpha:YES
+                                                                      isPlanar:NO
+                                                                colorSpaceName:NSCalibratedRGBColorSpace
+                                                                  bitmapFormat:NSBitmapFormatAlphaFirst | kCGBitmapByteOrder32Big
+                                                                   bytesPerRow:bpr
+                                                                  bitsPerPixel:bpp];
+    // The rep refuses combinations it can't read (it returns nil then).
+    NSData *tiff = [rep.ensuredSRGBSpace TIFFRepresentationUsingCompression:NSTIFFCompressionLZW factor:1.0];
+    [rep release];
+    return tiff;
+}
+
+NSDictionary *createCapeFromMightyMouse(NSDictionary *mightyMouse, NSDictionary *metadata) {
+    if (![mightyMouse isKindOfClass:[NSDictionary class]])
+        return nil;
+
     NSDictionary *cursors    = mightyMouse[@"Cursors"];
-    NSDictionary *global     = cursors[@"Global"];
-    NSDictionary *cursorData = cursors[@"Cursor Data"];
-    NSDictionary *identifiers = global[@"Identifiers"];
-    
-    if (!cursors || !global || !identifiers || !cursorData) {
+    NSDictionary *global     = [cursors isKindOfClass:[NSDictionary class]] ? cursors[@"Global"] : nil;
+    NSDictionary *cursorData = [cursors isKindOfClass:[NSDictionary class]] ? cursors[@"Cursor Data"] : nil;
+    NSDictionary *identifiers = [global isKindOfClass:[NSDictionary class]] ? global[@"Identifiers"] : nil;
+
+    if (![identifiers isKindOfClass:[NSDictionary class]] || ![cursorData isKindOfClass:[NSDictionary class]]) {
         MMLog(BOLD RED "Mighty Mouse format either invalid or unrecognized." RESET);
         return nil;
     }
-    
+
     NSMutableDictionary *convertedCursors = [NSMutableDictionary dictionary];
-    
+
     for (NSString *key in identifiers) {
+        if (![key isKindOfClass:[NSString class]])
+            continue;
         MMLog("Converting cursor: %s", key.UTF8String);
-        
+
         NSMutableDictionary *currentCursor = [NSMutableDictionary dictionary];
-        
+
         NSDictionary *info = identifiers[key];
-        NSString *customKey = info[@"Custom Key"];
-        
-        NSDictionary *data = cursorData[customKey];
-        
-        NSNumber *bpp   = data[@"BitsPerPixel"];
-        NSNumber *bps   = data[@"BitsPerSample"];
-        NSNumber *bpr   = data[@"BytesPerRow"];
-        NSData *rawData = data[@"CursorData"];
-        NSNumber *spp   = data[@"SamplesPerPixel"];
-        
+        NSString *customKey = [info isKindOfClass:[NSDictionary class]] ? info[@"Custom Key"] : nil;
+        NSDictionary *data = [customKey isKindOfClass:[NSString class]] ? cursorData[customKey] : nil;
+        if (![data isKindOfClass:[NSDictionary class]]) {
+            MMLog(BOLD RED "Skipping cursor %s: it has no image data." RESET, key.UTF8String);
+            continue;
+        }
+
         NSNumber *fc    = data[@"FrameCount"];
         NSNumber *fd    = data[@"FrameDuration"];
         NSNumber *hotX  = data[@"HotspotX"];
         NSNumber *hotY  = data[@"HotspotY"];
         NSNumber *wide  = data[@"PixelsWide"];
         NSNumber *high  = data[@"PixelsHigh"];
-        
-        unsigned char *bytes = (unsigned char*)rawData.bytes;
-        
-        NSBitmapImageRep *rep = [[NSBitmapImageRep alloc] initWithBitmapDataPlanes:&bytes
-                                                                        pixelsWide:wide.integerValue
-                                                                        pixelsHigh:high.integerValue * fc.integerValue
-                                                                     bitsPerSample:bps.integerValue
-                                                                   samplesPerPixel:spp.integerValue
-                                                                          hasAlpha:YES
-                                                                          isPlanar:NO
-                                                                    colorSpaceName:NSCalibratedRGBColorSpace
-                                                                      bitmapFormat:NSBitmapFormatAlphaFirst | kCGBitmapByteOrder32Big
-                                                                       bytesPerRow:bpr.integerValue
-                                                                      bitsPerPixel:bpp.integerValue];
-        
-        currentCursor[MCCursorDictionaryRepresentationsKey] = @[ [rep.ensuredSRGBSpace TIFFRepresentationUsingCompression:NSTIFFCompressionLZW factor:1.0] ];
+
+        NSData *images = mightyMouseImages(data);
+        if (!images || ![fd isKindOfClass:[NSNumber class]] || ![hotX isKindOfClass:[NSNumber class]]
+            || ![hotY isKindOfClass:[NSNumber class]]) {
+            MMLog(BOLD RED "Skipping cursor %s: its image data is malformed." RESET, key.UTF8String);
+            continue;
+        }
+
+        currentCursor[MCCursorDictionaryRepresentationsKey] = @[ images ];
         currentCursor[MCCursorDictionaryPointsWideKey]      = wide;
         currentCursor[MCCursorDictionaryPointsHighKey]      = high;
         currentCursor[MCCursorDictionaryHotSpotXKey]        = hotX;

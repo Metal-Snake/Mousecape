@@ -33,6 +33,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `mousecloak --export` writes real PNG files. Images stored as TIFF, as in captured
   cursors, were written into `.png` files unchanged.
 
+### Security
+
+- Importing a MightyMouse file checks every value in it. A broken or hostile file could
+  make Mousecape read past the end of its image data, or crash it with values of the
+  wrong type; such cursors are now left out, and files with a broken structure are
+  refused. Images over the size limit are refused too, as for every other import.
+- `mousecloak` no longer writes one byte past its input buffer when it asks for cape
+  details on the command line.
+
 ## [3.0.0] - 2026-11-10
 
 The first release of this fork, after the original's last release (build 1813). The cursor

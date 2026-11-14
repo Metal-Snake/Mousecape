@@ -103,3 +103,27 @@ public func maCursorEntry(points: Int = 32, frames: Int = 1, hotSpot: (Double, D
      "Representations": [pngImage(width: points, height: points * frames),
                          pngImage(width: points * 2, height: points * 2 * frames)]]
 }
+
+/// A MightyMouse theme as its property list: `Cursors` → `Global` → `Identifiers` names each
+/// cursor's entry in `Cursor Data`. `cursors` maps identifiers to such entries.
+public func mightyMouseTheme(cursors: [String: [String: Any]]) -> [String: Any] {
+    var identifiers: [String: Any] = [:]
+    var data: [String: Any] = [:]
+    for (index, (identifier, entry)) in cursors.sorted(by: { $0.key < $1.key }).enumerated() {
+        identifiers[identifier] = ["Custom Key": "cursor\(index)"]
+        data["cursor\(index)"] = entry
+    }
+    return ["Cursors": ["Global": ["Identifiers": identifiers], "Cursor Data": data]]
+}
+
+/// A MightyMouse cursor entry: raw 32-bit ARGB rows, all frames stacked, opaque red.
+/// `dataBytes` cuts or pads the raw data to that length.
+public func mightyMouseEntry(width: Int = 16, height: Int = 16, frames: Int = 1,
+                             dataBytes: Int? = nil) -> [String: Any] {
+    var pixels = Data(count: width * height * frames * 4)
+    for i in stride(from: 0, to: pixels.count, by: 4) { pixels[i] = 0xFF; pixels[i + 1] = 0xFF }
+    if let dataBytes { pixels = Data(pixels.prefix(dataBytes)) + Data(count: max(0, dataBytes - pixels.count)) }
+    return ["BitsPerPixel": 32, "BitsPerSample": 8, "SamplesPerPixel": 4, "BytesPerRow": width * 4,
+            "PixelsWide": width, "PixelsHigh": height, "FrameCount": frames, "FrameDuration": 0.1,
+            "HotspotX": 1.0, "HotspotY": 2.0, "CursorData": pixels]
+}
