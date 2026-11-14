@@ -6,8 +6,35 @@ a real Mac.
 
 ## Known issues
 
+- [ ] **MightyMouse conversion reads past its data.** `createCapeFromMightyMouse` builds a
+      bitmap straight from `CursorData` with the size the file's header claims, without
+      checking that the data is that long. A broken or hostile `.MightyMouse` file, which the
+      app imports, makes the engine read outside the buffer. Check `BytesPerRow` × rows
+      against the data length and skip the cursor otherwise (SnowGlow-aww has this check).
+- [ ] **Reset can't remove what it doesn't own** ([NOTES.md](NOTES.md#registrations-last-for-the-session)):
+      backups stay for the session, and a variant like `ArrowS` from an earlier cape can
+      only be overwritten. Unregistering with the global flag removes registrations of
+      other processes too (measured on macOS 15.6). Removing backups after a reset would
+      end the "first backup of a session counts" limitation. Test on macOS 27 first, and
+      never remove the `ArrowS`/`IBeamS` that macOS registers itself. This may make the
+      low-priority "reset from a stored copy" below unnecessary.
+- [ ] **Backups stop at the arrow.** `backupAllCursors` skips everything once a backup of
+      `Arrow` exists, though `backupCursorForIdentifier` already skips each cursor that has
+      one. If the original Mousecape backed up the arrow earlier in the session, `ArrowS`
+      and `IBeamS` never get a backup. Drop the early return (as SnowGlow-aww and
+      Alex-Simedrea did).
+- [ ] **Display changes re-apply the cape several times.** The reconfiguration callback
+      runs for every display, before and after each change, and applies the whole cape
+      each time. Skip `kCGDisplayBeginConfigurationFlag` and coalesce the rest into one apply
+      (SnowGlow-aww does both).
+- [ ] **A cancelled dump leaves the cursor big and hidden.** `dumpCursorsToFile` and
+      `…ToFolder` set the scale to 16 and hide the cursor, but return early without
+      restoring either when the progress block says stop. The app never stops a dump today;
+      restore both on every exit anyway.
 - [ ] **Blocking work on the main thread.**
-  - Applying runs there, so a large cape can freeze the UI for a moment.
+  - Applying runs there, so a large cape can freeze the UI for a moment. SnowGlow-aww
+    decodes each cursor's images on all cores into premultiplied BGRA, the window
+    server's own layout, before registering them in order: 0.40 s → 0.16 s for 52 cursors.
   - A library reload parses every cape fully (often several MB each). It happens only
     when the folder changed, but a big library still stalls. Load the metadata first and
     the images on demand.
@@ -18,7 +45,9 @@ a real Mac.
       instead of an empty square.
 - [ ] **No undo** in the editor, or for deleting a cape. The original had both.
 - [ ] **`mousecloak --create` asks questions on stdin** (`scanf` in `create.m`), so it
-      cannot be scripted. Add options such as `--name` and `--author`.
+      cannot be scripted. Add options such as `--name` and `--author`. It also stores every
+      cursor under the cape's identifier instead of the folder's name, so the cape ends up
+      with one cursor, and `scanf` leaves a newline behind that becomes the HiDPI answer.
 
 ## Build and release
 
@@ -109,8 +138,26 @@ above is done, or a real problem calls for them.
 
 ## Housekeeping
 
-- [ ] **Upstream.** `git fetch upstream` (alexzielenski/Mousecape) now and then. As of
-      2026-10-22 it has no commits after `184f87b`.
+- [ ] **Related projects.** Every few weeks, look for new work in the projects below and
+      note what is worth taking (as an idea, unless the licence allows code). Last checked
+      2026-11-14.
+      - The original: `git fetch upstream` (alexzielenski/Mousecape). No commits after
+        `184f87b`.
+      - Forks of the original with commits of their own:
+        `gh api repos/alexzielenski/Mousecape/forks --paginate`, then compare each with
+        `repos/alexzielenski/Mousecape/compare/master...<owner>:<branch>`. Of 273 forks,
+        these had changes: SnowGlow-aww (macOS 26/27 fixes, faster apply, bug fixes; the
+        findings above), Alex-Simedrea (ArrowS/IBeamS, long animations; nothing new),
+        AdamWawrzynkowskiGF/Mousecape-TahoeSupport, branch `TahoeSupport` (ArrowS by name
+        discovery), saltjsx (a fallback when capturing), doctorllll (Windows import),
+        chornthorn (SwiftUI port). The rest only change build settings.
+      - sdmj76/Mousecape-swiftUI and its forks MoriMeina and isandrel (Windows import, UI):
+        no commits since 2026-08-28.
+      - kwd421/macOS_Cursie: since v1.0.10 only its website.
+      - Juwan-Hwang/macOS27-Cursors: v1.0.1 fixes its Windows `.ani` files and Linux alias
+        links; `docs/MAPPING.md` unchanged.
+      - writronic/MaCursor (GPL-3.0): v2.8.2, the version analysed for the import and the
+        engine ideas below.
 
 Standing rule: keep the original licence's non-commercial clause and Alex Zielenski's
 notice in every distribution. No paid builds, no donations tied to downloads.

@@ -18,9 +18,13 @@ last differently long can only keep their timing by repeating frames.
 
 ## Registrations last for the session
 
-Only the process that registered a cursor can unregister it. Every later process fails,
-silently. So cursors are overwritten rather than removed, and registrations stay until
-logout.
+`CGSRemoveRegisteredCursor` takes a flag. With `false`, only the process that registered
+a cursor can remove it; every other process fails silently, though the call reports
+success. With `true`, any process can remove it (measured on macOS 15.6 with a cursor
+another process had registered with the global flag, as the engine does; not yet tried
+on macOS 27). The engine passes `false`, so cursors are overwritten rather than removed,
+and its registrations stay until logout. The global remove was found by the
+SnowGlow-aww fork of the original.
 
 This shapes how reset works. The engine registers its backups as
 `com.alexzielenski.mousecape.<identifier>`, the same names the original Mousecape uses,
