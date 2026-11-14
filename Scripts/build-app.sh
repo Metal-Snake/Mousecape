@@ -24,6 +24,11 @@ cd "$ROOT"
 VERSION="$(sed -n 's/^## \[\([0-9][0-9.]*\)\] - .*/\1/p' CHANGELOG.md | head -n 1)"   # CFBundleShortVersionString
 BUILD="$(git rev-list --count HEAD)"                                                # CFBundleVersion
 [ -n "$VERSION" ] || { echo "No released version in CHANGELOG.md" >&2; exit 1; }
+# The years of the fork in the copyright, up to the year of the last commit, so the notice
+# never looks older than the code.
+YEAR="$(git log -1 --format=%cd --date=format:%Y)"
+FORK_YEARS="2026"
+[ "$YEAR" -gt 2026 ] && FORK_YEARS="2026–$YEAR"
 
 MAKE_ZIP=0
 [ "${1:-}" = "--zip" ] && MAKE_ZIP=1
@@ -39,7 +44,10 @@ echo "==> Bundle…"
 rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp "$BIN/Mousecape" "$BIN/mousecloak" "$APP/Contents/MacOS/"
-sed -e "s/@VERSION@/$VERSION/" -e "s/@BUILD@/$BUILD/" Resources/Info.plist > "$APP/Contents/Info.plist"
+# The short version carries the build too ("3.1.0 (404)"): Finder's Get Info shows only
+# this string. The About window gets the version without it (see MousecapeApp).
+sed -e "s/@VERSION@/$VERSION/" -e "s/@BUILD@/$BUILD/g" -e "s/@FORK_YEARS@/$FORK_YEARS/" \
+    Resources/Info.plist > "$APP/Contents/Info.plist"
 plutil -lint -s "$APP/Contents/Info.plist"
 printf 'APPL????' > "$APP/Contents/PkgInfo"
 

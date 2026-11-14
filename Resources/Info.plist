@@ -13,7 +13,7 @@
     <key>CFBundleVersion</key>
     <string>@BUILD@</string>
     <key>CFBundleShortVersionString</key>
-    <string>@VERSION@</string>
+    <string>@VERSION@ (@BUILD@)</string>
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleIconFile</key>
@@ -31,7 +31,8 @@
     <key>NSPrincipalClass</key>
     <string>NSApplication</string>
     <key>NSHumanReadableCopyright</key>
-    <string>© 2013–2024 Alex Zielenski. Modernized fork by Metal-Snake.</string>
+    <string>© 2013–2024 Alex Zielenski.
+Modernized fork © @FORK_YEARS@ Metal-Snake.</string>
     <key>CFBundleDocumentTypes</key>
     <array>
         <dict>

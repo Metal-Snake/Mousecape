@@ -17,6 +17,9 @@ struct MousecapeApp: App {
         // open event closes this window and creates a new one (seen on macOS 27).
         .handlesExternalEvents(matching: [])
         .commands {
+            CommandGroup(replacing: .appInfo) {
+                Button("About Mousecape") { Self.showAboutPanel() }
+            }
             CommandGroup(replacing: .newItem) {
                 Button("New Cape") { model.newCape() }
                     .keyboardShortcut("n")
@@ -65,6 +68,15 @@ struct MousecapeApp: App {
         Settings {
             SettingsView(model: model)
         }
+    }
+
+    /// The standard About window. The short version already carries the build ("3.1.0
+    /// (404)", so that Finder's Get Info shows it); left alone, the panel would add the
+    /// build a second time.
+    @MainActor static func showAboutPanel() {
+        let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? ""
+        NSApp.orderFrontStandardAboutPanel(options: [.applicationVersion: version, .version: ""])
+        NSApp.activate()
     }
 }
 

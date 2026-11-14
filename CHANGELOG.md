@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Finder's Get Info and the About window show the build number with the version, such
+  as "3.1.0 (404)". The copyright names the fork's years up to the current one.
+
 ### Fixed
 
 - After an update, the login agent runs the new version as soon as the app is started,
