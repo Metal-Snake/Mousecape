@@ -12,6 +12,8 @@ public struct Cape: Identifiable, Equatable, Sendable {
     public var cursors: [CapeCursor]
     /// Where the cape was loaded from, if it came from a file.
     public var fileURL: URL?
+    /// Where the cape was downloaded from (the online gallery); nil for others.
+    public var source: CapeSource?
     /// Keys of the file this version doesn't know; written back unchanged.
     public var otherKeys: OtherKeys = .none
 
@@ -64,12 +66,14 @@ public struct Cape: Identifiable, Equatable, Sendable {
                   isHiDPI: (dict[Key.hiDPI] as? NSNumber)?.boolValue ?? false,
                   cursors: parsed,
                   fileURL: fileURL)
-        otherKeys = OtherKeys(dict, known: Key.all)
+        source = CapeSource(propertyList: dict[Key.source])
+        // A `Source` this version can't read is kept as it was.
+        otherKeys = OtherKeys(dict, known: source == nil ? Key.all : Key.all.union([Key.source]))
     }
 
     /// The property list as written to a `.cape` file.
     public var propertyList: [String: Any] {
-        otherKeys.merged(with: [
+        var known: [String: Any] = [
             Key.version: Self.formatVersion,
             Key.minimumVersion: Self.formatVersion,
             Key.identifier: identifier,
@@ -79,7 +83,9 @@ public struct Cape: Identifiable, Equatable, Sendable {
             Key.hiDPI: isHiDPI,
             Key.cloud: false,
             Key.cursors: Dictionary(uniqueKeysWithValues: cursors.map { ($0.identifier, $0.propertyList) }),
-        ])
+        ]
+        known[Key.source] = source?.propertyList
+        return otherKeys.merged(with: known)
     }
 
     /// Whether `identifier` is safe as a file or folder name: not empty, no path separators
@@ -106,6 +112,7 @@ public struct Cape: Identifiable, Equatable, Sendable {
         static let hiDPI = "HiDPI"
         static let cloud = "Cloud"
         static let cursors = "Cursors"
+        static let source = "Source"
         static let all: Set<String> = [version, minimumVersion, identifier, name, author, capeVersion,
                                        hiDPI, cloud, cursors]
     }

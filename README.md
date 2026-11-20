@@ -91,8 +91,9 @@ files and licence. Themes you installed from here are marked **Installed**, with
 the cape in your library. When the author uploads a new version, the mark says **Update
 Available**: double-click the theme to see, cursor by cursor, what the update changes
 before you take it. **Installed** at the top shows only these themes. An update keeps
-the cape's name and place; its previous state stays in the cape's history. Most are
-Linux themes, which Mousecape converts on import like any
+the cape's name and place; its previous state stays in the cape's history. A cape
+installed from here remembers where it came from (its page shows "From pling.com"), also
+when you copy it to another Mac or give it away. Most are Linux themes, which Mousecape converts on import like any
 other. The themes are made by others: check a theme's licence before you share or change
 it.
 

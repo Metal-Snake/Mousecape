@@ -36,65 +36,36 @@ final class Library {
         self.folder = folder
         self.versionsFolder = versionsFolder
             ?? folder.deletingLastPathComponent().appending(path: "Versions", directoryHint: .isDirectory)
-        galleryInstalls = Self.readGalleryInstalls(from: galleryFile)
         reload()
     }
 
     // MARK: - Installed from the gallery
 
-    /// Which cape each theme from the online gallery became (by pling.com theme id), and
-    /// the file it came from, to notice updates. Kept in a file next to the library folder,
-    /// since the cape format has no place for it (new keys must stay per cursor) and other
-    /// tools don't need it.
-    private(set) var galleryInstalls: [Int: GalleryInstall] = [:]
-
-    var galleryFile: URL { folder.deletingLastPathComponent().appending(path: "Gallery.plist") }
-
-    /// The cape in the library that a gallery theme was installed as; nil when it was
-    /// never installed, or the cape has been deleted since.
+    /// The cape in the library that a pling.com theme was installed as (its `Source`); nil
+    /// when it was never installed, or the cape has been deleted since.
     func cape(installedFromGalleryTheme id: Int) -> Cape? {
-        guard let identifier = galleryInstalls[id]?.identifier else { return nil }
-        return capes.first { $0.identifier == identifier }
+        capes.first { $0.source?.site == CapeSource.plingSite && $0.source?.themeID == id }
     }
 
-    /// Themes whose cape is still in the library.
+    /// The pling.com themes that capes in the library came from.
     var installedGalleryThemes: [Int] {
-        galleryInstalls.keys.filter { cape(installedFromGalleryTheme: $0) != nil }.sorted()
+        Array(Set(capes.compactMap { $0.source?.site == CapeSource.plingSite ? $0.source?.themeID : nil })).sorted()
     }
 
-    func recordGalleryInstall(themeID: Int, _ install: GalleryInstall) {
-        galleryInstalls[themeID] = install
-        saveGalleryInstalls()
-    }
-
-    /// A cape saved under a new identifier keeps its mark.
-    private func renameGalleryInstalls(from old: String, to new: String) {
-        guard old != new, galleryInstalls.values.contains(where: { $0.identifier == old }) else { return }
-        galleryInstalls = galleryInstalls.mapValues { install in
-            var renamed = install
-            if renamed.identifier == old { renamed.identifier = new }
-            return renamed
+    /// Records a newer source file for a cape whose cursors it doesn't change ("Mark as Up
+    /// to Date"). The cape's original in the history gets the same change, so that a cape
+    /// that wasn't edited doesn't count as edited for it; no history entry is added.
+    @discardableResult
+    func updateSource(of cape: Cape, to source: CapeSource) throws -> Cape {
+        guard let file = cape.fileURL else { throw LibraryError.notInLibrary }
+        let original = try history.originalURL(for: cape.identifier)
+        for url in [file, original] where FileManager.default.fileExists(atPath: url.path) {
+            var stored = try Cape(contentsOf: url)
+            stored.source = source
+            try stored.propertyListData().write(to: url, options: .atomic)
         }
-        saveGalleryInstalls()
-    }
-
-    private func saveGalleryInstalls() {
-        let plist = Dictionary(uniqueKeysWithValues: galleryInstalls.map { (String($0.key), $0.value.propertyList) })
-        // Only a convenience: a write that fails loses the marks, nothing else.
-        if let data = try? PropertyListSerialization.data(fromPropertyList: plist, format: .xml, options: 0) {
-            try? data.write(to: galleryFile, options: .atomic)
-        }
-    }
-
-    private static func readGalleryInstalls(from url: URL) -> [Int: GalleryInstall] {
-        guard let data = try? Data(contentsOf: url),
-              let plist = try? PropertyListSerialization.propertyList(from: data, format: nil) as? [String: Any]
-        else { return [:] }
-        var installs: [Int: GalleryInstall] = [:]
-        for (key, value) in plist {
-            if let id = Int(key), let install = GalleryInstall(propertyList: value) { installs[id] = install }
-        }
-        return installs
+        reload()
+        return capes.first { $0.identifier == cape.identifier } ?? cape
     }
 
     /// `MOUSECAPE_LIBRARY` points the app at another folder (for testing).
@@ -306,7 +277,6 @@ final class Library {
             try history.ensureOriginal(for: existing.identifier, from: source)
             try history.record(source, for: existing.identifier)
             try history.rename(from: existing.identifier, to: identifier)
-            renameGalleryInstalls(from: existing.identifier, to: identifier)
         } else {
             try history.discard(for: identifier)                // a new cape starts fresh
         }
@@ -340,6 +310,8 @@ final class Library {
         copy.identifier = cape.identifier + ".copy.\(Int(Date().timeIntervalSince1970))"
         copy.name = String(localized: "\(cape.name) Copy")
         copy.fileURL = nil
+        // The copy is the user's own: updates from the gallery go to the original.
+        copy.source = nil
         return try save(copy, originalIdentifier: nil)
     }
 
@@ -461,37 +433,6 @@ final class Library {
         } else {
             try FileManager.default.moveItem(at: temporary, to: destination)
         }
-    }
-}
-
-/// A cape installed from the online gallery: its identifier in the library, and the file
-/// it came from (name and MD5, as pling.com gave them), so that a changed file shows as an
-/// update.
-struct GalleryInstall: Equatable {
-    var identifier: String
-    var fileName: String?
-    var md5: String?
-
-    var propertyList: [String: String] {
-        var plist = ["Identifier": identifier]
-        plist["File"] = fileName
-        plist["MD5"] = md5
-        return plist
-    }
-
-    /// Read as untrusted: the identifier must be a valid one.
-    init?(propertyList: Any) {
-        guard let plist = propertyList as? [String: Any], let identifier = plist["Identifier"] as? String,
-              Cape.isValidIdentifier(identifier) else { return nil }
-        self.identifier = identifier
-        fileName = plist["File"] as? String
-        md5 = (plist["MD5"] as? String)?.lowercased()
-    }
-
-    init(identifier: String, fileName: String?, md5: String?) {
-        self.identifier = identifier
-        self.fileName = fileName
-        self.md5 = md5
     }
 }
 

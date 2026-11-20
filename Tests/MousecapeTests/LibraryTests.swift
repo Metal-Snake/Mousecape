@@ -256,41 +256,40 @@ final class LibraryTests {
         #expect(throws: LibraryError.self) { try library.putBack(emptied) }
     }
 
-    /// The gallery's marks: kept across launches, following a new identifier, gone with the
-    /// cape and back with Undo.
-    @Test func remembersCapesInstalledFromTheGallery() throws {
+    /// A cape installed from the gallery is found by its source; a duplicate is the user's
+    /// own and drops it.
+    @Test func findsCapesBySource() throws {
         let library = makeLibrary()
-        let cape = try library.save(Cape(identifier: "local.xcursor.sweet", name: "Sweet", author: ""), originalIdentifier: nil)
-        library.recordGalleryInstall(themeID: 1393084, GalleryInstall(identifier: cape.identifier,
-                                                                      fileName: "Sweet.tar.xz", md5: "ABC"))
-        #expect(library.cape(installedFromGalleryTheme: 1393084)?.name == "Sweet")
+        var cape = Cape(identifier: "local.xcursor.sweet", name: "Sweet", author: "")
+        cape.source = CapeSource(site: CapeSource.plingSite, themeID: 1393084, fileName: "Sweet.tar.xz",
+                                 md5: String(repeating: "a", count: 32))
+        let saved = try library.save(cape, originalIdentifier: nil)
+        #expect(library.cape(installedFromGalleryTheme: 1393084)?.identifier == saved.identifier)
         #expect(library.cape(installedFromGalleryTheme: 1) == nil)
-
-        var renamed = cape
-        renamed.identifier = "local.sweet.mine"
-        let saved = try library.save(renamed, originalIdentifier: cape.identifier)
-        let reopened = makeLibrary()
-        #expect(reopened.cape(installedFromGalleryTheme: 1393084)?.identifier == "local.sweet.mine")
-        #expect(reopened.galleryInstalls[1393084] == GalleryInstall(identifier: "local.sweet.mine",
-                                                                    fileName: "Sweet.tar.xz", md5: "abc"))
-        #expect(reopened.installedGalleryThemes == [1393084])
-
-        let trashed = try reopened.delete(saved)
-        #expect(reopened.cape(installedFromGalleryTheme: 1393084) == nil)
-        try reopened.putBack(trashed)
-        #expect(reopened.cape(installedFromGalleryTheme: 1393084) != nil)
+        #expect(library.installedGalleryThemes == [1393084])
+        let copy = try library.duplicate(saved)
+        #expect(copy.source == nil)
+        #expect(library.cape(installedFromGalleryTheme: 1393084)?.identifier == saved.identifier)
     }
 
-    /// A damaged file loses the marks, nothing else; identifiers in it are checked.
-    @Test func ignoresABrokenGalleryFile() throws {
-        try FileManager.default.createDirectory(at: base, withIntermediateDirectories: true)
-        let plist: [String: Any] = ["12": ["Identifier": "../escape"], "x": ["Identifier": "local.a"], "13": 5,
-                                    "15": "local.old", "14": ["Identifier": "local.ok", "MD5": "AB"]]
-        try PropertyListSerialization.data(fromPropertyList: plist, format: .xml, options: 0)
-            .write(to: base.appending(path: "Gallery.plist"))
-        #expect(makeLibrary().galleryInstalls == [14: GalleryInstall(identifier: "local.ok", fileName: nil, md5: "ab")])
-        try Data("garbage".utf8).write(to: base.appending(path: "Gallery.plist"))
-        #expect(makeLibrary().galleryInstalls.isEmpty)
+    /// Mark as Up to Date changes the source in the file and in its original, so a cape that
+    /// wasn't edited still isn't, and adds no saved state.
+    @Test func updatingTheSourceKeepsACapeUnedited() throws {
+        let library = makeLibrary()
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        var theme = Cape(identifier: "local.theme", name: "Theme", author: "")
+        theme.source = CapeSource(site: CapeSource.plingSite, themeID: 7, md5: String(repeating: "a", count: 32))
+        try theme.propertyListData().write(to: folder.appending(path: "local.theme.cape"))
+        library.reload()
+        let cape = try #require(library.capes.first)
+        #expect(!library.editedIdentifiers.contains(cape.identifier))
+
+        var newer = try #require(cape.source)
+        newer.md5 = String(repeating: "b", count: 32)
+        let updated = try library.updateSource(of: cape, to: newer)
+        #expect(updated.source?.md5 == newer.md5)
+        #expect(!library.editedIdentifiers.contains(cape.identifier))
+        #expect(library.versions(of: updated).map(\.kind) == [.original])
     }
 
     @Test func importingAgainStartsOver() throws {

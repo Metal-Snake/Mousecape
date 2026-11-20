@@ -59,6 +59,10 @@ a manual test. What these tests found out about macOS is in [NOTES.md](NOTES.md)
   the cape's name, records the new checksum and puts the previous state in the history.
   With an unchanged cape the comparison says "Nothing Changes", and Mark as Up to Date
   removes the mark without a new history entry.
+- The source in the cape: installing Sweet writes `Source` (site, ID, page, file, MD5)
+  into the cape file, and the cape's page shows "From pling.com". A changed MD5 in the
+  file shows as an update; Mark as Up to Date writes the new MD5 into the file and its
+  original, so the cape stays byte-identical to its original (not edited).
 - Undo in the editor: typing a name and ⌘Z in the focused field gives back the old name
   in one step; the menu says "Undo Name", and ⇧⌘Z types it again. Removing the I-beam
   and ⌘Z brings it back and shows it. Cancel still asks before discarding.

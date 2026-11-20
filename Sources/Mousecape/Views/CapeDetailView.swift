@@ -49,8 +49,21 @@ struct CapeDetailView: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text(cape.name)
                     .font(.largeTitle.weight(.semibold))
-                Text(subtitle)
-                    .foregroundStyle(.secondary)
+                HStack(spacing: 6) {
+                    Text(subtitle)
+                    // Where it was downloaded from: credit, and the way back to the author.
+                    if let source = cape.source {
+                        Text("·")
+                        if let page = source.page {
+                            Link("From \(source.site)", destination: page)
+                                .foregroundStyle(.tint)
+                                .help(page.absoluteString)
+                        } else {
+                            Text("From \(source.site)")
+                        }
+                    }
+                }
+                .foregroundStyle(.secondary)
             }
             Spacer()
             Button("Edit…") { onEdit(nil) }

@@ -43,10 +43,13 @@ Key facts:
 
 - **Cape format.** A `.cape` is an XML plist, format version 2.0, type
   `com.alexzielenski.mousecape.cape`. Each cursor has one sprite sheet per scale
-  (1x/2x/5x/10x), with frames stacked vertically and frame 0 at the top. Original
-  Mousecape must still open the files. New keys must be optional per-cursor keys, and
-  `MinimumVersion` stays 2.0. Unknown keys must survive a save: they go through
-  `OtherKeys`, at both the cape and the cursor level.
+  (1x/2x/5x/10x), with frames stacked vertically and frame 0 at the top. New keys are
+  optional, at the cape level (`Source`, where a cape was downloaded from) or per cursor
+  (`FrameDurations`, the left-handed keys), and `MinimumVersion` stays 2.0, so the
+  original Mousecape still opens the files and ignores what it doesn't know. Keeping
+  that is good, but no longer a must: the original isn't developed any more, and a new
+  feature that needs a break may make one (the user's decision, 2026-11-20). Unknown keys
+  must survive a save: they go through `OtherKeys`, at both the cape and the cursor level.
 - **Preferences domain.** The engine, the agent and the app all use the
   `com.alexzielenski.Mousecape` domain (`MCAppliedCursor`, `MCCursorScale`,
   `MCHandedness`, …). The engine writes some values per host, so read them with
@@ -87,8 +90,8 @@ Capes, themes and archives are untrusted input (see "Hardening" in CHANGES.md):
   the size of PNGs in `.cur` files are also bounded.
 - Ignore symlinks in themes that point outside the theme folder.
 - A save that can't keep the state it replaces must not overwrite anything.
-- The online gallery (`PlingCatalog` in CapeKit, `CursorGallery` in the app) is the only
-  network access. It runs only while its window is open, follows HTTPS links only,
+- The online gallery (`PlingCatalog` and `CapeSource` in CapeKit, `CursorGallery` in the
+  app) is the only network access. It runs only while its window is open, follows HTTPS links only,
   cleans file names from the catalogue, limits download sizes and checks checksums.
   Send nothing about the user (the User-Agent names only the app and its version).
 

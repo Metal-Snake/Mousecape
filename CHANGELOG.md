@@ -21,7 +21,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   licences, and installing with a double-click. Themes installed from the gallery are
   marked as such, and as "Update Available" when the author uploads a new version. A
   comparison shows what an update changes, cursor by cursor, before it is saved; the
-  previous state stays in the cape's history. The app goes online only while the gallery
+  previous state stays in the cape's history. A cape from the gallery keeps its source
+  (page, file and checksum) in an optional `Source` key of the cape file, so it travels
+  with the file; the cape's page links to it. The app goes online only while the gallery
   is open.
 - Undo of Move to Trash in the library: the cape comes back with its history, and is
   applied again if it was applied.

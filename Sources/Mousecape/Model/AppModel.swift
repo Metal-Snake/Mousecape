@@ -121,7 +121,6 @@ final class AppModel {
             case .converted(let cape, let skipped):
                 let saved = try library.replace(with: cape)
                 selection = saved.id
-                if let source = pending.gallerySource { record(source, as: saved) }
                 reportSkipped(skipped, in: saved)
             }
         }
@@ -132,7 +131,7 @@ final class AppModel {
         guard let pending = pendingReplacement, case .converted(let cape, let skipped) = pending.source else { return }
         pendingReplacement = nil
         defer { showNextReplacement() }
-        perform { try addConverted(cape, skipped: skipped, gallerySource: pending.gallerySource) }
+        perform { try addConverted(cape, skipped: skipped) }
     }
 
     /// Leaves the cape the dialog asks about as it is (Cancel, or the dialog closed).
@@ -181,22 +180,20 @@ final class AppModel {
 
     /// Adds a cape converted from a cursor theme and says which cursors were left out. When
     /// the library already has a cape with its identifier (the same theme imported before),
-    /// asks whether to replace it. `gallerySource` is the pling.com theme and file it came
-    /// from, so that the gallery can mark it as installed and notice updates.
-    private func importTheme(gallerySource: GallerySource? = nil, _ convert: () throws -> (cape: Cape, skipped: [String])) {
+    /// asks whether to replace it.
+    private func importTheme(_ convert: () throws -> (cape: Cape, skipped: [String])) {
         perform {
             let (cape, skipped) = try convert()
             if let existing = library.capes.first(where: { $0.identifier == cape.identifier }) {
-                askToReplace(PendingReplacement(source: .converted(cape, skipped: skipped), existing: existing,
-                                                gallerySource: gallerySource))
+                askToReplace(PendingReplacement(source: .converted(cape, skipped: skipped), existing: existing))
                 return      // the dialog continues with confirmReplacement() or keepBoth()
             }
-            try addConverted(cape, skipped: skipped, gallerySource: gallerySource)
+            try addConverted(cape, skipped: skipped)
         }
     }
 
     /// Adds a converted cape under a free identifier and name.
-    private func addConverted(_ converted: Cape, skipped: [String], gallerySource: GallerySource? = nil) throws {
+    private func addConverted(_ converted: Cape, skipped: [String]) throws {
         var cape = converted
         // Two themes of the same name ("kiriko" animated and static) shouldn't look alike.
         let names = Set(library.capes.map(\.name))
@@ -208,7 +205,6 @@ final class AppModel {
         }
         let added = try library.add(propertyList: cape.propertyList)
         selection = added.id
-        if let gallerySource { record(gallerySource, as: added) }
         reportSkipped(skipped, in: added)
     }
 
@@ -229,8 +225,11 @@ final class AppModel {
             defer { try? FileManager.default.removeItem(at: downloaded.file.deletingLastPathComponent()) }
             // The import itself runs while the file exists: a question about replacing a
             // cape holds the converted cape, not the file.
-            importTheme(gallerySource: GallerySource(themeID: theme.id, file: downloaded.info)) {
-                try Self.convertDownload(at: downloaded.file, author: theme.author)
+            importTheme {
+                var converted = try Self.convertDownload(at: downloaded.file, author: theme.author)
+                // The source travels with the cape: credit, and updates later.
+                converted.cape.source = CapeSource(theme: theme, file: downloaded.info)
+                return converted
             }
         } catch {
             errorMessage = String(localized: "“\(theme.name)” could not be installed: \(error.localizedDescription)")
@@ -252,19 +251,13 @@ final class AppModel {
         }
     }
 
-    private func record(_ source: GallerySource, as cape: Cape) {
-        library.recordGalleryInstall(themeID: source.themeID,
-                                     GalleryInstall(identifier: cape.identifier, fileName: source.file.name, md5: source.file.md5))
-    }
-
     // MARK: - Gallery updates
 
     /// The newer file of an installed theme, when pling.com has one; nil when the theme
     /// isn't installed, is up to date, or it can't be told.
     func update(for theme: PlingTheme) -> PlingTheme.File? {
-        guard library.cape(installedFromGalleryTheme: theme.id) != nil, let install = library.galleryInstalls[theme.id]
-        else { return nil }
-        return theme.updatedFile(installedName: install.fileName, installedMD5: install.md5,
+        guard let source = library.cape(installedFromGalleryTheme: theme.id)?.source else { return nil }
+        return theme.updatedFile(installedName: source.fileName, installedMD5: source.md5,
                                  among: CursorGallery.installableFiles(of: theme))
     }
 
@@ -283,8 +276,8 @@ final class AppModel {
         updated.name = installed.name
         updated.fileURL = installed.fileURL
         updated.otherKeys = installed.otherKeys
-        return PreparedUpdate(themeID: theme.id, file: downloaded.info, installed: installed, updated: updated,
-                              skipped: skipped)
+        updated.source = CapeSource(theme: theme, file: downloaded.info)
+        return PreparedUpdate(themeID: theme.id, installed: installed, updated: updated, skipped: skipped)
     }
 
     /// Saves the update over the installed cape. The cape's current state stays in its
@@ -294,7 +287,6 @@ final class AppModel {
         perform {
             let saved = try library.save(update.updated, originalIdentifier: update.installed.identifier)
             selection = saved.id
-            record(GallerySource(themeID: update.themeID, file: update.file), as: saved)
             reportSkipped(update.skipped, in: saved)
         }
     }
@@ -302,7 +294,8 @@ final class AppModel {
     /// The update changes nothing in the cape: remember the new file, so it no longer
     /// shows as an update.
     func markUpToDate(_ update: PreparedUpdate) {
-        record(GallerySource(themeID: update.themeID, file: update.file), as: update.installed)
+        guard let source = update.updated.source else { return }
+        perform { try library.updateSource(of: update.installed, to: source) }
     }
 
     private func importMightyMouse(_ url: URL) {
@@ -450,8 +443,6 @@ struct PendingReplacement {
 
     let source: Source
     let existing: Cape
-    /// The pling.com theme and file a gallery install came from.
-    var gallerySource: GallerySource? = nil
 
     /// A converted theme can also be added next to the existing cape, under a new identifier.
     var canKeepBoth: Bool {
@@ -459,17 +450,10 @@ struct PendingReplacement {
     }
 }
 
-/// The pling.com theme and the file a cape was installed from.
-struct GallerySource {
-    let themeID: Int
-    let file: PlingTheme.File
-}
-
 /// An update from the gallery, downloaded and converted but not saved yet.
 struct PreparedUpdate: Identifiable {
     var id: Int { themeID }
     let themeID: Int
-    let file: PlingTheme.File
     let installed: Cape
     let updated: Cape
     let skipped: [String]
