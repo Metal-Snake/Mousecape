@@ -120,6 +120,9 @@ final class AppModel {
             case .converted(let cape, let skipped):
                 let saved = try library.replace(with: cape)
                 selection = saved.id
+                if let theme = pending.galleryTheme {
+                    library.recordGalleryInstall(themeID: theme, identifier: saved.identifier)
+                }
                 reportSkipped(skipped, in: saved)
             }
         }
@@ -130,7 +133,7 @@ final class AppModel {
         guard let pending = pendingReplacement, case .converted(let cape, let skipped) = pending.source else { return }
         pendingReplacement = nil
         defer { showNextReplacement() }
-        perform { try addConverted(cape, skipped: skipped) }
+        perform { try addConverted(cape, skipped: skipped, galleryTheme: pending.galleryTheme) }
     }
 
     /// Leaves the cape the dialog asks about as it is (Cancel, or the dialog closed).
@@ -179,20 +182,22 @@ final class AppModel {
 
     /// Adds a cape converted from a cursor theme and says which cursors were left out. When
     /// the library already has a cape with its identifier (the same theme imported before),
-    /// asks whether to replace it.
-    private func importTheme(_ convert: () throws -> (cape: Cape, skipped: [String])) {
+    /// asks whether to replace it. `galleryTheme` is the pling.com theme it came from, so
+    /// that the gallery can mark it as installed.
+    private func importTheme(galleryTheme: Int? = nil, _ convert: () throws -> (cape: Cape, skipped: [String])) {
         perform {
             let (cape, skipped) = try convert()
             if let existing = library.capes.first(where: { $0.identifier == cape.identifier }) {
-                askToReplace(PendingReplacement(source: .converted(cape, skipped: skipped), existing: existing))
+                askToReplace(PendingReplacement(source: .converted(cape, skipped: skipped), existing: existing,
+                                                galleryTheme: galleryTheme))
                 return      // the dialog continues with confirmReplacement() or keepBoth()
             }
-            try addConverted(cape, skipped: skipped)
+            try addConverted(cape, skipped: skipped, galleryTheme: galleryTheme)
         }
     }
 
     /// Adds a converted cape under a free identifier and name.
-    private func addConverted(_ converted: Cape, skipped: [String]) throws {
+    private func addConverted(_ converted: Cape, skipped: [String], galleryTheme: Int? = nil) throws {
         var cape = converted
         // Two themes of the same name ("kiriko" animated and static) shouldn't look alike.
         let names = Set(library.capes.map(\.name))
@@ -204,6 +209,7 @@ final class AppModel {
         }
         let added = try library.add(propertyList: cape.propertyList)
         selection = added.id
+        if let galleryTheme { library.recordGalleryInstall(themeID: galleryTheme, identifier: added.identifier) }
         reportSkipped(skipped, in: added)
     }
 
@@ -222,7 +228,7 @@ final class AppModel {
         do {
             let downloaded = try await gallery.download(file, of: theme)
             defer { try? FileManager.default.removeItem(at: downloaded.deletingLastPathComponent()) }
-            importDownloaded(downloaded, author: theme.author)
+            importDownloaded(downloaded, author: theme.author, galleryTheme: theme.id)
         } catch {
             errorMessage = String(localized: "“\(theme.name)” could not be installed: \(error.localizedDescription)")
         }
@@ -230,18 +236,18 @@ final class AppModel {
 
     /// The import itself runs while the file exists: a question about replacing a cape
     /// holds the converted cape, not the file.
-    private func importDownloaded(_ url: URL, author: String) {
+    private func importDownloaded(_ url: URL, author: String, galleryTheme: Int) {
         switch url.pathExtension.lowercased() {
         case "cape":
-            importTheme {
+            importTheme(galleryTheme: galleryTheme) {
                 var cape = try Cape(contentsOf: url)
                 cape.fileURL = nil
                 return (cape, [])
             }
         case MaCursorTheme.fileExtension:
-            importTheme { try MaCursorTheme(contentsOf: url).makeCape(author: author) }
+            importTheme(galleryTheme: galleryTheme) { try MaCursorTheme(contentsOf: url).makeCape(author: author) }
         default:
-            importTheme { try ThemeImport.withTheme(at: url) { try $0.makeCape(author: author) } }
+            importTheme(galleryTheme: galleryTheme) { try ThemeImport.withTheme(at: url) { try $0.makeCape(author: author) } }
         }
     }
 
@@ -390,6 +396,8 @@ struct PendingReplacement {
 
     let source: Source
     let existing: Cape
+    /// The pling.com theme a gallery install came from.
+    var galleryTheme: Int? = nil
 
     /// A converted theme can also be added next to the existing cape, under a new identifier.
     var canKeepBoth: Bool {

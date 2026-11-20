@@ -36,7 +36,57 @@ final class Library {
         self.folder = folder
         self.versionsFolder = versionsFolder
             ?? folder.deletingLastPathComponent().appending(path: "Versions", directoryHint: .isDirectory)
+        galleryInstalls = Self.readGalleryInstalls(from: galleryFile)
         reload()
+    }
+
+    // MARK: - Installed from the gallery
+
+    /// Which cape each theme from the online gallery became: pling.com theme id → cape
+    /// identifier. Kept in a file next to the library folder, since the cape format has no
+    /// place for it (new keys must stay per cursor) and other tools don't need it.
+    private(set) var galleryInstalls: [Int: String] = [:]
+
+    var galleryFile: URL { folder.deletingLastPathComponent().appending(path: "Gallery.plist") }
+
+    /// The cape in the library that a gallery theme was installed as; nil when it was
+    /// never installed, or the cape has been deleted since.
+    func cape(installedFromGalleryTheme id: Int) -> Cape? {
+        guard let identifier = galleryInstalls[id] else { return nil }
+        return capes.first { $0.identifier == identifier }
+    }
+
+    func recordGalleryInstall(themeID: Int, identifier: String) {
+        galleryInstalls[themeID] = identifier
+        saveGalleryInstalls()
+    }
+
+    /// A cape saved under a new identifier keeps its mark.
+    private func renameGalleryInstalls(from old: String, to new: String) {
+        guard old != new, galleryInstalls.values.contains(old) else { return }
+        galleryInstalls = galleryInstalls.mapValues { $0 == old ? new : $0 }
+        saveGalleryInstalls()
+    }
+
+    private func saveGalleryInstalls() {
+        let plist = Dictionary(uniqueKeysWithValues: galleryInstalls.map { (String($0.key), $0.value) })
+        // Only a convenience: a write that fails loses the marks, nothing else.
+        if let data = try? PropertyListSerialization.data(fromPropertyList: plist, format: .xml, options: 0) {
+            try? data.write(to: galleryFile, options: .atomic)
+        }
+    }
+
+    private static func readGalleryInstalls(from url: URL) -> [Int: String] {
+        guard let data = try? Data(contentsOf: url),
+              let plist = try? PropertyListSerialization.propertyList(from: data, format: nil) as? [String: Any]
+        else { return [:] }
+        var installs: [Int: String] = [:]
+        for (key, value) in plist {
+            if let id = Int(key), let identifier = value as? String, Cape.isValidIdentifier(identifier) {
+                installs[id] = identifier
+            }
+        }
+        return installs
     }
 
     /// `MOUSECAPE_LIBRARY` points the app at another folder (for testing).
@@ -248,6 +298,7 @@ final class Library {
             try history.ensureOriginal(for: existing.identifier, from: source)
             try history.record(source, for: existing.identifier)
             try history.rename(from: existing.identifier, to: identifier)
+            renameGalleryInstalls(from: existing.identifier, to: identifier)
         } else {
             try history.discard(for: identifier)                // a new cape starts fresh
         }

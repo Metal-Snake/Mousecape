@@ -40,7 +40,9 @@ struct GalleryView: View {
             if gallery.themes.isEmpty { gallery.reload() }
         }
         .sheet(item: $detailTheme) { theme in
-            ThemeDetailView(theme: theme, gallery: gallery) { file in install(file, of: theme) }
+            ThemeDetailView(theme: theme, gallery: gallery,
+                            installedCape: model.library.cape(installedFromGalleryTheme: theme.id),
+                            onShowInLibrary: { show($0) }) { file in install(file, of: theme) }
         }
     }
 
@@ -64,7 +66,8 @@ struct GalleryView: View {
             ScrollView {
                 LazyVGrid(columns: [GridItem(.adaptive(minimum: 210, maximum: 280), spacing: 16)], spacing: 16) {
                     ForEach(gallery.themes) { theme in
-                        ThemeCard(theme: theme, isDownloading: gallery.downloading.contains(theme.id))
+                        ThemeCard(theme: theme, isDownloading: gallery.downloading.contains(theme.id),
+                                  installedCape: model.library.cape(installedFromGalleryTheme: theme.id))
                             .onTapGesture(count: 2) { installFirstFile(of: theme) }
                             .onTapGesture { detailTheme = theme }
                             .onAppear {
@@ -74,6 +77,9 @@ struct GalleryView: View {
                                 Button("Install") { installFirstFile(of: theme) }
                                     .disabled(CursorGallery.installableFiles(of: theme).isEmpty)
                                 Button("Details…") { detailTheme = theme }
+                                if let cape = model.library.cape(installedFromGalleryTheme: theme.id) {
+                                    Button("Show in Library") { show(cape) }
+                                }
                                 if let page = theme.detailPage {
                                     Link("Open on pling.com", destination: page)
                                 }
@@ -127,6 +133,12 @@ struct GalleryView: View {
         install(file, of: theme)
     }
 
+    /// Selects a cape in the library and brings the library forward.
+    private func show(_ cape: Cape) {
+        model.selection = cape.id
+        openWindow(id: "library")
+    }
+
     /// Installs, then brings the library forward: it shows the new cape, or asks whether to
     /// replace one with the same identifier.
     private func install(_ file: PlingTheme.File, of theme: PlingTheme) {
@@ -137,10 +149,12 @@ struct GalleryView: View {
     }
 }
 
-/// One theme in the grid: preview, name, author, downloads and licence.
+/// One theme in the grid: preview, name, author, downloads and licence, and a mark when
+/// it is already in the library.
 private struct ThemeCard: View {
     let theme: PlingTheme
     let isDownloading: Bool
+    let installedCape: Cape?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -151,6 +165,13 @@ private struct ThemeCard: View {
                         ProgressView()
                             .padding(10)
                             .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8))
+                    }
+                }
+                .overlay(alignment: .topTrailing) {
+                    if let installedCape {
+                        InstalledBadge()
+                            .padding(6)
+                            .help("In your library as “\(installedCape.name)”")
                     }
                 }
             Text(theme.name)
@@ -172,6 +193,19 @@ private struct ThemeCard: View {
         .background(.background.secondary, in: RoundedRectangle(cornerRadius: 10))
         .contentShape(RoundedRectangle(cornerRadius: 10))
         .help("Double-click to install; click for details")
+    }
+}
+
+/// Marks a theme that is already in the library.
+private struct InstalledBadge: View {
+    var body: some View {
+        Label("Installed", systemImage: "checkmark.circle.fill")
+            .font(.caption.weight(.semibold))
+            .padding(.horizontal, 7)
+            .padding(.vertical, 3)
+            .foregroundStyle(.white)
+            .background(Color.green, in: Capsule())
+            .shadow(radius: 2)
     }
 }
 
@@ -214,6 +248,9 @@ private struct ThemePreview: View {
 private struct ThemeDetailView: View {
     let theme: PlingTheme
     let gallery: CursorGallery
+    /// The cape this theme was installed as, if it is in the library.
+    let installedCape: Cape?
+    let onShowInLibrary: (Cape) -> Void
     let onInstall: (PlingTheme.File) -> Void
     @Environment(\.dismiss) private var dismiss
 
@@ -272,6 +309,19 @@ private struct ThemeDetailView: View {
             }
             .font(.callout)
             .foregroundStyle(.secondary)
+            if let installedCape {
+                HStack {
+                    InstalledBadge()
+                    Text("In your library as “\(installedCape.name)”.")
+                        .foregroundStyle(.secondary)
+                    Button("Show in Library") {
+                        onShowInLibrary(installedCape)
+                        dismiss()
+                    }
+                    .buttonStyle(.link)
+                }
+                .padding(.top, 4)
+            }
         }
     }
 
@@ -297,7 +347,7 @@ private struct ThemeDetailView: View {
                     }
                     Spacer()
                     if installable {
-                        Button("Install") {
+                        Button(installedCape == nil ? "Install" : "Install Again") {
                             onInstall(file)
                             dismiss()
                         }
