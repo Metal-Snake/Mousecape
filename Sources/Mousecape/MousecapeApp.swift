@@ -22,6 +22,7 @@ struct MousecapeApp: App {
                 Button("About Mousecape") { Self.showAboutPanel() }
             }
             UndoCommands(model: model)
+            FindCommands()
             CommandGroup(replacing: .newItem) {
                 Button("New Cape") { model.newCape() }
                     .keyboardShortcut("n")
@@ -142,9 +143,25 @@ struct UndoCommands: Commands {
     }
 }
 
+/// Edit → Find (⌘F): the search field of the window in front, where it has one.
+struct FindCommands: Commands {
+    @FocusedValue(\.focusSearch) private var focusSearch
+
+    var body: some Commands {
+        CommandGroup(after: .pasteboard) {
+            Divider()
+            Button("Find…") { focusSearch?() }
+                .keyboardShortcut("f")
+                .disabled(focusSearch == nil)
+        }
+    }
+}
+
 extension FocusedValues {
     /// Set by the library window (and so its sheets), for `UndoCommands`.
     @Entry var isLibraryWindow: Bool?
+    /// Puts the focus in the window's search field (the gallery), for `FindCommands`.
+    @Entry var focusSearch: (() -> Void)?
 }
 
 /// Opens the gallery of cursor themes on pling.com.

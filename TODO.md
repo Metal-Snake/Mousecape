@@ -73,8 +73,8 @@ there is no x86_64 build.
       27.0.1 that is exactly the set the fork handles today
       ([NOTES.md](NOTES.md#system-cursor-names)). When a future macOS adds more, use this
       list for backup, reset and syncing instead of the fixed one.
-- [ ] **Gallery follow-ups.** ⌘F doesn't reach the search field yet (`searchFocused`
-  needs macOS 15). Mark themes already in the library. More sources than pling.com.
+- [ ] **Gallery follow-ups.** Mark themes already in the library. More sources than
+  pling.com.
 - [ ] **Menu bar extra** for switching capes quickly.
 - [ ] **Cursor trails:** a line that follows the pointer and shrinks back into it when it
       stops (MaCursor has one; GPL-3.0, so only the idea).

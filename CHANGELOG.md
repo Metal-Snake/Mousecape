@@ -17,8 +17,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Undo and Redo in the editor (⌘Z, ⇧⌘Z). Quick edits of one field, like typing a name,
   are one step. Undo shows the cursor it changed, and brings back a removed cursor.
 - A gallery of the cursor themes on pling.com (gnome-look.org), under File → Browse
-  Cursor Themes Online… (⇧⌘O): search, sort, previews, licences, and installing with a
-  double-click. The app goes online only while the gallery is open.
+  Cursor Themes Online… (⇧⌘O): search (⌘F on macOS 15 and later), sort, previews,
+  licences, and installing with a double-click. The app goes online only while the gallery is open.
 - Undo of Move to Trash in the library: the cape comes back with its history, and is
   applied again if it was applied.
 

@@ -8,6 +8,7 @@ struct GalleryView: View {
     let model: AppModel
     @Environment(\.openWindow) private var openWindow
     @State private var detailTheme: PlingTheme?
+    @FocusState private var isSearchFocused: Bool
 
     private var gallery: CursorGallery { model.gallery }
 
@@ -20,6 +21,8 @@ struct GalleryView: View {
         }
         .frame(minWidth: 720, minHeight: 480)
         .searchable(text: $gallery.search, placement: .toolbar, prompt: "Search cursor themes")
+        .modifier(SearchFocus(isFocused: $isSearchFocused))
+        .focusedSceneValue(\.focusSearch, Self.canFocusSearch ? { isSearchFocused = true } : nil)
         .onSubmit(of: .search) { gallery.reload() }
         .onChange(of: gallery.search) { _, new in
             if new.isEmpty { gallery.reload() }     // the field's clear button
@@ -108,6 +111,12 @@ struct GalleryView: View {
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
+    }
+
+    /// Edit → Find (⌘F) puts the focus in the search field. SwiftUI can do that only from
+    /// macOS 15 on (`searchFocused`); on macOS 14 the menu item stays disabled.
+    private static var canFocusSearch: Bool {
+        if #available(macOS 15, *) { true } else { false }
     }
 
     private func installFirstFile(of theme: PlingTheme) {
@@ -300,6 +309,19 @@ private struct ThemeDetailView: View {
                     }
                 }
             }
+        }
+    }
+}
+
+/// `searchFocused` where the system has it (macOS 15 and later).
+private struct SearchFocus: ViewModifier {
+    let isFocused: FocusState<Bool>.Binding
+
+    func body(content: Content) -> some View {
+        if #available(macOS 15, *) {
+            content.searchFocused(isFocused)
+        } else {
+            content
         }
     }
 }

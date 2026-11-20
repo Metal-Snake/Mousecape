@@ -85,7 +85,8 @@ to replace it or keep both.
 **File → Browse Cursor Themes Online…** (⇧⌘O, or the globe in the toolbar) shows the
 cursor themes on [pling.com](https://www.pling.com), the catalogue behind gnome-look.org
 and store.kde.org, about 1,200 of them. Search them, sort them by downloads, date, rating
-or name, and double-click one to install it; click it for its previews, description,
+or name (⌘F jumps to the search field on macOS 15 and later), and double-click one to
+install it; click it for its previews, description,
 files and licence. Most are Linux themes, which Mousecape converts on import like any
 other. The themes are made by others: check a theme's licence before you share or change
 it.

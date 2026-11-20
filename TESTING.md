@@ -49,7 +49,8 @@ a manual test. What these tests found out about macOS is in [NOTES.md](NOTES.md)
   files and link. A double-click on Sweet cursors installs it (37 cursors, author
   eliverlara) and brings the library forward; installing it again asks whether to
   replace it. The download's temporary folder is gone afterwards. ⌘Z in the gallery's
-  search field leaves the library alone.
+  search field leaves the library alone. Edit → Find (⌘F) puts the focus in the
+  gallery's search field and is disabled in the library window.
 - Undo in the editor: typing a name and ⌘Z in the focused field gives back the old name
   in one step; the menu says "Undo Name", and ⇧⌘Z types it again. Removing the I-beam
   and ⌘Z brings it back and shows it. Cancel still asks before discarding.
