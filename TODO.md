@@ -6,21 +6,6 @@ a real Mac.
 
 ## Known issues
 
-- [ ] **Reset can't remove what it doesn't own** ([NOTES.md](NOTES.md#registrations-last-for-the-session)):
-      backups stay for the session, and a variant like `ArrowS` from an earlier cape can
-      only be overwritten. Unregistering with the global flag removes registrations of
-      other processes too (measured on macOS 15.6 and 27.2.1). Removing backups after a
-      reset would end the "first backup of a session counts" limitation. Never remove the
-      `ArrowS`/`IBeamS` that macOS 27 registers itself. This may make the
-      low-priority "reset from a stored copy" below unnecessary.
-- [ ] **Backups stop at the arrow.** `backupAllCursors` skips everything once a backup of
-      `Arrow` exists. If the original Mousecape backed up the arrow earlier in the session,
-      `ArrowS` and `IBeamS` never get a backup. Simply dropping the early return, as
-      SnowGlow-aww and Alex-Simedrea did, isn't safe here: once a cape is applied, the
-      cursors without a backup can be the cape's own (on macOS 15.6, `ArrowS` exists only
-      because a cape registered it), and they would be saved as the system's. Back up an
-      extra cursor late only when no cape put it there (`MCAppliedExtraCursors`); test with
-      the original Mousecape on macOS 27.
 - [ ] **Blocking work on the main thread.**
   - Applying runs there, so a large cape can freeze the UI for a moment. SnowGlow-aww
     decodes each cursor's images on all cores into premultiplied BGRA, the window
@@ -113,8 +98,9 @@ above is done, or a real problem calls for them.
       boot (`kern.bootsessionuuid`): reset the core cursors, capture the system cursors at
       scale 16 into a file, and reset and apply from that file. Captures that come back as
       red placeholders fall back to Apple's PDFs in HIServices' `cursors` folder (which
-      has no arrow, I-beam or wait cursor). Takes away most of the "first backup of a
-      session counts" limitation.
+      has no arrow, I-beam or wait cursor). A reset now backs up afresh, but a backup still
+      takes whatever is on screen, so cursors another tool changed earlier come back; a
+      stored copy of the system's own cursors wouldn't.
 - [ ] **Guard against a cursor scale stuck at 16.** Capturing sets the scale to 16 and back;
       if it stops halfway, the scale stays at 16. Treat 16 as "not the user's choice" when
       reading the scale, as MaCursor does.

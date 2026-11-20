@@ -89,9 +89,9 @@ says what happens to which cursor: macOS shows at most 24 frames of an animation
 longer ones are reduced when applied; a cursor whose images don't fit is flagged. Click a
 line to open that cursor in the editor.
 
-Reset brings back the cursors Mousecape found when it first applied a cape in this login
-session. If another cursor tool had changed them before, reset brings back that tool's
-cursors. Log out and in again to get the macOS cursors.
+Reset brings back the cursors that were on screen before Mousecape applied a cape, which
+are normally the macOS cursors. If another cursor tool had changed them before, reset
+brings back that tool's cursors. Log out and in again to get the macOS cursors.
 
 ## Making and editing capes
 

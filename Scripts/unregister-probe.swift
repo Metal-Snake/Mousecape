@@ -4,8 +4,10 @@ import Foundation
 // Unregister probe: checks whether a process can remove a cursor that another process
 // registered (NOTES.md, "Registrations last for the session"). It registers a test cursor
 // in a child process that then exits, and tries to remove it from this process, first with
-// the non-global flag the engine uses, then with the global one. The test cursor has a name
-// of its own, so no system or cape cursor is touched.
+// the non-global flag, then with the global one. It does this twice: for a name of its own,
+// and for a made-up name under com.apple.coregraphics., the namespace of the system's
+// cursors, which can't be removed on macOS 15. The test cursors are invisible; one under
+// com.apple.coregraphics. that can't be removed stays registered until logout.
 //
 // Usage: swiftc -o /tmp/unregister-probe Scripts/unregister-probe.swift && /tmp/unregister-probe
 // (compiled, because the probe starts itself again as the child process)
@@ -43,20 +45,22 @@ if arguments.count == 3, arguments[1] == "--register" {
     exit(register(arguments[2]) ? 0 : 1)
 }
 
-let name = "io.github.metal-snake.unregister-probe.\(getpid())"
-let child = Process()
-child.executableURL = URL(fileURLWithPath: Bundle.main.executablePath ?? arguments[0])
-child.arguments = ["--register", name]
-try child.run()
-child.waitUntilExit()
-guard child.terminationStatus == 0, isRegistered(name) else {
-    print("The child process could not register \(name).")
-    exit(1)
-}
-print("Registered by another process, which has exited: \(name)")
+for name in ["io.github.metal-snake.unregister-probe.\(getpid())",
+             "com.apple.coregraphics.MousecapeUnregisterProbe\(getpid())"] {
+    let child = Process()
+    child.executableURL = URL(fileURLWithPath: Bundle.main.executablePath ?? arguments[0])
+    child.arguments = ["--register", name]
+    try child.run()
+    child.waitUntilExit()
+    guard child.terminationStatus == 0, isRegistered(name) else {
+        print("The child process could not register \(name).")
+        exit(1)
+    }
+    print("Registered by another process, which has exited: \(name)")
 
-for global in [false, true] {
-    let error = CGSRemoveRegisteredCursor(CGSMainConnectionID(), name, global)
-    print("Remove with global = \(global): error \(error), still registered: \(isRegistered(name))")
-    if !isRegistered(name) { break }
+    for global in [false, true] {
+        let error = CGSRemoveRegisteredCursor(CGSMainConnectionID(), name, global)
+        print("  Remove with global = \(global): error \(error), still registered: \(isRegistered(name))")
+        if !isRegistered(name) { break }
+    }
 }

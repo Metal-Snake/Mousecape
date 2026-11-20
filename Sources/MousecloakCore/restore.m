@@ -47,6 +47,13 @@ static BOOL registrationMatches(NSString *ident, NSDictionary *reference) {
 
 // Puts a cursor back from its backup. Returns YES only when the backup was there and the
 // cursor now matches it.
+//
+// A restored backup is then removed, with the global flag: only that removes a registration
+// another process made, and the backup was usually registered by an earlier mousecloak or
+// app process (NOTES.md, "Registrations last for the session"). The next apply then backs up
+// what this reset put on screen, instead of the first backup of the session counting for
+// good. A backup that could not be restored stays, so the next backup can't take the cape's
+// cursor still on screen for the system's.
 BOOL restoreCursorForIdentifier(NSString *ident) {
     bool registered = false;
     MCIsCursorRegistered(CGSMainConnectionID(), (char *)ident.UTF8String, &registered);
@@ -64,12 +71,13 @@ BOOL restoreCursorForIdentifier(NSString *ident) {
         }
     }
 
-    CGSRemoveRegisteredCursor(CGSMainConnectionID(), (char *)ident.UTF8String, false);
+    if (restored)
+        CGSRemoveRegisteredCursor(CGSMainConnectionID(), (char *)ident.UTF8String, true);
     return restored;
 }
 
-// Restores an extra cursor from its backup, or unregisters it when the system never had
-// it. Returns NO if it is still showing something it shouldn't.
+// Restores an extra cursor from its backup, or, without one, gives it the standard cursor
+// it is a variant of. Returns NO if it is still showing something it shouldn't.
 static BOOL removeExtraCursor(NSString *ident) {
     bool hasBackup = false;
     MCIsCursorRegistered(CGSMainConnectionID(), (char *)backupStringForIdentifier(ident).UTF8String, &hasBackup);
@@ -82,17 +90,10 @@ static BOOL removeExtraCursor(NSString *ident) {
     if (!registered)
         return YES;
 
-    // The window server only lets the process that registered a cursor remove it, and
-    // that process is usually gone. A variant like ArrowS then gets the restored
-    // standard cursor instead, so it looks like the default wherever macOS uses it.
-    // A removal that reports success is checked too: it must actually be gone.
-    CGError removal = CGSRemoveRegisteredCursor(CGSMainConnectionID(), (char *)ident.UTF8String, false);
-    MCIsCursorRegistered(CGSMainConnectionID(), (char *)ident.UTF8String, &registered);
-    if (!registered) {
-        MMLog("Removed %s", ident.UTF8String);
-        return YES;
-    }
-    MMLog("Could not remove %s (error %d)", ident.UTF8String, removal);
+    // Names under com.apple.coregraphics. can't be unregistered at all, not even by the
+    // process that registered them, with either flag (NOTES.md). A variant like ArrowS
+    // therefore gets the restored standard cursor instead, so it looks like the default
+    // wherever macOS uses it.
     // The default comes from the base cursor's backup. On macOS 27 a registered variant
     // shadows its base, even when reading it: asking for Arrow returns ArrowS. So the
     // base itself would hand back the cape's image, and the variant would be "reset" to

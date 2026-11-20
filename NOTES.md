@@ -20,18 +20,25 @@ last differently long can only keep their timing by repeating frames.
 
 `CGSRemoveRegisteredCursor` takes a flag. With `false`, only the process that registered
 a cursor can remove it; every other process fails silently, though the call reports
-success. With `true`, any process can remove it (measured on macOS 15.6 and 27.2.1 with a
-cursor another process had registered with the global flag, as the engine does). The engine passes `false`, so cursors are overwritten rather than removed,
-and its registrations stay until logout. The global remove was found by the
-SnowGlow-aww fork of the original.
+success. With `true`, any process can remove it, whether the process that registered it
+still runs or not (measured on macOS 15.6, 15.8.3 and 27.2.1, with cursors registered with
+the global flag, as the engine does). The global remove was found by the SnowGlow-aww fork
+of the original.
+
+Names under `com.apple.coregraphics.` are the exception: they can't be removed at all,
+not even by the process that registered them, with either flag (error 1000; measured on
+macOS 15.8.3, also for made-up names in that namespace). So a variant like `ArrowS`, once a
+cape registered it, stays until logout; a reset can only give it the default images.
 
 This shapes how reset works. The engine registers its backups as
 `com.alexzielenski.mousecape.<identifier>`, the same names the original Mousecape uses,
-and backs up only when no backup exists yet. The first backup of a login session is
-therefore the one every reset brings back. The engine can't tell whether the cursors on
-screen at that moment are macOS's own: if another tool (the original Mousecape, Cursie, …)
-changed them earlier in the session, reset brings back that tool's cursors. Logging out
-and in again starts over.
+and backs up only when no backup exists yet. A reset removes each backup it restored, with
+the global flag, so the next apply backs up what is on screen after the reset. A backup
+that could not be restored stays, so a cape's cursor is never backed up as the system's.
+
+The engine can't tell whether the cursors on screen are macOS's own when it backs them
+up: if another tool (the original Mousecape, Cursie, …) changed them before, reset brings
+back that tool's cursors. Logging out and in again starts over.
 
 ## ArrowS and IBeamS
 

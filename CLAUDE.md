@@ -60,9 +60,10 @@ Key facts:
   build of an app without a team ID. Don't switch it back.
 - **Window server limits** shape much of the code. It allows at most 24 frames per cursor
   (`CapeCursor.maximumFrameCount`). Longer animations are reduced at apply time (every
-  n-th frame, or by time when `FrameDurations` exists). The engine unregisters with the
-  non-global flag, which works only for the process that registered a cursor, so backups
-  last for the whole login session (NOTES.md has the details). On macOS 27,
+  n-th frame, or by time when `FrameDurations` exists). A reset removes the backups it
+  restored (with the global flag, the only one that works across processes), so the next
+  apply backs up afresh. Names under `com.apple.coregraphics.` can't be unregistered at
+  all, so a variant like `ArrowS` lasts until logout (NOTES.md has the details). On macOS 27,
   `ArrowS`/`IBeamS` shadow `Arrow`/`IBeam`.
 
 ## Logic that exists twice

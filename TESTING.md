@@ -19,6 +19,7 @@ a manual test. What these tests found out about macOS is in [NOTES.md](NOTES.md)
 - Unregistering (`Scripts/unregister-probe.swift`, on macOS 15.6 and 27.2.1): a cursor
   that another, finished process registered can't be removed with the non-global flag,
   but can with the global one ([NOTES.md](NOTES.md#registrations-last-for-the-session)).
+  On macOS 15.8.3, names under `com.apple.coregraphics.` can't be removed with either.
 
 **On macOS 27.2.1** (the build released as 3.1.0):
 
@@ -40,6 +41,16 @@ a manual test. What these tests found out about macOS is in [NOTES.md](NOTES.md)
   with 3x images (MaCursor's Softglow) and with fractional point sizes (Anya) apply without
   an error, look sharp, keep their transparency, and click where they point, although
   Mousecape marks them red.
+
+**On macOS 15.8.3:**
+
+- Reset removes the backups it restored (none are left after `mousecloak --reset` with
+  left-handed mode off), and the next apply backs up again.
+- The original Mousecape's arrow backup without one for `ArrowS` (simulated: a backup of
+  the arrow and an `ArrowS` with its own hot spot, registered by a helper): applying a cape
+  backs up `ArrowS` anyway, and a reset brings back that `ArrowS`, not a copy of the arrow.
+- A variant a cape registered (`ArrowS` from `ArrowS-Test.cape`) can't be removed; reset
+  gives it the default arrow.
 
 **On macOS 15.6:**
 
@@ -86,6 +97,14 @@ a manual test. What these tests found out about macOS is in [NOTES.md](NOTES.md)
   converted animated theme applies.
 
 ## Still to verify
+
+- [ ] **Unregistering `com.apple.coregraphics.` names on macOS 27.** Run
+      `Scripts/unregister-probe.swift`: its second name should stay registered, as on
+      macOS 15.8.3.
+- [ ] **Backups with the original Mousecape on macOS 27.** Apply a cape with the original
+      Mousecape, then one with this version, then reset: `ArrowS` and `IBeamS` should come
+      back as the system's (`mousecloak --list` shows a backup for them while the cape is
+      on). Simulated on macOS 15.8.3 only (above).
 
 - [ ] **A real login with a cape applied**, ideally on macOS 27. The agent's part is
       checked on macOS 15.6 (see above), but not a real logout and login.

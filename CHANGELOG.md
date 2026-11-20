@@ -14,6 +14,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- A reset removes the backups it brought back, so the next apply backs up the cursors on
+  screen anew. Before, the first backup of a login session was the one every reset
+  brought back until logout.
+- On macOS 27, `ArrowS` and `IBeamS` get a backup of their own even when the original
+  Mousecape backed up the arrow earlier in the session. A reset then brings back the
+  system's variants instead of a copy of the arrow.
 - After an update, the login agent runs the new version as soon as the app is started,
   even when the new version took the old one's place. Before, the old agent kept running
   until the next login in that case.

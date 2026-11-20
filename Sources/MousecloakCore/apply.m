@@ -297,7 +297,9 @@ BOOL applyCape(NSDictionary *dictionary) {
         }
 
         // A variant like ArrowS left over from an earlier cape would hide this cape's Arrow
-        // where macOS uses the variant; give it this cape's cursor too.
+        // where macOS uses the variant; give it this cape's cursor too. It then shows the
+        // cape, so it goes on the list of cursors Mousecape registered, which keeps the next
+        // backup from taking it for the system's.
         for (NSUInteger i = 0; extraCursors[i] != nil; i++) {
             NSString *extra = extraCursors[i];
             NSString *base = MCBaseCursorForExtra(extra);
@@ -305,6 +307,8 @@ BOOL applyCape(NSDictionary *dictionary) {
             MCIsCursorRegistered(CGSMainConnectionID(), (char *)extra.UTF8String, &registered);
             if (registered && !cursors[extra] && base && cursors[base]) {
                 MMLog("Using %s for %s", base.UTF8String, extra.UTF8String);
+                [extras addObject:extra];
+                MCSetDefault(extras.allObjects, MCPreferencesAppliedExtraCursorsKey);
                 applyCapeForIdentifier(cursors[base], extra, NO);
             }
         }
@@ -361,6 +365,14 @@ BOOL applyDefaultCursors(void) {
         if (registered && MCCursorIsPointer(extraCursors[i]))
             [identifiers addObject:extraCursors[i]];
     }
+    // Mirrored variants are Mousecape's registrations, like a cape's (see backupAllCursors).
+    NSMutableSet *mirroredExtras = [NSMutableSet set];
+    for (NSString *identifier in identifiers) {
+        if (!MCCursorIsStandard(identifier))
+            [mirroredExtras addObject:identifier];
+    }
+    if (mirroredExtras.count)
+        MCSetDefault(mirroredExtras.allObjects, MCPreferencesAppliedExtraCursorsKey);
     NSUInteger failed = 0;
     for (NSString *identifier in identifiers) {
         NSDictionary *cursor = capeWithIdentifier(identifier);
