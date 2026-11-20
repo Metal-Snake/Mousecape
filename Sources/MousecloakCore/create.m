@@ -11,134 +11,20 @@
 #import "NSCursor_Private.h"
 #import "NSBitmapImageRep+ColorSpace.h"
 
-NSError *createCape(NSString *input, NSString *output, BOOL convert) {
-    NSDictionary *cape;
-    if (convert)
-        cape = createCapeFromMightyMouse([NSDictionary dictionaryWithContentsOfFile:input], nil);
-    else
-        cape = createCapeFromDirectory(input);
-    
+// (mousecloak --create builds capes from folders in Swift, with CapeKit: CreateCape.swift.)
+NSError *convertMightyMouseFile(NSString *input, NSString *output) {
+    NSDictionary *cape = createCapeFromMightyMouse([NSDictionary dictionaryWithContentsOfFile:input], nil);
     if (!cape) {
-        if (convert)
-            return [NSError errorWithDomain:MCErrorDomain code:MCErrorInvalidCapeCode userInfo:@{
-                                                                                                 NSLocalizedDescriptionKey: NSLocalizedString(@"Failed to create cape file", nil),
-                                                                                                 NSLocalizedFailureReasonErrorKey: NSLocalizedString(@"Unabled to create a cape from the file specified.", nil) }];
-        else
-            return [NSError errorWithDomain:MCErrorDomain code:MCErrorInvalidCapeCode userInfo:@{
-                                                                                                 NSLocalizedDescriptionKey: NSLocalizedString(@"Failed to create cape file", nil),
-                                                                                                 NSLocalizedFailureReasonErrorKey: NSLocalizedString(@"Unabled to create a cape from the directory specified.", nil) }];
+        return [NSError errorWithDomain:MCErrorDomain code:MCErrorInvalidCapeCode userInfo:@{
+            NSLocalizedDescriptionKey: NSLocalizedString(@"Failed to create cape file", nil),
+            NSLocalizedFailureReasonErrorKey: NSLocalizedString(@"Unable to create a cape from the file specified.", nil) }];
     }
-    
-    if (![cape writeToFile:output atomically:NO]) {
+    if (![cape writeToFile:output atomically:YES]) {
         return [NSError errorWithDomain:MCErrorDomain code:MCErrorWriteFailCode userInfo:@{
-                                                                                           NSLocalizedDescriptionKey: NSLocalizedString(@"Failed to create cape file", nil),
-                                                                                           NSLocalizedFailureReasonErrorKey: [NSString stringWithFormat: NSLocalizedString(@"The destination, %@, is not writable.", nil), output] }];
+            NSLocalizedDescriptionKey: NSLocalizedString(@"Failed to create cape file", nil),
+            NSLocalizedFailureReasonErrorKey: [NSString stringWithFormat:NSLocalizedString(@"The destination, %@, is not writable.", nil), output] }];
     }
-
     return nil;
-}
-
-NSDictionary *createCapeFromDirectory(NSString *path) {
-    NSFileManager *manager = [NSFileManager defaultManager];
-    
-    BOOL isDir;
-    BOOL exists = [manager fileExistsAtPath:path isDirectory:&isDir];
-    
-    if (!exists || !isDir)
-        return nil;
-    
-    NSArray *contents = [manager contentsOfDirectoryAtPath:path error:nil];
-    
-    NSMutableDictionary *dictionary = [NSMutableDictionary dictionary];
-    [dictionary setObject:@(MCCursorCreatorVersion) forKey:MCCursorDictionaryVersionKey];
-    [dictionary setObject:@(MCCursorParserVersion) forKey:MCCursorDictionaryMinimumVersionKey];
-    
-    CGFloat version = 0.0;
-    
-    MMLog(BOLD "Enter metadata for cape:" RESET);
-    NSString *author = MMGet(@"Author");
-    NSString *identifier = MMGet(@"Identifier");
-    NSString *name = MMGet(@"Cape Name");
-    // A whole line, as for the other answers: scanf left the newline behind, and the HiDPI
-    // question below then read it as an empty answer.
-    version = MMGet(@"Cape Version").doubleValue;
-    NSString *hidpi = MMGet(@"HiDPI? (y/n)");
-    
-    MMLog("");
-    
-    BOOL HiDPI = [hidpi isEqualToString:@"y"];
-    
-    [dictionary setObject:author forKey:MCCursorDictionaryAuthorKey];
-    [dictionary setObject:identifier forKey:MCCursorDictionaryIdentifierKey];
-    [dictionary setObject:name forKey:MCCursorDictionaryCapeNameKey];
-    [dictionary setObject:@(version) forKey:MCCursorDictionaryCapeVersionKey];
-    [dictionary setObject:@NO forKey:MCCursorDictionaryCloudKey];
-    [dictionary setObject:@(HiDPI) forKey:MCCursorDictionaryHiDPIKey];
-    
-    NSMutableDictionary *cursors = [NSMutableDictionary dictionary];
-    
-    for (NSString *subpath in contents) {
-        NSString *fullPath = [path stringByAppendingPathComponent:subpath];
-        
-        [manager fileExistsAtPath:fullPath isDirectory:&isDir];
-        
-        if (!isDir)
-            continue;
-        
-        NSString *ident = subpath;
-        NSMutableDictionary *data = [NSMutableDictionary dictionary];
-        
-        NSUInteger fC;
-        CGFloat hotX, hotY, pW, pH, fD;
-        printf(BOLD "Need metadata for %s." RESET, [ident cStringUsingEncoding:NSUTF8StringEncoding]);
-        printf("X Hotspot: ");
-        scanf("%lf", &hotX);
-        printf("Y Hotspot: ");
-        scanf("%lf", &hotY);
-        printf("Points Wide: ");
-        scanf("%lf", &pW);
-        printf("Points High: ");
-        scanf("%lf", &pH);
-        printf("Frame Count: ");
-        scanf("%lu", &fC);
-        printf("Frame Duration: ");
-        scanf("%lf", &fD);
-        
-        NSMutableArray *representations = [NSMutableArray array];
-        NSArray *repNames = [manager contentsOfDirectoryAtPath:fullPath error:nil];
-        for (NSString *rep in repNames) {
-            NSString *repPath = [fullPath stringByAppendingPathComponent:rep];
-            
-            [manager fileExistsAtPath:repPath isDirectory:&isDir];
-            if (isDir || [rep isEqualToString:@".DS_Store"])
-                continue;
-            
-            NSBitmapImageRep *image = [NSBitmapImageRep imageRepWithData:[NSData dataWithContentsOfFile:repPath]];
-            if (image) {
-                NSData *pngData = [image.ensuredSRGBSpace TIFFRepresentationUsingCompression:NSTIFFCompressionLZW factor:1.0];
-                [representations addObject:pngData];
-            }
-            
-        }
-        
-        [data setObject:@(hotX) forKey:MCCursorDictionaryHotSpotXKey];
-        [data setObject:@(hotY) forKey:MCCursorDictionaryHotSpotYKey];
-        [data setObject:@(pW) forKey:MCCursorDictionaryPointsWideKey];
-        [data setObject:@(pH) forKey:MCCursorDictionaryPointsHighKey];
-        [data setObject:@(fC) forKey:MCCursorDictionaryFrameCountKey];
-        [data setObject:@(fD) forKey:MCCursorDictionaryFrameDuratiomKey];
-        
-        [data setObject:representations forKey:MCCursorDictionaryRepresentationsKey];
-        // Each cursor under its folder's name; the cape's identifier put them all in one.
-        [cursors setObject:data forKey:ident];
-    }
-    
-    if (cursors.count == 0)
-        return nil;
-    
-    [dictionary setObject:cursors forKey:MCCursorDictionaryCursorsKey];
-    
-    return dictionary;
 }
 
 // The value if it is a whole number in [min, max], otherwise -1. MightyMouse files are

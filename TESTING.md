@@ -44,6 +44,10 @@ a manual test. What these tests found out about macOS is in [NOTES.md](NOTES.md)
 
 **On macOS 15.8.3:**
 
+- `mousecloak --create` on a folder with a 1x/2x arrow and a six-frame Wait sheet: in a
+  script (no terminal) it takes the options and defaults, and the cape applies; in a
+  terminal it asks for the hot spots, the frames of the tall sheet and their duration,
+  repeats a question after a wrong answer, and takes the default for an empty one.
 - Reset removes the backups it restored (none are left after `mousecloak --reset` with
   left-handed mode off), and the next apply backs up again.
 - The original Mousecape's arrow backup without one for `ArrowS` (simulated: a backup of
@@ -62,8 +66,6 @@ a manual test. What these tests found out about macOS is in [NOTES.md](NOTES.md)
   their part, and the questions stop after the last.
 - Display changes: switching the resolution and back makes the login agent apply the cape
   once per change (it did twice before).
-- `mousecloak --create` with answers piped in: a folder of two cursors gives a cape with
-  both, and with the HiDPI answer.
 - `mousecloak --export` of a cursor capture (TIFF images) and of Svanslös (PNG) writes
   only PNG files, one per image.
 - The sidebar scrolls to an imported cape that lands outside the visible part (at the

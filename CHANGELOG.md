@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `mousecloak --create` takes the cape's details as options (`--name`, `--author`,
+  `--identifier`, `--cape-version`, `--hidpi`/`--no-hidpi`) and defaults for all cursors
+  (`--hot-spot`, `--frame-duration`). It reads each cursor's size and frames from its
+  images, and a `cursor.plist` in a cursor's folder can set them. It asks only about what
+  the images leave open, and only in a terminal, so it can run in a script.
+
 ### Changed
 
 - Finder's Get Info and the About window show the build number with the version, such
@@ -14,6 +22,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- `mousecloak --create` without `-o` writes `<folder>.cape` next to the folder. It tried to
+  write the cape over the folder's parent folder and failed.
 - A reset removes the backups it brought back, so the next apply backs up the cursors on
   screen anew. Before, the first backup of a login session was the one every reset
   brought back until logout.

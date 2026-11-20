@@ -34,8 +34,8 @@ without Xcode, so don't add them.
 | Target | Language | Role |
 |---|---|---|
 | `MousecloakCore` | Objective-C, **manual retain/release** (`-fno-objc-arc`) | The original engine. It applies, backs up, restores and scales cursors through private CGS/CoreCursor calls (`include/CGSInternal`). `MousecloakCore.h` and `module.modulemap` expose it to Swift. |
-| `CapeKit` | Pure Swift, no private API | The `.cape` format (`Cape`, `CapeCursor`), sprite sheets (`CursorSheet`), the editing model and validation (`CapeEditing`), diffs, left-handed rules, and the Windows (`Windows/`), Xcursor (`Xcursor/`) and MaCursor (`MaCursor/`) importers. |
-| `mousecloak` | Swift | CLI (`main.swift`). `mousecloak --listen` is also the background login agent. |
+| `CapeKit` | Pure Swift, no private API | The `.cape` format (`Cape`, `CapeCursor`), sprite sheets (`CursorSheet`), the editing model and validation (`CapeEditing`), capes from folders of images (`CapeFolder`, for `mousecloak --create`), diffs, left-handed rules, and the Windows (`Windows/`), Xcursor (`Xcursor/`) and MaCursor (`MaCursor/`) importers. |
+| `mousecloak` | Swift | CLI (`main.swift`, `--create` in `CreateCape.swift`). `mousecloak --listen` is also the background login agent. |
 | `Mousecape` | SwiftUI | The app. `Model/` holds `AppModel` (UI state and actions), `Library` (the capes folder), `CapeHistory`, `Engine` (the Swift face of the engine plus `EnginePreferences`), `LoginAgent` and `ThemeImport` (archives and folders). `Views/` holds the UI, with the editor under `Views/Editor/`. |
 | `TestSupport` | Swift | Builders for test files (PNG, `.cur`, Xcursor), shared by both test targets. |
 

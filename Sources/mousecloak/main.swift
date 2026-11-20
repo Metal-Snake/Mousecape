@@ -12,7 +12,8 @@ APPLYING CAPES
   -a, --apply <cape>      Apply a cape
   -r, --reset             Reset to the default macOS cursors (mirrored in left-handed mode)
 CREATING CAPES
-  -c, --create <dir>      Create a cape from a folder of <cursor identifier>/<n>.png
+  -c, --create <dir>      Create a cape from a folder of <cursor identifier>/<images>
+                          (one image per scale, frames stacked; see "Creating" below)
   -d, --dump <file>       Dump the currently applied cursors to a cape file
   -x, --convert <file>    Convert a .MightyMouse file to a cape
 MISCELLANEOUS
@@ -22,6 +23,21 @@ MISCELLANEOUS
       --listen            Stay alive and re-apply the current cape on login and display changes
       --list              Show which cursors are registered, and their backups (for bug reports)
   -h, --help              Show this help
+
+CREATING
+  Options for --create; all are optional:
+      --name <name>          Cape name (default: the folder's name)
+      --author <author>      Author (default: your full name)
+      --identifier <id>      Cape identifier (default: local.<name>)
+      --cape-version <n>     Cape version (default: 1)
+      --hidpi, --no-hidpi    Whether the cape has HiDPI images (default: --hidpi)
+      --hot-spot <x,y>       Hot spot for cursors without their own (default: 0,0)
+      --frame-duration <s>   Seconds per frame for animations without their own (default: 0.1)
+  The smallest image of a cursor is taken as 1x and gives its size; a sheet as tall as a
+  multiple of its width holds that many square frames. A cursor.plist in a cursor's folder
+  (keys HotSpotX, HotSpotY, PointsWide, PointsHigh, FrameCount, FrameDuration) overrides
+  this. Values the images leave open are asked for in a terminal; in a script the defaults
+  are taken. Without -o, the cape is written next to the folder as <folder>.cape.
 """
 
 enum Command {
@@ -34,9 +50,10 @@ func fail(_ message: String) -> Never {
     exit(EXIT_FAILURE)
 }
 
-func parse(_ args: [String]) -> (Command, output: String?) {
+func parse(_ args: [String]) -> (Command, output: String?, create: CreateOptions) {
     var commands: [Command] = []
     var output: String?
+    var create = CreateOptions()
     var i = 0
     func value(for option: String) -> String {
         i += 1
@@ -53,6 +70,20 @@ func parse(_ args: [String]) -> (Command, output: String?) {
         case "-d", "--dump": commands.append(.dump(value(for: arg)))
         case "-e", "--export": commands.append(.export(value(for: arg)))
         case "-o", "--output": output = value(for: arg)
+        case "--name": create.name = value(for: arg)
+        case "--author": create.author = value(for: arg)
+        case "--identifier": create.identifier = value(for: arg)
+        case "--cape-version":
+            guard let version = Double(value(for: arg)) else { fail("--cape-version needs a number") }
+            create.version = version
+        case "--hidpi": create.isHiDPI = true
+        case "--no-hidpi": create.isHiDPI = false
+        case "--hot-spot":
+            guard let point = parsePoint(value(for: arg)) else { fail("--hot-spot needs two numbers, such as 4,4") }
+            create.hotSpot = point
+        case "--frame-duration":
+            guard let duration = Double(value(for: arg)), duration > 0 else { fail("--frame-duration needs a positive number") }
+            create.frameDuration = duration
         case "-s", "--scale":
             // The value is optional: `--scale` alone prints the current scale.
             if i + 1 < args.count, let scale = Float(args[i + 1]) {
@@ -70,10 +101,10 @@ func parse(_ args: [String]) -> (Command, output: String?) {
         i += 1
     }
     if commands.count > 1 { fail("one command at a time") }
-    return (commands.first ?? .help, output)
+    return (commands.first ?? .help, output, create)
 }
 
-let (command, output) = parse(Array(CommandLine.arguments.dropFirst()))
+let (command, output, createOptions) = parse(Array(CommandLine.arguments.dropFirst()))
 
 switch command {
 case .help:
@@ -83,11 +114,12 @@ case .apply(let path):
 case .reset:
     // The macOS cursors, mirrored when left-handed mode is on.
     if !applyDefaultCursors() { exit(EXIT_FAILURE) }
-case .create(let input), .convert(let input):
-    var isConvert = false
-    if case .convert = command { isConvert = true }
-    let destination = output ?? (input as NSString).deletingLastPathComponent
-    if let error = createCape(input, destination, isConvert) {
+case .create(let input):
+    createCape(from: input, output: output, options: createOptions)
+case .convert(let input):
+    // Default: <file>.cape next to the MightyMouse file.
+    let destination = output ?? (input as NSString).deletingPathExtension + ".cape"
+    if let error = convertMightyMouseFile(input, destination) {
         fail(error.localizedDescription)
     }
     print("Cape written to \(destination)")

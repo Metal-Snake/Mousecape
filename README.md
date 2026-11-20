@@ -153,12 +153,19 @@ Mousecape.app/Contents/MacOS/mousecloak --help
 mousecloak --apply my.cape            # apply a cape
 mousecloak --reset                    # back to the macOS cursors
 mousecloak --scale 2                  # set the cursor scale
-mousecloak --create folder/ -o my.cape   # build a cape from <cursor identifier>/<n>.png
+mousecloak --create folder/ --name "My Cape" --hot-spot 4,4   # build a cape from <cursor identifier>/<images>
 mousecloak --export my.cape -o folder/   # write a cape's images as PNG files
 mousecloak --dump current.cape        # save the cursors on screen as a cape
 mousecloak --convert old.MightyMouse -o new.cape
 mousecloak --list                     # what is registered, and the backups (for bug reports)
 ```
+
+`--create` takes a folder with one folder per cursor, named by its identifier
+(`com.apple.coregraphics.Arrow`), holding one image per scale. The smallest image counts as
+1x and gives the cursor's size; a sheet as tall as a multiple of its width holds that many
+square frames. A `cursor.plist` in a cursor's folder can set `HotSpotX`, `HotSpotY`,
+`PointsWide`, `PointsHigh`, `FrameCount` and `FrameDuration`. Whatever stays open is asked
+in a terminal and left at its default in a script; `mousecloak --help` lists the options.
 
 ## Building
 

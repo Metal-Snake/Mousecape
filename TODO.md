@@ -14,8 +14,6 @@ a real Mac.
     when the folder changed, but a big library still stalls. Load the metadata first and
     the images on demand.
 - [ ] **No undo** in the editor, or for deleting a cape. The original had both.
-- [ ] **`mousecloak --create` asks questions on stdin** (`scanf` in `create.m`). Piped
-      answers work, but options such as `--name` and `--author` would be easier to script.
 
 ## Build and release
 
