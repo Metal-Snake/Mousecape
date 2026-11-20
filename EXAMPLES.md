@@ -1,6 +1,7 @@
 # Where to find cursors
 
-Places to get cursor themes for Mousecape. None of these are part of this project: check
+Places to get cursor themes for Mousecape. The themes on gnome-look.org (pling.com) can
+also be browsed and installed in the app: File → Browse Cursor Themes Online…. None of these are part of this project: check
 each theme's licence before you share or change it, and only download from sources you
 trust. Mousecape imports five kinds of files:
 

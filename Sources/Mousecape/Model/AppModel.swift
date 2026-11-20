@@ -212,6 +212,39 @@ final class AppModel {
         errorMessage = String(localized: "Imported “\(cape.name)”. Left out, as macOS has no matching cursor or the file couldn't be read: \(skipped.joined(separator: ", ")).")
     }
 
+    // MARK: - Gallery
+
+    let gallery = CursorGallery()
+
+    /// Downloads a theme from the gallery and imports it like a dropped file. The author is
+    /// the uploader's name on pling.com, unless the theme names its own.
+    func install(_ file: PlingTheme.File, of theme: PlingTheme) async {
+        do {
+            let downloaded = try await gallery.download(file, of: theme)
+            defer { try? FileManager.default.removeItem(at: downloaded.deletingLastPathComponent()) }
+            importDownloaded(downloaded, author: theme.author)
+        } catch {
+            errorMessage = String(localized: "“\(theme.name)” could not be installed: \(error.localizedDescription)")
+        }
+    }
+
+    /// The import itself runs while the file exists: a question about replacing a cape
+    /// holds the converted cape, not the file.
+    private func importDownloaded(_ url: URL, author: String) {
+        switch url.pathExtension.lowercased() {
+        case "cape":
+            importTheme {
+                var cape = try Cape(contentsOf: url)
+                cape.fileURL = nil
+                return (cape, [])
+            }
+        case MaCursorTheme.fileExtension:
+            importTheme { try MaCursorTheme(contentsOf: url).makeCape(author: author) }
+        default:
+            importTheme { try ThemeImport.withTheme(at: url) { try $0.makeCape(author: author) } }
+        }
+    }
+
     private func importMightyMouse(_ url: URL) {
         perform {
             guard let plist = Engine.convertMightyMouse(at: url) else { throw LibraryError.conversionFailed }

@@ -44,6 +44,12 @@ a manual test. What these tests found out about macOS is in [NOTES.md](NOTES.md)
 
 **On macOS 15.8.3:**
 
+- The online gallery: it lists the 1238 themes on pling.com with previews and licences;
+  a search for "bibata" shows the Bibata variants; a theme's details show its previews,
+  files and link. A double-click on Sweet cursors installs it (37 cursors, author
+  eliverlara) and brings the library forward; installing it again asks whether to
+  replace it. The download's temporary folder is gone afterwards. ⌘Z in the gallery's
+  search field leaves the library alone.
 - Undo in the editor: typing a name and ⌘Z in the focused field gives back the old name
   in one step; the menu says "Undo Name", and ⇧⌘Z types it again. Removing the I-beam
   and ⌘Z brings it back and shows it. Cancel still asks before discarding.

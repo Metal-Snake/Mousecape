@@ -11,6 +11,7 @@ struct MousecapeApp: App {
                 .frame(minWidth: 900, minHeight: 620)   // room for the editor sheet
                 .onAppear { appDelegate.model = model }
                 .task { model.applyAtLaunch() }     // once the window appears
+                .focusedSceneValue(\.isLibraryWindow, true)
         }
         .defaultSize(width: 1000, height: 680)
         // Opened files go to AppDelegate.application(_:open:). Left to SwiftUI, the
@@ -20,22 +21,14 @@ struct MousecapeApp: App {
             CommandGroup(replacing: .appInfo) {
                 Button("About Mousecape") { Self.showAboutPanel() }
             }
-            // Undo and Redo of the app's own: the editor's draft, or moving capes to the
-            // Trash. Text fields have no undo of their own here; the editor's history
-            // covers typing too.
-            CommandGroup(replacing: .undoRedo) {
-                Button(model.undoTitle) { model.undo() }
-                    .keyboardShortcut("z")
-                    .disabled(!model.canUndo)
-                Button(model.redoTitle) { model.redo() }
-                    .keyboardShortcut("z", modifiers: [.command, .shift])
-                    .disabled(!model.canRedo)
-            }
+            UndoCommands(model: model)
             CommandGroup(replacing: .newItem) {
                 Button("New Cape") { model.newCape() }
                     .keyboardShortcut("n")
                 Button("Import…") { model.showImportPanel() }
                     .keyboardShortcut("o")
+                OpenGalleryButton()
+                    .keyboardShortcut("o", modifiers: [.command, .shift])
             }
             CommandMenu("Cape") {
                 Button("Apply") {
@@ -76,6 +69,11 @@ struct MousecapeApp: App {
             }
         }
 
+        Window("Cursor Themes Online", id: "gallery") {
+            GalleryView(model: model)
+        }
+        .defaultSize(width: 980, height: 680)
+
         Settings {
             SettingsView(model: model)
         }
@@ -115,5 +113,45 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
         true
+    }
+}
+
+/// Undo and Redo of the app's own in the library window: the editor's draft, or moving
+/// capes to the Trash. The editor's history covers typing in its fields too. In other
+/// windows (the gallery's search field) the menu items do what they usually do.
+struct UndoCommands: Commands {
+    let model: AppModel
+    @FocusedValue(\.isLibraryWindow) private var isLibraryWindow
+
+    var body: some Commands {
+        CommandGroup(replacing: .undoRedo) {
+            if isLibraryWindow == true {
+                Button(model.undoTitle) { model.undo() }
+                    .keyboardShortcut("z")
+                    .disabled(!model.canUndo)
+                Button(model.redoTitle) { model.redo() }
+                    .keyboardShortcut("z", modifiers: [.command, .shift])
+                    .disabled(!model.canRedo)
+            } else {
+                Button("Undo") { NSApp.sendAction(Selector(("undo:")), to: nil, from: nil) }
+                    .keyboardShortcut("z")
+                Button("Redo") { NSApp.sendAction(Selector(("redo:")), to: nil, from: nil) }
+                    .keyboardShortcut("z", modifiers: [.command, .shift])
+            }
+        }
+    }
+}
+
+extension FocusedValues {
+    /// Set by the library window (and so its sheets), for `UndoCommands`.
+    @Entry var isLibraryWindow: Bool?
+}
+
+/// Opens the gallery of cursor themes on pling.com.
+struct OpenGalleryButton: View {
+    @Environment(\.openWindow) private var openWindow
+
+    var body: some View {
+        Button("Browse Cursor Themes Online…") { openWindow(id: "gallery") }
     }
 }

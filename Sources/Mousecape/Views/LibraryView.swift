@@ -4,6 +4,7 @@ import CapeKit
 /// The main window: capes on the left, the selected cape on the right.
 struct LibraryView: View {
     @Bindable var model: AppModel
+    @Environment(\.openWindow) private var openWindow
 
     var body: some View {
         NavigationSplitView {
@@ -37,6 +38,14 @@ struct LibraryView: View {
                     Label("Import", systemImage: "plus")
                 }
                 .help("Import capes or MightyMouse files")
+            }
+            ToolbarItem(placement: .navigation) {
+                Button {
+                    openWindow(id: "gallery")
+                } label: {
+                    Label("Browse Online", systemImage: "globe")
+                }
+                .help("Browse cursor themes on pling.com (gnome-look.org)")
             }
             ToolbarItem {
                 Button {

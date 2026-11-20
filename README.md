@@ -80,6 +80,22 @@ to replace it or keep both.
 
 [EXAMPLES.md](EXAMPLES.md) lists places to find capes and cursor themes.
 
+### Cursor themes online
+
+**File → Browse Cursor Themes Online…** (⇧⌘O, or the globe in the toolbar) shows the
+cursor themes on [pling.com](https://www.pling.com), the catalogue behind gnome-look.org
+and store.kde.org, about 1,200 of them. Search them, sort them by downloads, date, rating
+or name, and double-click one to install it; click it for its previews, description,
+files and licence. Most are Linux themes, which Mousecape converts on import like any
+other. The themes are made by others: check a theme's licence before you share or change
+it.
+
+Mousecape goes online only while this window is open. It asks pling.com's public API (the
+one KDE uses for "Get New Stuff") for the list and the files, sends no data about you,
+and keeps no cookies. Downloads must come over HTTPS, are limited in size and checked
+against their checksum, and are imported as untrusted like any other file. Themes that
+pling.com keeps out of apps are not shown.
+
 ### Applying and checking
 
 Select a cape and click **Apply** (⌘↩), or double-click it; **Cape → Reset to Default Cursors** (⇧⌘R) brings
@@ -196,8 +212,8 @@ testing new macOS versions (see [TESTING.md](TESTING.md)).
 |---|---|
 | `Sources/MousecloakCore` | The original cursor engine (Objective-C, manual retain/release) |
 | `Sources/mousecloak` | Command line tool and background agent |
-| `Sources/CapeKit` | The cape format, cursor images, editing, the Windows and Xcursor importers (pure Swift) |
-| `Sources/Mousecape` | The SwiftUI app: library, history, editor, theme import |
+| `Sources/CapeKit` | The cape format, cursor images, editing, the Windows and Xcursor importers, the pling.com catalogue (pure Swift) |
+| `Sources/Mousecape` | The SwiftUI app: library, history, editor, theme import, online gallery |
 | `Tests` | Swift Testing suites, and `TestSupport` with the file builders they share |
 | `Resources` | Info.plist, app icon |
 | `Scripts` | Building, signing, releasing, the cursor size probe |
