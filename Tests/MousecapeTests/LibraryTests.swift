@@ -28,7 +28,9 @@ final class LibraryTests {
         let trash = trash
         library.moveToTrash = { url in
             try FileManager.default.createDirectory(at: trash, withIntermediateDirectories: true)
-            try FileManager.default.moveItem(at: url, to: trash.appending(path: UUID().uuidString + "-" + url.lastPathComponent))
+            let destination = trash.appending(path: UUID().uuidString + "-" + url.lastPathComponent)
+            try FileManager.default.moveItem(at: url, to: destination)
+            return destination
         }
         return library
     }
@@ -224,6 +226,34 @@ final class LibraryTests {
         #expect(files().isEmpty)
         #expect(files(in: versionsFolder).isEmpty)
         #expect(files(in: trash).count == 2)                  // the file and its history folder
+    }
+
+    /// Undo of Move to Trash: the file and its history come back.
+    @Test func putsBackADeletedCape() throws {
+        let library = makeLibrary()
+        let cape = try importedAndEdited(library)
+        let versions = library.versions(of: cape).count
+        let trashed = try library.delete(cape)
+        let restored = try library.putBack(trashed)
+        #expect(restored.identifier == cape.identifier)
+        #expect(files() == [cape.identifier + ".cape"])
+        #expect(library.versions(of: restored).count == versions)
+        #expect(files(in: trash).isEmpty)
+    }
+
+    /// Put back never overwrites: not a cape that came in since, not a missing file.
+    @Test func refusesToPutBackOverAnotherCape() throws {
+        let library = makeLibrary()
+        let cape = try library.save(Cape(identifier: "test.gone", name: "Gone", author: ""), originalIdentifier: nil)
+        let trashed = try library.delete(cape)
+        try library.save(Cape(identifier: "test.gone", name: "New", author: ""), originalIdentifier: nil)
+        #expect(throws: LibraryError.self) { try library.putBack(trashed) }
+        #expect(library.capes.map(\.name) == ["New"])
+
+        let other = try library.save(Cape(identifier: "test.other", name: "Other", author: ""), originalIdentifier: nil)
+        let emptied = try library.delete(other)
+        try FileManager.default.removeItem(at: trash)        // the Trash was emptied
+        #expect(throws: LibraryError.self) { try library.putBack(emptied) }
     }
 
     @Test func importingAgainStartsOver() throws {

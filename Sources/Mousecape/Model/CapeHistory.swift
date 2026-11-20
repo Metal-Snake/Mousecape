@@ -26,7 +26,8 @@ struct CapeHistory {
     /// Saved states kept per cape; older ones go to the Trash.
     static let savedLimit = 20
 
-    var moveToTrash: (URL) throws -> Void
+    /// Moves a file to the Trash and returns where it went.
+    var moveToTrash: (URL) throws -> URL?
 
     private static let originalName = "original.cape"
 
@@ -97,18 +98,21 @@ struct CapeHistory {
         try FileManager.default.copyItem(at: file, to: destination)
         // Over the limit, the oldest go; failing that only leaves one too many.
         let saved = versions(for: identifier).filter { $0.kind == .saved }
-        for old in saved.dropLast(Self.savedLimit) { try? moveToTrash(old.url) }
+        for old in saved.dropLast(Self.savedLimit) { _ = try? moveToTrash(old.url) }
     }
 
     /// Moves the saved states (not the original) to the Trash.
     func removeSavedVersions(for identifier: String) throws {
-        for version in versions(for: identifier) where version.kind == .saved { try moveToTrash(version.url) }
+        for version in versions(for: identifier) where version.kind == .saved { _ = try moveToTrash(version.url) }
     }
 
-    /// Moves a cape's whole history to the Trash (deleted, or imported again).
-    func discard(for identifier: String) throws {
+    /// Moves a cape's whole history to the Trash (deleted, or imported again); returns
+    /// where it went, nil when there was none.
+    @discardableResult
+    func discard(for identifier: String) throws -> URL? {
         let url = try capeFolder(for: identifier)
-        if FileManager.default.fileExists(atPath: url.path) { try moveToTrash(url) }
+        guard FileManager.default.fileExists(atPath: url.path) else { return nil }
+        return try moveToTrash(url)
     }
 
     /// Moves the history along with an identifier change.

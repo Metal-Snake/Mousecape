@@ -100,7 +100,9 @@ Add cursors with **+**, then drop a PNG into each scale well (1x, 2x, 5x, 10x). 
 image sets the cursor's size; click the large preview to set the hot spot, where the click
 lands. macOS uses images at any density, so images from other tools at 3x or 4x stay in
 the cape; the editor lists them under the wells. The editor shows the same warnings as the
-library, per cursor and under Cape Details.
+library, per cursor and under Cape Details. **Edit → Undo** (⌘Z) takes back edits in the
+editor one step at a time, and shows the cursor it changed; in the library it puts a cape
+moved to the Trash back.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/editor-dark.png">

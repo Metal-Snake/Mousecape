@@ -20,6 +20,17 @@ struct MousecapeApp: App {
             CommandGroup(replacing: .appInfo) {
                 Button("About Mousecape") { Self.showAboutPanel() }
             }
+            // Undo and Redo of the app's own: the editor's draft, or moving capes to the
+            // Trash. Text fields have no undo of their own here; the editor's history
+            // covers typing too.
+            CommandGroup(replacing: .undoRedo) {
+                Button(model.undoTitle) { model.undo() }
+                    .keyboardShortcut("z")
+                    .disabled(!model.canUndo)
+                Button(model.redoTitle) { model.redo() }
+                    .keyboardShortcut("z", modifiers: [.command, .shift])
+                    .disabled(!model.canRedo)
+            }
             CommandGroup(replacing: .newItem) {
                 Button("New Cape") { model.newCape() }
                     .keyboardShortcut("n")

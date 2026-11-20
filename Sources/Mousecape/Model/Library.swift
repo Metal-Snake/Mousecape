@@ -20,9 +20,12 @@ final class Library {
     let folder: URL
     /// Each cape's original and earlier states (see `CapeHistory`).
     let versionsFolder: URL
-    /// Moves a file to the Trash (tests swap it for plain removal).
-    @ObservationIgnored var moveToTrash: (URL) throws -> Void = {
-        try FileManager.default.trashItem(at: $0, resultingItemURL: nil)
+    /// Moves a file to the Trash and returns where it went (tests swap in a folder of
+    /// their own).
+    @ObservationIgnored var moveToTrash: (URL) throws -> URL? = { url in
+        var trashed: NSURL?
+        try FileManager.default.trashItem(at: url, resultingItemURL: &trashed)
+        return trashed as URL?
     }
 
     var history: CapeHistory { CapeHistory(folder: versionsFolder, moveToTrash: moveToTrash) }
@@ -263,7 +266,7 @@ final class Library {
         // a new identifier, or when it wasn't named after its identifier.
         if let previous = cape.fileURL, previous.standardizedFileURL != destination.standardizedFileURL,
            FileManager.default.fileExists(atPath: previous.path) {
-            try? moveToTrash(previous)
+            _ = try? moveToTrash(previous)
         }
         reload()
         let result = capes.first { $0.identifier == identifier } ?? saved
@@ -282,14 +285,49 @@ final class Library {
     }
 
     /// Moves the cape file and its history to the Trash; resets the cursors first if it is
-    /// applied.
-    func delete(_ cape: Cape) throws {
-        if cape.identifier == appliedIdentifier { try resetToDefault() }
-        if let url = cape.fileURL {
-            try moveToTrash(url)
+    /// applied. The result says where they went, for `putBack`.
+    @discardableResult
+    func delete(_ cape: Cape) throws -> TrashedCape {
+        let wasApplied = cape.identifier == appliedIdentifier
+        if wasApplied { try resetToDefault() }
+        var file: TrashedCape.Move?
+        if let url = cape.fileURL, let trashed = try moveToTrash(url) {
+            file = TrashedCape.Move(from: url, trashed: trashed)
         }
-        try history.discard(for: cape.identifier)
+        let historyFolder = try history.capeFolder(for: cape.identifier)
+        let trashedHistory = try history.discard(for: cape.identifier).map {
+            TrashedCape.Move(from: historyFolder, trashed: $0)
+        }
         reload()
+        return TrashedCape(identifier: cape.identifier, name: cape.name, file: file, history: trashedHistory,
+                           wasApplied: wasApplied)
+    }
+
+    /// Undoes `delete`: moves the cape file and its history back from the Trash. Refuses
+    /// when the file is no longer in the Trash, or when a cape with the same identifier
+    /// came into the library since; it never overwrites anything.
+    @discardableResult
+    func putBack(_ trashed: TrashedCape) throws -> Cape {
+        let manager = FileManager.default
+        guard let file = trashed.file, manager.fileExists(atPath: file.trashed.path) else {
+            throw LibraryError.notInTrash(trashed.name)
+        }
+        guard !capes.contains(where: { $0.identifier == trashed.identifier }),
+              !manager.fileExists(atPath: file.from.path) else {
+            throw LibraryError.identifierTaken(trashed.identifier)
+        }
+        try manager.moveItem(at: file.trashed, to: file.from)
+        // The history is a bonus: without it the cape is back, just without earlier states.
+        if let history = trashed.history, manager.fileExists(atPath: history.trashed.path),
+           !manager.fileExists(atPath: history.from.path) {
+            try? manager.createDirectory(at: history.from.deletingLastPathComponent(), withIntermediateDirectories: true)
+            try? manager.moveItem(at: history.trashed, to: history.from)
+        }
+        reload()
+        guard let cape = capes.first(where: { $0.identifier == trashed.identifier }) else {
+            throw LibraryError.notInLibrary
+        }
+        return cape
     }
 
     /// The stored states of a cape: its original first, then saved states, oldest first.
@@ -314,7 +352,7 @@ final class Library {
             if restored.identifier != cape.identifier {
                 try history.rename(from: cape.identifier, to: restored.identifier)
                 versionURL = try history.capeFolder(for: restored.identifier).appending(path: version.url.lastPathComponent)
-                if FileManager.default.fileExists(atPath: current.path) { try moveToTrash(current) }
+                if FileManager.default.fileExists(atPath: current.path) { _ = try moveToTrash(current) }
             }
         }
         try place(versionURL, at: fileURL(for: restored.identifier))
@@ -367,6 +405,22 @@ final class Library {
     }
 }
 
+/// A cape `Library.delete` moved to the Trash, and where its files went, so that Undo can
+/// put them back.
+struct TrashedCape {
+    struct Move {
+        let from: URL
+        let trashed: URL
+    }
+
+    let identifier: String
+    let name: String
+    let file: Move?
+    let history: Move?
+    /// Undo applies it again.
+    let wasApplied: Bool
+}
+
 enum LibraryError: LocalizedError {
     case notInLibrary
     case applyFailed(String)
@@ -377,6 +431,7 @@ enum LibraryError: LocalizedError {
     case resetIncomplete
     case identifierTaken(String)
     case noOriginal(String)
+    case notInTrash(String)
 
     var errorDescription: String? {
         switch self {
@@ -388,6 +443,7 @@ enum LibraryError: LocalizedError {
             String(localized: "Another cape in the library already uses the identifier “\(identifier)”.")
         case .notInLibrary: String(localized: "The cape is not saved in the library.")
         case .noOriginal(let name): String(localized: "There is no original of “\(name)” to go back to.")
+        case .notInTrash(let name): String(localized: "“\(name)” can't be put back: it is no longer in the Trash.")
         case .applyFailed(let name): String(localized: "“\(name)” could not be applied.")
         case .partiallyApplied(let name):
             String(localized: "“\(name)” is applied, but some of its cursors were rejected by macOS. Check them in the editor.")

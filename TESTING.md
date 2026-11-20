@@ -44,6 +44,11 @@ a manual test. What these tests found out about macOS is in [NOTES.md](NOTES.md)
 
 **On macOS 15.8.3:**
 
+- Undo in the editor: typing a name and ⌘Z in the focused field gives back the old name
+  in one step; the menu says "Undo Name", and ⇧⌘Z types it again. Removing the I-beam
+  and ⌘Z brings it back and shows it. Cancel still asks before discarding.
+- Undo of Move to Trash: the cape and its history folder come back; Redo moves them to
+  the Trash again, and Undo again puts them back.
 - `mousecloak --create` on a folder with a 1x/2x arrow and a six-frame Wait sheet: in a
   script (no terminal) it takes the options and defaults, and the cape applies; in a
   terminal it asks for the hot spots, the frames of the tall sheet and their duration,

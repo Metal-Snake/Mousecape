@@ -13,7 +13,6 @@ a real Mac.
   - A library reload parses every cape fully (often several MB each). It happens only
     when the folder changed, but a big library still stalls. Load the metadata first and
     the images on demand.
-- [ ] **No undo** in the editor, or for deleting a cape. The original had both.
 
 ## Build and release
 

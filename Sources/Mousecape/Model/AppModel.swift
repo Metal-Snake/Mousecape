@@ -276,10 +276,55 @@ final class AppModel {
     func confirmDelete() {
         guard let cape = capeToDelete else { return }
         capeToDelete = nil
+        trashedForRedo.removeAll()      // a new action: Redo can't go to the old ones
+        moveToTrash(cape)
+    }
+
+    private func moveToTrash(_ cape: Cape) {
         perform {
-            try library.delete(cape)
+            trashedForUndo.append(try library.delete(cape))
             if selection == cape.id { selection = library.capes.first?.id }
         }
+    }
+
+    // MARK: - Undo
+
+    /// Capes moved to the Trash, the last one last, for Undo.
+    private var trashedForUndo: [TrashedCape] = []
+    /// Capes Undo put back (by identifier), for Redo.
+    private var trashedForRedo: [String] = []
+
+    /// While the editor is open, Undo and Redo work on its draft; otherwise on the library
+    /// (moving capes to the Trash).
+    var canUndo: Bool { editorSession.map(\.canUndo) ?? !trashedForUndo.isEmpty }
+    var canRedo: Bool { editorSession.map(\.canRedo) ?? !trashedForRedo.isEmpty }
+
+    var undoTitle: String {
+        let title = editorSession.map(\.undoTitle) ?? (trashedForUndo.isEmpty ? nil : String(localized: "Move to Trash"))
+        return title.map { String(localized: "Undo \($0)") } ?? String(localized: "Undo")
+    }
+
+    var redoTitle: String {
+        let title = editorSession.map(\.redoTitle) ?? (trashedForRedo.isEmpty ? nil : String(localized: "Move to Trash"))
+        return title.map { String(localized: "Redo \($0)") } ?? String(localized: "Redo")
+    }
+
+    func undo() {
+        if let editorSession { editorSession.undo(); return }
+        guard let trashed = trashedForUndo.popLast() else { return }
+        perform {
+            let cape = try library.putBack(trashed)
+            selection = cape.id
+            trashedForRedo.append(cape.identifier)
+            if trashed.wasApplied { try library.apply(cape) }
+        }
+    }
+
+    func redo() {
+        if let editorSession { editorSession.redo(); return }
+        guard let identifier = trashedForRedo.popLast(),
+              let cape = library.capes.first(where: { $0.identifier == identifier }) else { return }
+        moveToTrash(cape)
     }
 
     func revealInFinder(_ cape: Cape) {
@@ -317,14 +362,4 @@ struct PendingReplacement {
     var canKeepBoth: Bool {
         if case .converted = source { true } else { false }
     }
-}
-
-/// One opening of the editor: the cape to start from, and the identifier it is saved under
-/// in the library (nil for a new cape).
-struct EditorSession: Identifiable {
-    let id = UUID()
-    let cape: Cape
-    let originalIdentifier: String?
-    /// The cursor to show first; nil shows the cape details.
-    var cursor: String? = nil
 }

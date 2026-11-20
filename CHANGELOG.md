@@ -14,6 +14,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (`--hot-spot`, `--frame-duration`). It reads each cursor's size and frames from its
   images, and a `cursor.plist` in a cursor's folder can set them. It asks only about what
   the images leave open, and only in a terminal, so it can run in a script.
+- Undo and Redo in the editor (⌘Z, ⇧⌘Z). Quick edits of one field, like typing a name,
+  are one step. Undo shows the cursor it changed, and brings back a removed cursor.
+- Undo of Move to Trash in the library: the cape comes back with its history, and is
+  applied again if it was applied.
 
 ### Changed
 

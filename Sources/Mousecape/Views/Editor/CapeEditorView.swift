@@ -2,27 +2,23 @@ import SwiftUI
 import CapeKit
 
 /// The cape editor sheet: cape details and the cursor list on the left, the selected part
-/// on the right. Works on a draft; nothing touches the library until Save.
+/// on the right. Works on the session's draft; nothing touches the library until Save.
+/// Every edit goes through `EditorSession.change`, so Edit > Undo can take it back.
 struct CapeEditorView: View {
-    let session: EditorSession
+    @Bindable var session: EditorSession
     /// Saves the draft; returns false if it failed (the sheet then stays open).
     let onSave: (Cape) -> Bool
 
     @Environment(\.dismiss) private var dismiss
-    @State private var draft: Cape
-    @State private var selection: Item? = .info
     @State private var confirmDiscard = false
 
-    enum Item: Hashable {
-        case info
-        case cursor(String)
-    }
+    typealias Item = EditorSession.Item
 
-    init(session: EditorSession, onSave: @escaping (Cape) -> Bool) {
-        self.session = session
-        self.onSave = onSave
-        _draft = State(initialValue: session.cape)
-        _selection = State(initialValue: session.cursor.map(Item.cursor) ?? .info)
+    private var draft: Cape { session.draft }
+
+    /// The draft for the controls; what they set is recorded for Undo.
+    private var draftBinding: Binding<Cape> {
+        Binding { session.draft } set: { session.change(to: $0) }
     }
 
     /// Problems per cursor, as the library shows them (left-handed hints included).
@@ -30,7 +26,7 @@ struct CapeEditorView: View {
         draft.problems(leftHanded: EnginePreferences.leftHanded)
     }
 
-    private var hasChanges: Bool { draft != session.cape || session.originalIdentifier == nil }
+    private var hasChanges: Bool { session.hasChanges }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -57,7 +53,7 @@ struct CapeEditorView: View {
 
     private var sidebar: some View {
         VStack(spacing: 0) {
-            List(selection: $selection) {
+            List(selection: $session.selection) {
                 Label("Cape Details", systemImage: "info.circle")
                     .tag(Item.info)
                 Section("Cursors") {
@@ -100,9 +96,9 @@ struct CapeEditorView: View {
 
     @ViewBuilder
     private var detail: some View {
-        switch selection {
+        switch session.selection {
         case .info, nil:
-            CapeInfoForm(cape: $draft, problems: problems) { selection = .cursor($0) }
+            CapeInfoForm(cape: draftBinding, problems: problems) { session.selection = .cursor($0) }
         case .cursor(let identifier):
             if let binding = cursorBinding(identifier) {
                 CursorEditorView(cursor: binding, problems: problems[identifier] ?? [])
@@ -123,7 +119,7 @@ struct CapeEditorView: View {
             }
             Spacer()
             Button("Cancel", role: .cancel) {
-                if hasChanges && draft != session.cape { confirmDiscard = true } else { dismiss() }
+                if hasChanges && draft != session.original { confirmDiscard = true } else { dismiss() }
             }
             .keyboardShortcut(.cancelAction)
             Button("Save") { _ = onSave(draft) }
@@ -137,7 +133,7 @@ struct CapeEditorView: View {
     // MARK: - Cursors
 
     private var selectedCursorIdentifier: String? {
-        if case .cursor(let identifier) = selection { identifier } else { nil }
+        if case .cursor(let identifier) = session.selection { identifier } else { nil }
     }
 
     private func cursorBinding(_ identifier: String) -> Binding<CapeCursor>? {
@@ -147,23 +143,25 @@ struct CapeEditorView: View {
             draft.cursors.first { $0.identifier == identifier }
                 ?? CapeCursor(identifier: identifier, size: CGSize(width: 32, height: 32), representations: [])
         } set: { newValue in
-            if let index = draft.cursors.firstIndex(where: { $0.identifier == identifier }) {
-                draft.cursors[index] = newValue
+            session.change { cape in
+                if let index = cape.cursors.firstIndex(where: { $0.identifier == identifier }) {
+                    cape.cursors[index] = newValue
+                }
             }
         }
     }
 
     private func addCursor(_ identifier: String) {
-        draft.addCursor(identifier: identifier)
-        selection = .cursor(identifier)
+        session.change { _ = $0.addCursor(identifier: identifier) }
+        session.selection = .cursor(identifier)
     }
 
     private func removeSelectedCursor() {
         guard let identifier = selectedCursorIdentifier,
               let index = draft.cursors.firstIndex(where: { $0.identifier == identifier }) else { return }
-        draft.removeCursor(identifier: identifier)
+        session.change { $0.removeCursor(identifier: identifier) }
         let next = draft.cursors.indices.contains(index) ? draft.cursors[index] : draft.cursors.last
-        selection = next.map { .cursor($0.identifier) } ?? .info
+        session.selection = next.map { .cursor($0.identifier) } ?? .info
     }
 }
 
