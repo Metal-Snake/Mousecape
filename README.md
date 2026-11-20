@@ -88,7 +88,11 @@ and store.kde.org, about 1,200 of them. Search them, sort them by downloads, dat
 or name (⌘F jumps to the search field on macOS 15 and later), and double-click one to
 install it; click it for its previews, description,
 files and licence. Themes you installed from here are marked **Installed**, with a link to
-the cape in your library. Most are Linux themes, which Mousecape converts on import like any
+the cape in your library. When the author uploads a new version, the mark says **Update
+Available**: double-click the theme to see, cursor by cursor, what the update changes
+before you take it. **Installed** at the top shows only these themes. An update keeps
+the cape's name and place; its previous state stays in the cape's history. Most are
+Linux themes, which Mousecape converts on import like any
 other. The themes are made by others: check a theme's licence before you share or change
 it.
 

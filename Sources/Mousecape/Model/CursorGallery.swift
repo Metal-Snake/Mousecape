@@ -8,8 +8,18 @@ import CapeKit
 /// only here, when the gallery window is open; nothing runs in the background.
 @MainActor @Observable
 final class CursorGallery {
+    /// All themes in the catalogue, or only those installed from here (to look for updates).
+    enum Scope: Hashable {
+        case all
+        case installed
+    }
+
     var search = ""
     var sort: PlingCatalog.Sort = .popular
+    var scope: Scope = .all
+    /// The themes installed from the gallery whose capes are still in the library (set by
+    /// the app model, which knows the library).
+    @ObservationIgnored var installedThemeIDs: () -> [Int] = { [] }
     private(set) var themes: [PlingTheme] = []
     private(set) var totalCount = 0
     private(set) var isLoading = false
@@ -36,6 +46,10 @@ final class CursorGallery {
     func loadMore() {
         guard !isLoading, !reachedEnd else { return }
         isLoading = true
+        if scope == .installed {
+            loadInstalled()
+            return
+        }
         let url = PlingCatalog.listURL(search: search, sort: sort, page: nextPage)
         loadTask = Task {
             defer { isLoading = false }
@@ -56,6 +70,38 @@ final class CursorGallery {
         }
     }
 
+    /// The installed themes, one request each (there are only a few), in the chosen order;
+    /// the search filters them by name.
+    private func loadInstalled() {
+        let ids = installedThemeIDs()
+        let search = search.trimmingCharacters(in: .whitespaces)
+        let sort = sort
+        loadTask = Task {
+            defer { isLoading = false }
+            var found: [PlingTheme] = []
+            for id in ids {
+                guard !Task.isCancelled else { return }
+                do {
+                    found += try PlingCatalog.page(from: try await Downloader.data(from: PlingCatalog.themeURL(id: id))).themes
+                } catch {
+                    errorMessage = error.localizedDescription      // the others still show
+                }
+            }
+            guard !Task.isCancelled else { return }
+            if !search.isEmpty { found = found.filter { $0.name.localizedCaseInsensitiveContains(search) } }
+            themes = found.sorted { first, second in
+                switch sort {
+                case .popular: first.downloads > second.downloads
+                case .newest: (first.changed ?? .distantPast) > (second.changed ?? .distantPast)
+                case .rating: first.score > second.score
+                case .name: first.name.localizedStandardCompare(second.name) == .orderedAscending
+                }
+            }
+            totalCount = themes.count
+            reachedEnd = true
+        }
+    }
+
     /// The files of a theme Mousecape can import: archives of Windows or Linux themes,
     /// capes and MaCursor themes.
     static func installableFiles(of theme: PlingTheme) -> [PlingTheme.File] {
@@ -70,8 +116,8 @@ final class CursorGallery {
 
     /// Downloads `file` into a new temporary folder and checks it; the caller imports it and
     /// removes the folder. The links in a list expire, so the theme is fetched again first
-    /// for a fresh one.
-    func download(_ file: PlingTheme.File, of theme: PlingTheme) async throws -> URL {
+    /// for a fresh one. Returns the file on disk and the catalogue's entry for it.
+    func download(_ file: PlingTheme.File, of theme: PlingTheme) async throws -> (file: URL, info: PlingTheme.File) {
         downloading.insert(theme.id)
         defer { downloading.remove(theme.id) }
         let fresh = try PlingCatalog.page(from: try await Downloader.data(from: PlingCatalog.themeURL(id: theme.id)))
@@ -79,7 +125,7 @@ final class CursorGallery {
         guard let current = files.first(where: { $0.name == file.name }) ?? files.first(where: { $0.id == file.id }) else {
             throw GalleryError.fileGone(file.name)
         }
-        return try await Downloader.file(current)
+        return (try await Downloader.file(current), current)
     }
 }
 

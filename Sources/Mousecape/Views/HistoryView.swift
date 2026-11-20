@@ -208,8 +208,9 @@ struct HistoryView: View {
     }
 }
 
-/// The changed details and cursors of a diff, each cursor with both versions side by side.
-private struct DiffList: View {
+/// The changed details and cursors of a diff, each cursor with both versions side by side
+/// (also used for updates from the gallery).
+struct DiffList: View {
     let diff: CapeDiff
 
     var body: some View {

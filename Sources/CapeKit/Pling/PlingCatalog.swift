@@ -211,6 +211,24 @@ public struct PlingTheme: Identifiable, Hashable, Sendable {
     }
 }
 
+extension PlingTheme {
+    /// The newer version of an installed file: the file of the same name when its checksum
+    /// changed. A file under a new name (authors often put the version in it) counts only
+    /// when it is the theme's single candidate; with several variants, which one replaced
+    /// the installed one can't be told. Without a checksum from the install, nothing can be
+    /// told either.
+    public func updatedFile(installedName: String?, installedMD5: String?, among candidates: [File]) -> File? {
+        guard let installedMD5 else { return nil }
+        if let installedName, let sameName = candidates.first(where: { $0.name == installedName }) {
+            return sameName.md5.map { $0 != installedMD5 } == true ? sameName : nil
+        }
+        guard candidates.count == 1, let only = candidates.first, let md5 = only.md5, md5 != installedMD5 else {
+            return nil
+        }
+        return only
+    }
+}
+
 extension PlingTheme.File {
     /// A file name that is safe to create: the last path part only, without control
     /// characters, not hidden, not empty.

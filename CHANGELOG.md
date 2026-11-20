@@ -19,7 +19,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - A gallery of the cursor themes on pling.com (gnome-look.org), under File → Browse
   Cursor Themes Online… (⇧⌘O): search (⌘F on macOS 15 and later), sort, previews,
   licences, and installing with a double-click. Themes installed from the gallery are
-  marked as such. The app goes online only while the gallery is open.
+  marked as such, and as "Update Available" when the author uploads a new version. A
+  comparison shows what an update changes, cursor by cursor, before it is saved; the
+  previous state stays in the cape's history. The app goes online only while the gallery
+  is open.
 - Undo of Move to Trash in the library: the cape comes back with its history, and is
   applied again if it was applied.
 

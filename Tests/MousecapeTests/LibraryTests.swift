@@ -261,7 +261,8 @@ final class LibraryTests {
     @Test func remembersCapesInstalledFromTheGallery() throws {
         let library = makeLibrary()
         let cape = try library.save(Cape(identifier: "local.xcursor.sweet", name: "Sweet", author: ""), originalIdentifier: nil)
-        library.recordGalleryInstall(themeID: 1393084, identifier: cape.identifier)
+        library.recordGalleryInstall(themeID: 1393084, GalleryInstall(identifier: cape.identifier,
+                                                                      fileName: "Sweet.tar.xz", md5: "ABC"))
         #expect(library.cape(installedFromGalleryTheme: 1393084)?.name == "Sweet")
         #expect(library.cape(installedFromGalleryTheme: 1) == nil)
 
@@ -270,6 +271,9 @@ final class LibraryTests {
         let saved = try library.save(renamed, originalIdentifier: cape.identifier)
         let reopened = makeLibrary()
         #expect(reopened.cape(installedFromGalleryTheme: 1393084)?.identifier == "local.sweet.mine")
+        #expect(reopened.galleryInstalls[1393084] == GalleryInstall(identifier: "local.sweet.mine",
+                                                                    fileName: "Sweet.tar.xz", md5: "abc"))
+        #expect(reopened.installedGalleryThemes == [1393084])
 
         let trashed = try reopened.delete(saved)
         #expect(reopened.cape(installedFromGalleryTheme: 1393084) == nil)
@@ -280,10 +284,11 @@ final class LibraryTests {
     /// A damaged file loses the marks, nothing else; identifiers in it are checked.
     @Test func ignoresABrokenGalleryFile() throws {
         try FileManager.default.createDirectory(at: base, withIntermediateDirectories: true)
-        let plist: [String: Any] = ["12": "../escape", "x": "local.a", "13": 5, "14": "local.ok"]
+        let plist: [String: Any] = ["12": ["Identifier": "../escape"], "x": ["Identifier": "local.a"], "13": 5,
+                                    "15": "local.old", "14": ["Identifier": "local.ok", "MD5": "AB"]]
         try PropertyListSerialization.data(fromPropertyList: plist, format: .xml, options: 0)
             .write(to: base.appending(path: "Gallery.plist"))
-        #expect(makeLibrary().galleryInstalls == [14: "local.ok"])
+        #expect(makeLibrary().galleryInstalls == [14: GalleryInstall(identifier: "local.ok", fileName: nil, md5: "ab")])
         try Data("garbage".utf8).write(to: base.appending(path: "Gallery.plist"))
         #expect(makeLibrary().galleryInstalls.isEmpty)
     }

@@ -95,3 +95,26 @@ func cleansFileNames(name: String, expected: String) {
 @Test func decodesEntities() {
     #expect(PlainText.from(html: "A&#39;s &#x263A; &bogus; & done") == "A's ☺ &bogus; & done")
 }
+
+private func file(_ id: Int, _ name: String, md5: String?) -> PlingTheme.File {
+    PlingTheme.File(id: id, name: name, url: URL(string: "https://files.pling.com/\(id)")!, size: nil, md5: md5)
+}
+
+/// An update is a changed checksum under the installed name, or the single file of a theme
+/// whose installed file is gone; with several variants, a new name says nothing.
+@Test func findsUpdates() throws {
+    let theme = try #require(try PlingCatalog.page(from: answer([fullEntry])).themes.first)
+    let same = [file(1, "Sweet.tar.xz", md5: "aa"), file(2, "Sweet-white.tar.xz", md5: "bb")]
+    #expect(theme.updatedFile(installedName: "Sweet.tar.xz", installedMD5: "aa", among: same) == nil)
+    let changed = [file(1, "Sweet.tar.xz", md5: "cc"), file(2, "Sweet-white.tar.xz", md5: "bb")]
+    #expect(theme.updatedFile(installedName: "Sweet.tar.xz", installedMD5: "aa", among: changed)?.md5 == "cc")
+    // Renamed: only the single candidate counts.
+    let renamed = [file(1, "Sweet-v2.tar.xz", md5: "dd")]
+    #expect(theme.updatedFile(installedName: "Sweet.tar.xz", installedMD5: "aa", among: renamed)?.id == 1)
+    let renamedVariants = [file(1, "Sweet-v2.tar.xz", md5: "dd"), file(2, "Sweet-white-v2.tar.xz", md5: "ee")]
+    #expect(theme.updatedFile(installedName: "Sweet.tar.xz", installedMD5: "aa", among: renamedVariants) == nil)
+    // Without checksums nothing can be told.
+    #expect(theme.updatedFile(installedName: "Sweet.tar.xz", installedMD5: nil, among: changed) == nil)
+    #expect(theme.updatedFile(installedName: "Sweet.tar.xz", installedMD5: "aa",
+                              among: [file(1, "Sweet.tar.xz", md5: nil)]) == nil)
+}

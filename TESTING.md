@@ -53,6 +53,12 @@ a manual test. What these tests found out about macOS is in [NOTES.md](NOTES.md)
   gallery's search field and is disabled in the library window. Installing Sweet cursors
   again and choosing Replace marks it "Installed" in the grid and in its details, with
   "Show in Library" and "Install Again".
+- Gallery updates (simulated: a wrong checksum in `Gallery.plist` and the arrow's hot spot
+  moved in the installed cape): Sweet shows "Update Available", also under Installed;
+  the comparison lists only the arrow's hot spot (9, 9 → 4, 4); Update saves it, keeps
+  the cape's name, records the new checksum and puts the previous state in the history.
+  With an unchanged cape the comparison says "Nothing Changes", and Mark as Up to Date
+  removes the mark without a new history entry.
 - Undo in the editor: typing a name and ⌘Z in the focused field gives back the old name
   in one step; the menu says "Undo Name", and ⇧⌘Z types it again. Removing the I-beam
   and ⌘Z brings it back and shows it. Cancel still asks before discarding.
