@@ -37,20 +37,46 @@ enum ThemeImport {
         return archiveSuffixes.contains { name.hasSuffix(".\($0)") }
     }
 
-    /// Calls `body` with the theme for a folder, `.inf` or archive. An archive is unpacked
-    /// into a temporary folder first, which is removed afterwards.
+    /// One theme found in a folder or archive. `variant` is its folder relative to the top
+    /// (nil at the top itself): it tells the versions in one archive apart, also later.
+    struct Found {
+        var theme: any CursorThemeConvertible
+        var variant: String?
+    }
+
+    /// No real theme pack holds more versions than this; it keeps a crafted archive from
+    /// making the importer convert thousands.
+    static let maximumThemes = 16
+
+    /// Calls `body` with the theme for a folder, `.inf` or archive: the first one, when
+    /// there are several.
     static func withTheme<T>(at url: URL, _ body: (any CursorThemeConvertible) throws -> T) throws -> T {
+        try withThemes(at: url) { found in try body(found[0].theme) }
+    }
+
+    /// Calls `body` with every theme in a folder, `.inf` or archive, never with an empty
+    /// list. Packs often hold several versions (Regular, Large, Extra-Large). An archive is
+    /// unpacked into a temporary folder first, which is removed afterwards.
+    static func withThemes<T>(at url: URL, _ body: ([Found]) throws -> T) throws -> T {
         if url.pathExtension.lowercased() == "inf" {
-            return try body(WindowsCursorTheme.load(folder: url.deletingLastPathComponent()))
+            return try body([Found(theme: try WindowsCursorTheme.load(folder: url.deletingLastPathComponent()))])
         }
         if isArchive(url) {
             let unpacked = try unpack(url)
             defer { try? FileManager.default.removeItem(at: unpacked) }
-            guard let (folder, theme) = findTheme(in: unpacked) else { throw ThemeImportError.noThemeFound }
-            return try body(named(theme, in: folder, root: unpacked, rootName: archiveBaseName(url)))
+            let found = findThemes(in: unpacked).map { folder, theme in
+                Found(theme: named(theme, in: folder, root: unpacked, rootName: archiveBaseName(url)),
+                      variant: relativePath(of: folder, in: unpacked))
+            }
+            guard !found.isEmpty else { throw ThemeImportError.noThemeFound }
+            return try body(found)
         }
-        if isFolder(url), let (folder, theme) = findTheme(in: url) {
-            return try body(named(theme, in: folder, root: url, rootName: url.lastPathComponent))
+        if isFolder(url) {
+            let found = findThemes(in: url).map { folder, theme in
+                Found(theme: named(theme, in: folder, root: url, rootName: url.lastPathComponent),
+                      variant: relativePath(of: folder, in: url))
+            }
+            if !found.isEmpty { return try body(found) }
         }
         throw ThemeImportError.noThemeFound
     }
@@ -136,14 +162,18 @@ enum ThemeImport {
         return suffix.map { String(name.dropLast($0.count + 1)) } ?? name
     }
 
-    /// The theme in `root` or a folder below it (archives often nest folders, Windows packs
-    /// up to `windows/cursors/<name>/<size>`):
-    /// searched breadth first, so the shallowest wins. In one folder, a Windows theme with an
-    /// `install.inf` comes first, then an Xcursor theme, then loose Windows cursors.
-    private static func findTheme(in root: URL) -> (URL, any CursorThemeConvertible)? {
-        var looseWindows: URL?
+    /// The themes in `root` and the folders below it (archives often nest folders, Windows
+    /// packs up to `windows/cursors/<name>/<size>`), searched breadth first, so the
+    /// shallowest comes first. In one folder, a Windows theme with an `install.inf` comes
+    /// first, then an Xcursor theme; the folders below a theme aren't searched. Loose
+    /// Windows cursors count only when there is nothing else. Size folders (`x1` … `x3`)
+    /// are one theme, the largest size.
+    private static func findThemes(in root: URL) -> [(URL, any CursorThemeConvertible)] {
+        var found: [(URL, any CursorThemeConvertible)] = []
+        var usedFolders: Set<String> = []
+        var looseWindows: [URL] = []
         var queue: [(URL, Int)] = [(root, 0)]
-        while !queue.isEmpty {
+        while !queue.isEmpty, found.count < maximumThemes {
             let (folder, depth) = queue.removeFirst()
             let contents = ((try? FileManager.default.contentsOfDirectory(
                 at: folder, includingPropertiesForKeys: [.isDirectoryKey], options: .skipsHiddenFiles)) ?? [])
@@ -151,20 +181,39 @@ enum ThemeImport {
             let hasWindowsCursors = contents.contains { windowsExtensions.contains($0.pathExtension.lowercased()) }
             if hasWindowsCursors, contents.contains(where: { $0.pathExtension.lowercased() == "inf" }) {
                 let variant = largestSizeVariant(of: folder)
-                if let theme = try? WindowsCursorTheme.load(folder: variant) { return (variant, theme) }
+                if usedFolders.contains(variant.path) { continue }          // another size of a theme found already
+                if let theme = try? WindowsCursorTheme.load(folder: variant) {
+                    found.append((variant, theme))
+                    usedFolders.insert(variant.path)
+                    continue
+                }
             }
             if XcursorTheme.isTheme(folder), let theme = try? XcursorTheme.load(folder: folder) {
-                return (folder, theme)
+                found.append((folder, theme))
+                continue
             }
-            if looseWindows == nil, hasWindowsCursors { looseWindows = folder }
+            if hasWindowsCursors { looseWindows.append(folder) }
             if depth < 5 {
                 queue += contents.filter { isFolder($0) && $0.lastPathComponent != "__MACOSX" }.map { ($0, depth + 1) }
             }
         }
-        if let folder = looseWindows.map(largestSizeVariant), let theme = try? WindowsCursorTheme.load(folder: folder) {
-            return (folder, theme)
+        if found.isEmpty {
+            for folder in looseWindows.map(largestSizeVariant) where !usedFolders.contains(folder.path) {
+                guard found.count < maximumThemes else { break }
+                usedFolders.insert(folder.path)
+                if let theme = try? WindowsCursorTheme.load(folder: folder) { found.append((folder, theme)) }
+            }
         }
-        return nil
+        return found
+    }
+
+    /// `folder` relative to `root`, such as `Bibata-Modern-Classic-Regular-Windows`; nil for
+    /// `root` itself.
+    private static func relativePath(of folder: URL, in root: URL) -> String? {
+        let rootPath = root.standardizedFileURL.path
+        let path = folder.standardizedFileURL.path
+        guard path.hasPrefix(rootPath + "/") else { return nil }
+        return String(path.dropFirst(rootPath.count + 1))
     }
 
     private static func unpack(_ archive: URL) throws -> URL {

@@ -25,6 +25,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (page, file and checksum) in an optional `Source` key of the cape file, so it travels
   with the file; the cape's page links to it. The app goes online only while the gallery
   is open.
+- When a theme comes in several versions (a Linux and a Windows file, or one archive with
+  a Regular, a Large and an Extra-Large version), Mousecape asks which one to install or
+  import. It shows how they differ: a few cursors of each at their real size, and the
+  number of cursors, size, sharpness and animation, with what differs in bold. It
+  suggests the version with the most cursors, then the sharpest, then the regular size.
+  A cape from the gallery remembers which version it is (`Variant` in its `Source`), so
+  an update takes the same one.
 - Undo of Move to Trash in the library: the cape comes back with its history, and is
   applied again if it was applied.
 
@@ -35,6 +42,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- An archive with several themes no longer imports simply the first one by name: for
+  Bibata's Windows zip that was the Extra-Large version.
 - `mousecloak --create` without `-o` writes `<folder>.cape` next to the folder. It tried to
   write the cape over the folder's parent folder and failed.
 - A reset removes the backups it brought back, so the next apply backs up the cursors on

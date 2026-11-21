@@ -9,6 +9,7 @@ struct GalleryView: View {
     @Environment(\.openWindow) private var openWindow
     @State private var detailTheme: PlingTheme?
     @State private var updateRequest: UpdateRequest?
+    @State private var installChoice: ThemeChoice?
     @FocusState private var isSearchFocused: Bool
 
     private var gallery: CursorGallery { model.gallery }
@@ -52,10 +53,18 @@ struct GalleryView: View {
         .sheet(item: $detailTheme) { theme in
             ThemeDetailView(theme: theme, gallery: gallery,
                             installedCape: model.library.cape(installedFromGalleryTheme: theme.id),
+                            installedFiles: Set(model.library.capes(installedFromGalleryTheme: theme.id)
+                                .compactMap(\.source?.fileName)),
                             update: model.update(for: theme),
                             onShowInLibrary: { show($0) },
                             onShowUpdate: { updateRequest = UpdateRequest(theme: theme, file: $0) }) { file in
-                install(file, of: theme)
+                install([file], of: theme)
+            }
+        }
+        .sheet(item: $installChoice) { choice in
+            ThemeChoiceView(choice: choice, isInstalled: isInstalled) { option in
+                model.install(option)
+                openWindow(id: "library")
             }
         }
         .sheet(item: $updateRequest) { request in
@@ -98,7 +107,7 @@ struct GalleryView: View {
                                 if let update {
                                     updateRequest = UpdateRequest(theme: theme, file: update)
                                 } else {
-                                    installFirstFile(of: theme)
+                                    installTheme(theme)
                                 }
                             }
                             .onTapGesture { detailTheme = theme }
@@ -106,7 +115,7 @@ struct GalleryView: View {
                                 if theme.id == gallery.themes.last?.id { gallery.loadMore() }
                             }
                             .contextMenu {
-                                Button("Install") { installFirstFile(of: theme) }
+                                Button("Install") { installTheme(theme) }
                                     .disabled(CursorGallery.installableFiles(of: theme).isEmpty)
                                 if let update {
                                     Button("Show Update…") { updateRequest = UpdateRequest(theme: theme, file: update) }
@@ -160,12 +169,15 @@ struct GalleryView: View {
         if #available(macOS 15, *) { true } else { false }
     }
 
-    private func installFirstFile(of theme: PlingTheme) {
-        guard let file = CursorGallery.installableFiles(of: theme).first else {
+    /// Installs a theme. When it offers several versions (files, or themes in one
+    /// archive), all are downloaded and converted first, and a sheet shows how they differ.
+    private func installTheme(_ theme: PlingTheme) {
+        let files = CursorGallery.installableFiles(of: theme)
+        guard !files.isEmpty else {
             detailTheme = theme     // nothing Mousecape can import: the details say why
             return
         }
-        install(file, of: theme)
+        install(files, of: theme)
     }
 
     /// Selects a cape in the library and brings the library forward.
@@ -175,11 +187,22 @@ struct GalleryView: View {
     }
 
     /// Installs, then brings the library forward: it shows the new cape, or asks whether to
-    /// replace one with the same identifier.
-    private func install(_ file: PlingTheme.File, of theme: PlingTheme) {
+    /// replace one with the same identifier. With several versions, asks which first.
+    private func install(_ files: [PlingTheme.File], of theme: PlingTheme) {
         Task {
-            await model.install(file, of: theme)
-            openWindow(id: "library")
+            if let choice = await model.prepareInstall(files, of: theme) {
+                installChoice = choice
+            } else {
+                openWindow(id: "library")
+            }
+        }
+    }
+
+    /// Whether this version of a theme (file, and theme in it) is in the library.
+    private func isInstalled(_ option: ThemeOption) -> Bool {
+        guard let source = option.cape.source else { return false }
+        return model.library.capes(installedFromGalleryTheme: source.themeID).contains { cape in
+            cape.source?.fileName == source.fileName && cape.source?.variant == source.variant
         }
     }
 }
@@ -297,6 +320,8 @@ private struct ThemeDetailView: View {
     let gallery: CursorGallery
     /// The cape this theme was installed as, if it is in the library.
     let installedCape: Cape?
+    /// The files capes in the library were installed from: only these say Install Again.
+    let installedFiles: Set<String>
     /// The newer file, when pling.com has one.
     let update: PlingTheme.File?
     let onShowInLibrary: (Cape) -> Void
@@ -403,7 +428,7 @@ private struct ThemeDetailView: View {
                     }
                     Spacer()
                     if installable {
-                        Button(installedCape == nil ? "Install" : "Install Again") {
+                        Button(installedFiles.contains(file.name) ? "Install Again" : "Install") {
                             onInstall(file)
                             dismiss()
                         }

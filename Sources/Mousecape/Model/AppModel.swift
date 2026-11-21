@@ -14,6 +14,12 @@ final class AppModel {
     var errorMessage: String?
     /// The import the "Replace?" dialog asks about.
     private(set) var pendingReplacement: PendingReplacement?
+    /// A dropped or opened theme that comes in several versions: the library window asks
+    /// which one to import. Closing the question shows the next one, if more are waiting.
+    var themeChoice: ThemeChoice? {
+        didSet { if themeChoice == nil { showNextChoice() } }
+    }
+    @ObservationIgnored private var queuedChoices: [ThemeChoice] = []
     /// Further imports that would replace a cape. They are asked about one after the other.
     private var queuedReplacements: [PendingReplacement] = []
     private var nextReplacementScheduled = false
@@ -83,7 +89,7 @@ final class AppModel {
         }
         for url in urls where !looseWindows.contains(url) && !looseXcursors.contains(url) {
             if ThemeImport.handles(url) {
-                importTheme { try ThemeImport.withTheme(at: url, convert) }
+                importVersions(of: url)
                 continue
             }
             if url.pathExtension.lowercased() == "mightymouse" {
@@ -178,6 +184,56 @@ final class AppModel {
         return try theme.makeCape(author: author)
     }
 
+    /// Imports a theme folder or archive. With one theme in it, right away; with several
+    /// versions (Regular, Large, …), the library window asks which.
+    private func importVersions(of url: URL) {
+        perform {
+            // Converted while the archive is unpacked: the themes read their files lazily.
+            let options = try ThemeImport.withThemes(at: url) { found in
+                try Self.convertEach(found.map { item in { [self] in
+                    let (cape, skipped) = try convert(item.theme)
+                    return ThemeOption(cape: cape, skipped: skipped, kind: ThemeOption.Kind(item.theme),
+                                       fileName: url.lastPathComponent, variant: item.variant)
+                } })
+            }
+            if options.count == 1 {
+                importTheme { (options[0].cape, options[0].skipped) }
+            } else {
+                offer(ThemeChoice(title: url.lastPathComponent, options: options))
+            }
+        }
+    }
+
+    /// The versions that convert; an error only when none does.
+    private nonisolated static func convertEach(_ conversions: [() throws -> ThemeOption]) throws -> [ThemeOption] {
+        var options: [ThemeOption] = []
+        var firstError: Error?
+        for conversion in conversions {
+            do { options.append(try conversion()) } catch { firstError = firstError ?? error }
+        }
+        if options.isEmpty { throw firstError ?? ThemeImportError.noThemeFound }
+        return options
+    }
+
+    /// Imports the version chosen in the library window.
+    func importVersion(_ option: ThemeOption) {
+        importTheme { (option.cape, option.skipped) }
+    }
+
+    private func offer(_ choice: ThemeChoice) {
+        if themeChoice == nil { themeChoice = choice } else { queuedChoices.append(choice) }
+    }
+
+    /// A sheet has to close before the next can open, so the next question follows a
+    /// moment later.
+    private func showNextChoice() {
+        guard !queuedChoices.isEmpty else { return }
+        Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(300))
+            if themeChoice == nil, !queuedChoices.isEmpty { themeChoice = queuedChoices.removeFirst() }
+        }
+    }
+
     /// Adds a cape converted from a cursor theme and says which cursors were left out. When
     /// the library already has a cape with its identifier (the same theme imported before),
     /// asks whether to replace it.
@@ -217,37 +273,67 @@ final class AppModel {
 
     let gallery = CursorGallery()
 
-    /// Downloads a theme from the gallery and imports it like a dropped file. The author is
-    /// the uploader's name on pling.com, unless the theme names its own.
-    func install(_ file: PlingTheme.File, of theme: PlingTheme) async {
+    /// Downloads files of a gallery theme and converts each, with every version an archive
+    /// holds. A single version is installed right away (nil comes back); several come back
+    /// as a choice, so that the gallery can ask which. The author is the uploader's name on
+    /// pling.com, unless the theme names its own.
+    func prepareInstall(_ files: [PlingTheme.File], of theme: PlingTheme) async -> ThemeChoice? {
         do {
-            let downloaded = try await gallery.download(file, of: theme)
-            defer { try? FileManager.default.removeItem(at: downloaded.file.deletingLastPathComponent()) }
-            // The import itself runs while the file exists: a question about replacing a
-            // cape holds the converted cape, not the file.
-            importTheme {
-                var converted = try Self.convertDownload(at: downloaded.file, author: theme.author)
-                // The source travels with the cape: credit, and updates later.
-                converted.cape.source = CapeSource(theme: theme, file: downloaded.info)
-                return converted
+            let downloads = try await gallery.download(files, of: theme)
+            defer {
+                for download in downloads { try? FileManager.default.removeItem(at: download.file.deletingLastPathComponent()) }
             }
+            var options: [ThemeOption] = []
+            var firstError: Error?
+            for download in downloads {
+                let path = download.file, author = theme.author
+                do {
+                    // Unpacking and converting can take a moment; not on the main thread.
+                    let versions = try await Task.detached { try Self.convertDownload(at: path, author: author) }.value
+                    options += versions.map { $0.from(theme: theme, file: download.info) }
+                } catch {
+                    firstError = firstError ?? error        // another file may still work
+                }
+            }
+            if options.isEmpty { throw firstError ?? ThemeImportError.noThemeFound }
+            if options.count == 1 {
+                install(options[0])
+                return nil
+            }
+            return ThemeChoice(title: theme.name, options: options)
         } catch {
             errorMessage = String(localized: "“\(theme.name)” could not be installed: \(error.localizedDescription)")
+            return nil
         }
     }
 
-    /// A downloaded file as a cape: a cape as it is, a MaCursor theme or a theme archive
-    /// converted.
-    nonisolated static func convertDownload(at url: URL, author: String) throws -> (cape: Cape, skipped: [String]) {
+    /// Imports a version of a gallery theme like a dropped file: a question about replacing
+    /// a cape holds the converted cape, not the downloaded file.
+    func install(_ option: ThemeOption) {
+        importTheme { (option.cape, option.skipped) }
+    }
+
+    /// A downloaded file as capes: a cape as it is, a MaCursor theme, or every theme in an
+    /// archive converted.
+    nonisolated static func convertDownload(at url: URL, author: String) throws -> [ThemeOption] {
+        let name = url.lastPathComponent
         switch url.pathExtension.lowercased() {
         case "cape":
             var cape = try Cape(contentsOf: url)
             cape.fileURL = nil
-            return (cape, [])
+            return [ThemeOption(cape: cape, skipped: [], kind: .cape, fileName: name, variant: nil)]
         case MaCursorTheme.fileExtension:
-            return try MaCursorTheme(contentsOf: url).makeCape(author: author)
+            let (cape, skipped) = try MaCursorTheme(contentsOf: url).makeCape(author: author)
+            return [ThemeOption(cape: cape, skipped: skipped, kind: .maCursor, fileName: name, variant: nil)]
         default:
-            return try ThemeImport.withTheme(at: url) { try $0.makeCape(author: author) }
+            // Converted while the archive is unpacked: the themes read their files lazily.
+            return try ThemeImport.withThemes(at: url) { found in
+                try convertEach(found.map { item in {
+                    let (cape, skipped) = try item.theme.makeCape(author: author)
+                    return ThemeOption(cape: cape, skipped: skipped, kind: ThemeOption.Kind(item.theme),
+                                       fileName: name, variant: item.variant)
+                } })
+            }
         }
     }
 
@@ -269,14 +355,22 @@ final class AppModel {
         defer { try? FileManager.default.removeItem(at: downloaded.file.deletingLastPathComponent()) }
         let path = downloaded.file, author = theme.author
         // Unpacking and converting can take a moment; not on the main thread.
-        let (converted, skipped) = try await Task.detached { try Self.convertDownload(at: path, author: author) }.value
-        var updated = converted
+        let versions = try await Task.detached { try Self.convertDownload(at: path, author: author) }.value
+        // The same version as before; a cape from a file with one theme takes that one, as
+        // does one installed before Mousecape knew versions.
+        let wanted = installed.source?.variant
+        guard let version = versions.first(where: { $0.variant == wanted })
+                ?? (versions.count == 1 || wanted == nil ? versions.first : nil) else {
+            throw GalleryError.versionGone(wanted ?? "")
+        }
+        let skipped = version.skipped
+        var updated = version.cape
         // The update replaces the cursors, not the cape's place and name in the library.
         updated.identifier = installed.identifier
         updated.name = installed.name
         updated.fileURL = installed.fileURL
         updated.otherKeys = installed.otherKeys
-        updated.source = CapeSource(theme: theme, file: downloaded.info)
+        updated.source = CapeSource(theme: theme, file: downloaded.info, variant: version.variant)
         return PreparedUpdate(themeID: theme.id, installed: installed, updated: updated, skipped: skipped)
     }
 
@@ -459,4 +553,71 @@ struct PreparedUpdate: Identifiable {
     let skipped: [String]
 
     var diff: CapeDiff { CapeDiff(from: installed, to: updated) }
+}
+
+/// One version of a theme, converted but not imported yet: one file of a theme, or one
+/// theme of several in an archive.
+struct ThemeOption: Identifiable {
+    enum Kind {
+        case linux, windows, cape, maCursor
+
+        init(_ theme: any CursorThemeConvertible) {
+            self = theme is XcursorTheme ? .linux : .windows
+        }
+
+        var title: String {
+            switch self {
+            case .linux: String(localized: "Linux theme")
+            case .windows: String(localized: "Windows theme")
+            case .cape: String(localized: "Cape")
+            case .maCursor: String(localized: "MaCursor theme")
+            }
+        }
+    }
+
+    let id = UUID()
+    var cape: Cape
+    let skipped: [String]
+    let kind: Kind
+    /// The file (or folder) it comes from.
+    let fileName: String
+    /// Its folder in the archive, when it comes from one.
+    let variant: String?
+    let summary: CapeSummary
+
+    init(cape: Cape, skipped: [String], kind: Kind, fileName: String, variant: String?) {
+        self.cape = cape
+        self.skipped = skipped
+        self.kind = kind
+        self.fileName = fileName
+        self.variant = variant
+        summary = CapeSummary(cape)
+    }
+
+    /// The same version with its source on pling.com, which travels with the cape.
+    func from(theme: PlingTheme, file: PlingTheme.File) -> ThemeOption {
+        var option = self
+        option.cape.source = CapeSource(theme: theme, file: file, variant: variant)
+        return option
+    }
+}
+
+/// The versions of a theme to choose from, the suggested one first (see
+/// `CapeSummary.suggested`), the others in the order of their files.
+struct ThemeChoice: Identifiable {
+    let id = UUID()
+    let title: String
+    let options: [ThemeOption]
+
+    init(title: String, options: [ThemeOption]) {
+        self.title = title
+        var sorted = options
+        if let suggested = CapeSummary.suggested(among: options.map(\.summary)) {
+            sorted.insert(sorted.remove(at: suggested), at: 0)
+        }
+        self.options = sorted
+    }
+
+    /// The suggested version (the first), when there is any.
+    var suggested: Int? { options.isEmpty ? nil : 0 }
 }

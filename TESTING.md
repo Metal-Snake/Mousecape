@@ -63,6 +63,14 @@ a manual test. What these tests found out about macOS is in [NOTES.md](NOTES.md)
   into the cape file, and the cape's page shows "From pling.com". A changed MD5 in the
   file shows as an update; Mark as Up to Date writes the new MD5 into the file and its
   original, so the cape stays byte-identical to its original (not edited).
+- Versions of a theme: Install on Bibata Modern Classic downloads both files and asks
+  between four versions: the Linux theme (suggested, first, 37 cursors, arrow 24 × 24 pt)
+  and the Regular, Large and Extra-Large versions from the Windows zip (28 cursors,
+  arrows 18 × 22, 22 × 26 and 26 × 32 pt, 4 cursors left out). The sample cursors show
+  the sizes; cursor count and size are bold, sharpness and animation not. A double-click
+  on Large installs it with `Variant` in its `Source`; asked again, Large is marked
+  "Installed". The details say Install Again only on the installed file. The update
+  comparison of the Linux version still works.
 - Undo in the editor: typing a name and ⌘Z in the focused field gives back the old name
   in one step; the menu says "Undo Name", and ⇧⌘Z types it again. Removing the I-beam
   and ⌘Z brings it back and shows it. Cancel still asks before discarding.
@@ -153,6 +161,9 @@ a manual test. What these tests found out about macOS is in [NOTES.md](NOTES.md)
       By Time.
 - [ ] **History:** compare two states, Restore This Version, Remove Saved States… and
       Revert to Original… in the app. Covered by `swift test` only.
+- [ ] **Versions in a dropped archive:** drop Bibata's Windows zip on the library: it
+      should ask between Regular, Large and Extra-Large, like the gallery. Covered by
+      `swift test` only (finding the versions), not the sheet in the library window.
 - [ ] **Importing a theme again:** replace the earlier import, and keep both.
 - [ ] **macOS 26.** Tested on 15.6 and 27.x only.
 

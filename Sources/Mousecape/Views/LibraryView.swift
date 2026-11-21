@@ -65,6 +65,9 @@ struct LibraryView: View {
         .sheet(item: $model.historyCape) { cape in
             HistoryView(model: model, cape: cape)
         }
+        .sheet(item: $model.themeChoice) { choice in
+            ThemeChoiceView(choice: choice) { model.importVersion($0) }
+        }
         .sheet(item: $model.editorSession) { session in
             CapeEditorView(session: session) { model.save($0, from: session) }
         }

@@ -135,6 +135,64 @@ final class ThemeImportTests {
         #expect(scales == [1, 2])          // 2x needs 64 px images: x1 (32 px) would give 1x only
     }
 
+    /// A Windows theme folder with an `install.inf` named `scheme` and an arrow of `size` px.
+    func makeWindowsTheme(at folder: URL, scheme: String, size: Int) throws {
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        let inf = """
+            [Wreg]
+            HKCU,"Control Panel\\Cursors",Arrow,0x00020000,"%10%\\%CUR_DIR%\\%pointer%"
+            [Strings]
+            CUR_DIR = "Cursors\\Test"
+            SCHEME_NAME = "\(scheme)"
+            pointer = "Pointer.cur"
+            """
+        try Data(inf.utf8).write(to: folder.appending(path: "install.inf"))
+        try curFile(size: size).write(to: folder.appending(path: "Pointer.cur"))
+    }
+
+    /// Like Bibata's Windows zip: one folder per size of the theme, each with its own
+    /// `install.inf`. Every one is a version to choose from; the first stays the default.
+    @Test func findsEveryVersionInAnArchive() throws {
+        let src = folder.appending(path: "src")
+        for (variant, size) in [("Regular", 32), ("Large", 48), ("Extra-Large", 64)] {
+            try makeWindowsTheme(at: src.appending(path: "Theme-\(variant)-Windows"), scheme: "Theme \(variant)", size: size)
+        }
+        let archive = folder.appending(path: "Theme-Windows.zip")
+        try run("/usr/bin/ditto", ["-c", "-k", src.path, archive.path])
+
+        let found = try ThemeImport.withThemes(at: archive) { found in
+            found.map { ($0.theme.name, $0.variant) }
+        }
+        #expect(found.map(\.0) == ["Theme Extra-Large", "Theme Large", "Theme Regular"])
+        #expect(found.map(\.1) == ["Theme-Extra-Large-Windows", "Theme-Large-Windows", "Theme-Regular-Windows"])
+        #expect(try capeIdentifiers(at: archive).name == "Theme Extra-Large")
+
+        let options = try AppModel.convertDownload(at: archive, author: "Kaiz")
+        #expect(options.count == 3)
+        #expect(Set(options.map(\.cape.identifier)).count == 3)
+        #expect(options.map(\.summary.arrowSize?.width) == [32, 32, 32])
+        #expect(options.allSatisfy { $0.kind == .windows && $0.fileName == "Theme-Windows.zip" })
+    }
+
+    /// Size folders are one theme, not versions to choose from.
+    @Test func sizeFoldersAreOneVersion() throws {
+        let src = folder.appending(path: "src")
+        for (scale, size) in [("x1", 32), ("x2", 64)] {
+            try makeWindowsTheme(at: src.appending(path: "Theme/\(scale)"), scheme: "Theme", size: size)
+        }
+        let found = try ThemeImport.withThemes(at: src) { $0.map(\.variant) }
+        #expect(found == ["Theme/x2"])
+    }
+
+    /// A crafted archive with many themes is cut off.
+    @Test func limitsTheNumberOfVersions() throws {
+        let src = folder.appending(path: "src")
+        for index in 0..<(ThemeImport.maximumThemes + 4) {
+            try makeWindowsTheme(at: src.appending(path: "T\(index)"), scheme: "T\(index)", size: 32)
+        }
+        #expect(try ThemeImport.withThemes(at: src) { $0.count } == ThemeImport.maximumThemes)
+    }
+
     @Test func reportsArchivesWithoutTheme() throws {
         let src = folder.appending(path: "empty")
         try FileManager.default.createDirectory(at: src, withIntermediateDirectories: true)

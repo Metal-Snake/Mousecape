@@ -123,12 +123,14 @@ private func file(_ id: Int, _ name: String, md5: String?) -> PlingTheme.File {
 @Test func capeSourceRoundTrips() throws {
     var cape = Cape(identifier: "local.sweet", name: "Sweet", author: "eliverlara")
     cape.source = CapeSource(site: "pling.com", themeID: 1393084, page: URL(string: "https://www.pling.com/p/1393084"),
-                             fileName: "Sweet-cursors.tar.xz", md5: "773ae8cb0fc173312f03affafbd8aa4e")
+                             fileName: "Sweet-cursors.tar.xz", md5: "773ae8cb0fc173312f03affafbd8aa4e",
+                             variant: "Sweet-cursors/large")
     let read = try Cape(propertyListData: cape.propertyListData())
     #expect(read.source == cape.source)
 
     var plist = Cape(identifier: "local.x", name: "X", author: "").propertyList
-    plist["Source"] = ["Site": "pling.com", "ID": "12", "Page": "http://evil.example", "File": "../a.zip", "MD5": "nope"]
+    plist["Source"] = ["Site": "pling.com", "ID": "12", "Page": "http://evil.example", "File": "../a.zip", "MD5": "nope",
+                       "Variant": "a\u{0}b"]
     let loose = try Cape(propertyList: plist)
     #expect(loose.source == CapeSource(site: "pling.com", themeID: 12, page: nil, fileName: "a.zip", md5: nil))
 

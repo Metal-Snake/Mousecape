@@ -16,20 +16,27 @@ public struct CapeSource: Equatable, Sendable {
     public var fileName: String?
     /// The downloaded file's MD5, lower-case hex.
     public var md5: String?
+    /// Which theme in the file, when it holds several (an archive with a Regular and a Large
+    /// version): the theme's folder in the archive. An update takes the same one again.
+    public var variant: String?
 
     public static let plingSite = "pling.com"
 
-    public init(site: String, themeID: Int, page: URL? = nil, fileName: String? = nil, md5: String? = nil) {
+    public init(site: String, themeID: Int, page: URL? = nil, fileName: String? = nil, md5: String? = nil,
+                variant: String? = nil) {
         self.site = site
         self.themeID = themeID
         self.page = page
         self.fileName = fileName
         self.md5 = md5
+        self.variant = variant
     }
 
-    /// A theme from the pling.com catalogue and the file it was installed from.
-    public init(theme: PlingTheme, file: PlingTheme.File) {
-        self.init(site: Self.plingSite, themeID: theme.id, page: theme.detailPage, fileName: file.name, md5: file.md5)
+    /// A theme from the pling.com catalogue, the file it was installed from and, when the
+    /// file holds several themes, which one.
+    public init(theme: PlingTheme, file: PlingTheme.File, variant: String? = nil) {
+        self.init(site: Self.plingSite, themeID: theme.id, page: theme.detailPage, fileName: file.name, md5: file.md5,
+                  variant: variant)
     }
 
     init?(propertyList value: Any?) {
@@ -41,6 +48,12 @@ public struct CapeSource: Equatable, Sendable {
         fileName = (dict[Key.file] as? String).map(PlingTheme.File.safeName)
         let md5 = (dict[Key.md5] as? String)?.lowercased()
         self.md5 = md5.flatMap { $0.count == 32 && $0.allSatisfy(\.isHexDigit) ? $0 : nil }
+        // Only ever compared, never used as a path; still, nothing odd is kept.
+        variant = (dict[Key.variant] as? String).flatMap { value in
+            let plain = !value.isEmpty && value.count <= 255
+                && !value.unicodeScalars.contains { CharacterSet.controlCharacters.contains($0) }
+            return plain ? value : nil
+        }
     }
 
     var propertyList: [String: Any] {
@@ -48,6 +61,7 @@ public struct CapeSource: Equatable, Sendable {
         dict[Key.page] = page?.absoluteString
         dict[Key.file] = fileName
         dict[Key.md5] = md5
+        dict[Key.variant] = variant
         return dict
     }
 
@@ -57,5 +71,6 @@ public struct CapeSource: Equatable, Sendable {
         static let page = "Page"
         static let file = "File"
         static let md5 = "MD5"
+        static let variant = "Variant"
     }
 }

@@ -114,18 +114,32 @@ final class CursorGallery {
         return ThemeImport.isArchive(url) || ext == "cape" || ext == MaCursorTheme.fileExtension
     }
 
-    /// Downloads `file` into a new temporary folder and checks it; the caller imports it and
-    /// removes the folder. The links in a list expire, so the theme is fetched again first
-    /// for a fresh one. Returns the file on disk and the catalogue's entry for it.
-    func download(_ file: PlingTheme.File, of theme: PlingTheme) async throws -> (file: URL, info: PlingTheme.File) {
+    /// Downloads `files` of a theme, each into a new temporary folder, and checks them; the
+    /// caller imports them and removes the folders. The links in a list expire, so the theme
+    /// is fetched again first for fresh ones. Returns each file on disk and the catalogue's
+    /// entry for it.
+    func download(_ files: [PlingTheme.File], of theme: PlingTheme) async throws -> [(file: URL, info: PlingTheme.File)] {
         downloading.insert(theme.id)
         defer { downloading.remove(theme.id) }
         let fresh = try PlingCatalog.page(from: try await Downloader.data(from: PlingCatalog.themeURL(id: theme.id)))
-        let files = fresh.themes.first { $0.id == theme.id }?.files ?? []
-        guard let current = files.first(where: { $0.name == file.name }) ?? files.first(where: { $0.id == file.id }) else {
-            throw GalleryError.fileGone(file.name)
+        let current = fresh.themes.first { $0.id == theme.id }?.files ?? []
+        var downloads: [(file: URL, info: PlingTheme.File)] = []
+        do {
+            for file in files {
+                guard let info = current.first(where: { $0.name == file.name }) ?? current.first(where: { $0.id == file.id }) else {
+                    throw GalleryError.fileGone(file.name)
+                }
+                downloads.append((try await Downloader.file(info), info))
+            }
+        } catch {
+            for download in downloads { try? FileManager.default.removeItem(at: download.file.deletingLastPathComponent()) }
+            throw error
         }
-        return (try await Downloader.file(current), current)
+        return downloads
+    }
+
+    func download(_ file: PlingTheme.File, of theme: PlingTheme) async throws -> (file: URL, info: PlingTheme.File) {
+        try await download([file], of: theme)[0]
     }
 }
 
@@ -134,6 +148,7 @@ enum GalleryError: LocalizedError {
     case tooLarge(String)
     case checksumMismatch(String)
     case httpStatus(Int)
+    case versionGone(String)
 
     var errorDescription: String? {
         switch self {
@@ -141,6 +156,7 @@ enum GalleryError: LocalizedError {
         case .tooLarge(let name): String(localized: "“\(name)” is larger than a cursor theme can be; it wasn't downloaded.")
         case .checksumMismatch(let name): String(localized: "“\(name)” arrived damaged (its checksum doesn't match); it wasn't imported.")
         case .httpStatus(let code): String(localized: "pling.com answered with error \(code).")
+        case .versionGone(let name): String(localized: "The new file no longer has the version you installed (“\(name)”). Install the theme again to choose one.")
         }
     }
 }

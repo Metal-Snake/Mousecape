@@ -34,7 +34,7 @@ without Xcode, so don't add them.
 | Target | Language | Role |
 |---|---|---|
 | `MousecloakCore` | Objective-C, **manual retain/release** (`-fno-objc-arc`) | The original engine. It applies, backs up, restores and scales cursors through private CGS/CoreCursor calls (`include/CGSInternal`). `MousecloakCore.h` and `module.modulemap` expose it to Swift. |
-| `CapeKit` | Pure Swift, no private API | The `.cape` format (`Cape`, `CapeCursor`), sprite sheets (`CursorSheet`), the editing model and validation (`CapeEditing`), capes from folders of images (`CapeFolder`, for `mousecloak --create`), Undo steps (`EditHistory`, `CapeEditPart`), the pling.com catalogue (`Pling/`), diffs, left-handed rules, and the Windows (`Windows/`), Xcursor (`Xcursor/`) and MaCursor (`MaCursor/`) importers. |
+| `CapeKit` | Pure Swift, no private API | The `.cape` format (`Cape`, `CapeCursor`), sprite sheets (`CursorSheet`), the editing model and validation (`CapeEditing`), capes from folders of images (`CapeFolder`, for `mousecloak --create`), Undo steps (`EditHistory`, `CapeEditPart`), the pling.com catalogue (`Pling/`), what tells versions of a theme apart (`CapeSummary`), diffs, left-handed rules, and the Windows (`Windows/`), Xcursor (`Xcursor/`) and MaCursor (`MaCursor/`) importers. |
 | `mousecloak` | Swift | CLI (`main.swift`, `--create` in `CreateCape.swift`). `mousecloak --listen` is also the background login agent. |
 | `Mousecape` | SwiftUI | The app. `Model/` holds `AppModel` (UI state and actions), `Library` (the capes folder), `CapeHistory`, `EditorSession` (the editor's draft and its Undo), `CursorGallery` (the online gallery and its downloads), `Engine` (the Swift face of the engine plus `EnginePreferences`), `LoginAgent` and `ThemeImport` (archives and folders). `Views/` holds the UI, with the editor under `Views/Editor/`. |
 | `TestSupport` | Swift | Builders for test files (PNG, `.cur`, Xcursor), shared by both test targets. |
@@ -87,7 +87,8 @@ Capes, themes and archives are untrusted input (see "Hardening" in CHANGES.md):
   refuses.
 - Check image dimensions from the header before decoding. Use `CursorSheet.decode`,
   which enforces `maximumPixels`, rather than decoding directly. The `.ani` step count and
-  the size of PNGs in `.cur` files are also bounded.
+  the size of PNGs in `.cur` files are also bounded, as is the number of themes taken
+  from one archive (`ThemeImport.maximumThemes`).
 - Ignore symlinks in themes that point outside the theme folder.
 - A save that can't keep the state it replaces must not overwrite anything.
 - The online gallery (`PlingCatalog` and `CapeSource` in CapeKit, `CursorGallery` in the

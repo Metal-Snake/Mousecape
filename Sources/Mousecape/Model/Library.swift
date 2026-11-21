@@ -47,6 +47,11 @@ final class Library {
         capes.first { $0.source?.site == CapeSource.plingSite && $0.source?.themeID == id }
     }
 
+    /// Every cape installed from a pling.com theme: a theme can come in several versions.
+    func capes(installedFromGalleryTheme id: Int) -> [Cape] {
+        capes.filter { $0.source?.site == CapeSource.plingSite && $0.source?.themeID == id }
+    }
+
     /// The pling.com themes that capes in the library came from.
     var installedGalleryThemes: [Int] {
         Array(Set(capes.compactMap { $0.source?.site == CapeSource.plingSite ? $0.source?.themeID : nil })).sorted()
