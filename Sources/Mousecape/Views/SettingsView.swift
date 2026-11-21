@@ -66,9 +66,10 @@ struct SettingsView: View {
 
 /// How much history each cape keeps: a number of saved states, or the disk space they may
 /// take. A change applies to every cape at once; what no longer fits goes to the Trash.
+/// Below it, the fullest history (against the limit) and what all histories take.
 private struct HistorySettings: View {
     let library: Library
-    @State private var usedSpace: Int64?
+    @State private var usage: HistoryUsage?
 
     private enum Kind: Hashable { case count, megabytes }
 
@@ -106,19 +107,37 @@ private struct HistorySettings: View {
     }
 
     private var footer: String {
-        var text = String(localized: "Each save keeps the state it replaces, so that Cape → History can bring it back. The state a cape came into the library with is always kept. Older states that no longer fit go to the Trash.")
-        if let usedSpace {
-            text += " " + String(localized: "The history takes \(usedSpace.formatted(.byteCount(style: .file))) now.")
+        var text = String(localized: "The limit applies to each cape on its own. It counts the states that saves replaced, which Cape → History can bring back; the state a cape came into the library with is always kept and doesn't count. Older states that no longer fit go to the Trash.")
+        guard let usage else { return text }
+        // How close the fullest history is to the limit of the kind chosen.
+        switch library.historyLimit {
+        case .count(let limit):
+            if let most = usage.mostStates {
+                text += "\n\n" + String(localized: "Most saved states now: \(most.count) of \(limit), in “\(name(of: most.identifier))”.")
+            }
+        case .megabytes(let limit):
+            if let largest = usage.largest {
+                let size = largest.size.formatted(.byteCount(style: .file))
+                text += "\n\n" + String(localized: "Largest history now: \(size) of \(limit) MB, in “\(name(of: largest.identifier))”.")
+            }
         }
+        if usage.mostStates == nil {
+            text += "\n\n" + String(localized: "No cape has saved states yet.")
+        }
+        let total = usage.totalSize.formatted(.byteCount(style: .file))
+        text += " " + String(localized: "All histories together take \(total), originals included.")
         return text
     }
 
-    /// Adds up the history's files away from the main thread: a big library has many.
+    private func name(of identifier: String) -> String {
+        library.capes.first { $0.identifier == identifier }?.name ?? identifier
+    }
+
+    /// Looks through the history's files away from the main thread: a big library has many.
     private func measure() {
         let history = library.history
         Task {
-            let size = await Task.detached { history.totalSize() }.value
-            usedSpace = size
+            usage = await Task.detached { history.usage() }.value
         }
     }
 

@@ -80,6 +80,14 @@ enum HistoryLimit: Equatable {
     }
 }
 
+/// What the histories hold: the cape with the most saved states, the cape whose saved
+/// states take the most space (the two the limit is about), and all files together.
+struct HistoryUsage: Sendable {
+    var mostStates: (identifier: String, count: Int)?
+    var largest: (identifier: String, size: Int64)?
+    var totalSize: Int64 = 0
+}
+
 /// The versions of each cape in the library, kept in `<folder>/<identifier>/`:
 /// `original.cape` (the state the cape came into the library with) and one dated file per
 /// state a save replaced. The current state is the library file itself.
@@ -175,10 +183,29 @@ struct CapeHistory {
         for old in limit.excess(of: saved) { _ = try? moveToTrash(old) }
     }
 
-    /// The disk space all histories take, originals included.
-    func totalSize() -> Int64 {
-        let files = FileManager.default.enumerator(at: folder, includingPropertiesForKeys: [.fileSizeKey])
-        return (files?.allObjects as? [URL] ?? []).reduce(0) { $0 + Self.fileSize($1) }
+    /// What the histories hold now, to show next to the limit: the limit is per cape and
+    /// counts only saved states, so the fullest and the largest history say how close a
+    /// cape is to it; the total (originals included) says what all of them take on disk.
+    func usage() -> HistoryUsage {
+        var usage = HistoryUsage()
+        let folders = (try? FileManager.default.contentsOfDirectory(
+            at: folder, includingPropertiesForKeys: nil, options: .skipsHiddenFiles)) ?? []
+        for capeFolder in folders {
+            let identifier = capeFolder.lastPathComponent
+            guard Cape.isValidIdentifier(identifier) else { continue }
+            let files = (try? FileManager.default.contentsOfDirectory(
+                at: capeFolder, includingPropertiesForKeys: [.fileSizeKey], options: .skipsHiddenFiles)) ?? []
+            let saved = files.filter { $0.pathExtension == "cape" && $0.lastPathComponent != Self.originalName }
+            let savedSize = saved.reduce(0) { $0 + Self.fileSize($1) }
+            usage.totalSize += files.reduce(0) { $0 + Self.fileSize($1) }
+            if saved.count > (usage.mostStates?.count ?? 0) {
+                usage.mostStates = (identifier, saved.count)
+            }
+            if savedSize > (usage.largest?.size ?? 0) {
+                usage.largest = (identifier, savedSize)
+            }
+        }
+        return usage
     }
 
     static func fileSize(_ url: URL) -> Int64 {

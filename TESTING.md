@@ -80,7 +80,10 @@ a manual test. What these tests found out about macOS is in [NOTES.md](NOTES.md)
 - History limit in Settings: switching between "By number" and "By disk space" keeps
   each value; lowering the number to 1 moves the older saved state of Large to the
   Trash right away (original and newest state stay), and the space shown drops from
-  4.4 to 3.9 MB. "Up to 1 state" is singular.
+  4.4 to 3.9 MB. "Up to 1 state" is singular. Below the limit, Settings names the
+  fullest history: "Most saved states now: 1 of 20, in “…Large Cursors”", or by space
+  (set with launch arguments, not stored) "Largest history now: 494 kB of 10 MB"; then
+  "All histories together take 3.9 MB, originals included."
 - Importing again keeps the history: replacing an edited Large cape ("Large edited")
   leaves the old original and the edited state as saved states in its `Versions`
   folder, and the import becomes the new original (the cape isn't marked edited).

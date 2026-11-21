@@ -10,9 +10,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Settings → History sets how much history each cape keeps: a number of saved states
-  (1 to 100, 20 as before) or the disk space they may take (10 MB to 1 GB). It shows how
-  much space the history takes, and a lower limit applies to all capes at once (older
-  states go to the Trash).
+  (1 to 100, 20 as before) or the disk space they may take (10 MB to 1 GB). The limit
+  is per cape and the original doesn't count. Below it, the settings show the fullest
+  history against the limit (the most states, or the largest by space, and which cape)
+  and what all histories take together. A lower limit applies to all capes at once
+  (older states go to the Trash).
 - `mousecloak --create` takes the cape's details as options (`--name`, `--author`,
   `--identifier`, `--cape-version`, `--hidpi`/`--no-hidpi`) and defaults for all cursors
   (`--hot-spot`, `--frame-duration`). It reads each cursor's size and frames from its

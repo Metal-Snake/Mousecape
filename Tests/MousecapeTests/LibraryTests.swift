@@ -224,6 +224,24 @@ final class LibraryTests {
         #expect(try names(library.versions(of: cape)) == ["Imported", "Save 2", "Save 3"])
     }
 
+    /// The settings show the fullest history next to the limit: saved states only, without
+    /// the original, while the total counts every file.
+    @Test func usageNamesTheFullestHistory() throws {
+        let library = makeLibrary()
+        #expect(library.history.usage().mostStates == nil)
+        var cape = try importedAndEdited(library)
+        for number in 1...2 {
+            cape.name = "Save \(number)"
+            cape = try library.save(cape, originalIdentifier: "test.theme")
+        }
+        let usage = library.history.usage()
+        let saved = library.versions(of: cape).filter { $0.kind == .saved }
+        #expect(usage.mostStates?.identifier == cape.identifier)
+        #expect(usage.mostStates?.count == saved.count)
+        #expect(usage.largest?.size == saved.reduce(0) { $0 + CapeHistory.fileSize($1.url) })
+        #expect(usage.totalSize > usage.largest?.size ?? 0)
+    }
+
     @Test func removesSavedStatesOnly() throws {
         let library = makeLibrary()
         var cape = try importedAndEdited(library)
