@@ -27,12 +27,22 @@ struct HistoryView: View {
         case version(CapeVersion)
     }
 
+    /// What the history keeps, with the limit from Settings.
+    private var explanation: String {
+        let kept = switch model.library.historyLimit {
+        case .count(1): String(localized: "the last state a save replaced")
+        case .count(let count): String(localized: "up to \(count) states that saves replaced")
+        case .megabytes(let megabytes): String(localized: "the states that saves replaced, up to \(megabytes) MB")
+        }
+        return String(localized: "Mousecape keeps how the cape came into the library and \(kept) (Settings → History). Restoring keeps the current state in the history too.")
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             VStack(alignment: .leading, spacing: 4) {
                 Text("History — \(cape.name)")
                     .font(.title2.weight(.semibold))
-                Text("Mousecape keeps how the cape came into the library and up to \(CapeHistory.savedLimit) states that saves replaced. Restoring keeps the current state in the history too.")
+                Text(explanation)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }

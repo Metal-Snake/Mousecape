@@ -77,6 +77,10 @@ a manual test. What these tests found out about macOS is in [NOTES.md](NOTES.md)
   All installs Regular, Large and Extra-Large as three capes, and one message names the
   four cursors each leaves out. Opening it again with all three asks once ("Replace 3
   Capes?"); Replace keeps three capes, Keep Both adds three more ("… 2").
+- History limit in Settings: switching between "By number" and "By disk space" keeps
+  each value; lowering the number to 1 moves the older saved state of Large to the
+  Trash right away (original and newest state stay), and the space shown drops from
+  4.4 to 3.9 MB. "Up to 1 state" is singular.
 - Importing again keeps the history: replacing an edited Large cape ("Large edited")
   leaves the old original and the edited state as saved states in its `Versions`
   folder, and the import becomes the new original (the cape isn't marked edited).

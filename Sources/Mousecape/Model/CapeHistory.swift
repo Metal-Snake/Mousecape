@@ -18,13 +18,75 @@ struct CapeVersion: Identifiable, Hashable {
     var id: URL { url }
 }
 
+/// How many saved states each cape keeps: a number of states, or the disk space they may
+/// take. The original never counts and is always kept. A setting (Settings → History).
+enum HistoryLimit: Equatable {
+    case count(Int)
+    case megabytes(Int)
+
+    static let standard = HistoryLimit.count(20)
+    static let countRange = 1...100
+    static let megabyteChoices = [10, 25, 50, 100, 250, 500, 1000]
+
+    private static let kindKey = "historyLimitKind"
+    private static let countKey = "historyLimitCount"
+    private static let megabytesKey = "historyLimitMegabytes"
+
+    /// The limit in the app's preferences; the standard one when none is set.
+    static func stored(in defaults: UserDefaults = .standard) -> HistoryLimit {
+        defaults.string(forKey: kindKey) == "megabytes" ? storedSpace(in: defaults) : storedCount(in: defaults)
+    }
+
+    /// The last limit by number, also while the limit is by space (to switch back to).
+    static func storedCount(in defaults: UserDefaults = .standard) -> HistoryLimit {
+        let value = defaults.integer(forKey: countKey)
+        return countRange.contains(value) ? .count(value) : standard
+    }
+
+    /// The last limit by space, also while the limit is by number.
+    static func storedSpace(in defaults: UserDefaults = .standard) -> HistoryLimit {
+        let value = defaults.integer(forKey: megabytesKey)
+        return .megabytes(megabyteChoices.contains(value) ? value : 100)
+    }
+
+    func store(in defaults: UserDefaults = .standard) {
+        switch self {
+        case .count(let count):
+            defaults.set("count", forKey: Self.kindKey)
+            defaults.set(count, forKey: Self.countKey)
+        case .megabytes(let megabytes):
+            defaults.set("megabytes", forKey: Self.kindKey)
+            defaults.set(megabytes, forKey: Self.megabytesKey)
+        }
+    }
+
+    /// The saved states to drop, from `saved` ordered oldest first: beyond the number, or
+    /// the oldest until the rest fit the space. The newest stays even when it alone is
+    /// larger, so that the last save can always be taken back.
+    func excess(of saved: [(url: URL, size: Int64)]) -> [URL] {
+        switch self {
+        case .count(let count):
+            return saved.dropLast(max(count, 1)).map(\.url)
+        case .megabytes(let megabytes):
+            let allowed = Int64(megabytes) * 1_000_000
+            var total = saved.reduce(0) { $0 + $1.size }
+            var dropped: [URL] = []
+            for state in saved.dropLast() where total > allowed {
+                dropped.append(state.url)
+                total -= state.size
+            }
+            return dropped
+        }
+    }
+}
+
 /// The versions of each cape in the library, kept in `<folder>/<identifier>/`:
 /// `original.cape` (the state the cape came into the library with) and one dated file per
 /// state a save replaced. The current state is the library file itself.
 struct CapeHistory {
     let folder: URL
     /// Saved states kept per cape; older ones go to the Trash.
-    static let savedLimit = 20
+    var limit: HistoryLimit = .standard
 
     /// Moves a file to the Trash and returns where it went.
     var moveToTrash: (URL) throws -> URL?
@@ -104,10 +166,23 @@ struct CapeHistory {
         return destination
     }
 
-    /// Over the limit, the oldest saved states go; failing that only leaves one too many.
-    private func trimSavedVersions(for identifier: String) {
-        let saved = versions(for: identifier).filter { $0.kind == .saved }
-        for old in saved.dropLast(Self.savedLimit) { _ = try? moveToTrash(old.url) }
+    /// Over the limit, the oldest saved states go to the Trash; failing that only leaves
+    /// one too many.
+    func trimSavedVersions(for identifier: String) {
+        let saved = versions(for: identifier).filter { $0.kind == .saved }.map { version in
+            (url: version.url, size: Self.fileSize(version.url))
+        }
+        for old in limit.excess(of: saved) { _ = try? moveToTrash(old) }
+    }
+
+    /// The disk space all histories take, originals included.
+    func totalSize() -> Int64 {
+        let files = FileManager.default.enumerator(at: folder, includingPropertiesForKeys: [.fileSizeKey])
+        return (files?.allObjects as? [URL] ?? []).reduce(0) { $0 + Self.fileSize($1) }
+    }
+
+    static func fileSize(_ url: URL) -> Int64 {
+        Int64((try? url.resourceValues(forKeys: [.fileSizeKey]))?.fileSize ?? 0)
     }
 
     /// Before an import replaces a cape (the same theme imported again): its original and

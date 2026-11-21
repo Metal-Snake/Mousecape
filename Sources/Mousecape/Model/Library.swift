@@ -28,7 +28,18 @@ final class Library {
         return trashed as URL?
     }
 
-    var history: CapeHistory { CapeHistory(folder: versionsFolder, moveToTrash: moveToTrash) }
+    /// How many saved states each cape keeps (Settings → History).
+    var historyLimit = HistoryLimit.stored()
+
+    var history: CapeHistory { CapeHistory(folder: versionsFolder, limit: historyLimit, moveToTrash: moveToTrash) }
+
+    /// Sets a new limit and applies it to every cape's history at once.
+    func setHistoryLimit(_ limit: HistoryLimit) {
+        historyLimit = limit
+        limit.store()
+        let history = history
+        for cape in capes { history.trimSavedVersions(for: cape.identifier) }
+    }
 
     /// `versionsFolder` defaults to `Versions` next to the library folder, outside it so
     /// the original Mousecape and the agent never see the copies.

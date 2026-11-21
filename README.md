@@ -194,8 +194,10 @@ preview shows the result. These settings are saved in the cape, so they travel w
 
 ### History
 
-Every cape keeps the state it came into the library with and the last 20 states a save
-replaced. **Cape → History…** (⌘Y) lists them, compares any two (which cursors changed,
+Every cape keeps the state it came into the library with and the states a save replaced:
+the last 20, or as many as you set under **Settings → History**, either by number (1 to
+100 per cape) or by disk space (10 MB to 1 GB per cape). Older states go to the Trash;
+a lower limit applies to all capes at once, and the newest saved state always stays. **Cape → History…** (⌘Y) lists them, compares any two (which cursors changed,
 and how, side by side) and restores any of them; restoring keeps the current state too.
 Edited capes are marked with a pencil, and **Revert to Original…** brings back the
 imported version. Importing a cape again (or replacing it with another version of its

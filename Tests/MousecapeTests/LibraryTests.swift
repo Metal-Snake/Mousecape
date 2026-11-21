@@ -198,15 +198,30 @@ final class LibraryTests {
 
     @Test func keepsAtMostTheLimitOfSavedStates() throws {
         let library = makeLibrary()
+        library.historyLimit = .count(5)
         var cape = try importedAndEdited(library)
-        for number in 1...(CapeHistory.savedLimit + 3) {
+        for number in 1...8 {
             cape.name = "Save \(number)"
             cape = try library.save(cape, originalIdentifier: "test.theme")
         }
         let versions = library.versions(of: cape)
-        #expect(versions.filter { $0.kind == .saved }.count == CapeHistory.savedLimit)
+        #expect(versions.filter { $0.kind == .saved }.count == 5)
         #expect(versions.first?.kind == .original)
-        #expect(try names(versions).last == "Save \(CapeHistory.savedLimit + 2)")   // the one before the current
+        #expect(try names(versions).last == "Save 7")          // the one before the current
+    }
+
+    /// A lower limit applies to every cape at once; the originals stay.
+    @Test func aLowerLimitTrimsEveryHistory() throws {
+        let library = makeLibrary()
+        library.historyLimit = .count(10)
+        var cape = try importedAndEdited(library)
+        for number in 1...4 {
+            cape.name = "Save \(number)"
+            cape = try library.save(cape, originalIdentifier: "test.theme")
+        }
+        library.historyLimit = .count(2)
+        for cape in library.capes { library.history.trimSavedVersions(for: cape.identifier) }
+        #expect(try names(library.versions(of: cape)) == ["Imported", "Save 2", "Save 3"])
     }
 
     @Test func removesSavedStatesOnly() throws {

@@ -40,6 +40,8 @@ struct SettingsView: View {
                 }
                 Toggle("Left-handed (mirror pointers)", isOn: $leftHanded)
             }
+
+            HistorySettings(library: model.library)
         }
         .formStyle(.grouped)
         .frame(width: 460)
@@ -59,5 +61,80 @@ struct SettingsView: View {
     private var agentBinding: Binding<Bool> {
         Binding(get: { model.loginAgent.isEnabled || model.loginAgent.needsApproval },
                 set: { model.loginAgent.setEnabled($0) })
+    }
+}
+
+/// How much history each cape keeps: a number of saved states, or the disk space they may
+/// take. A change applies to every cape at once; what no longer fits goes to the Trash.
+private struct HistorySettings: View {
+    let library: Library
+    @State private var usedSpace: Int64?
+
+    private enum Kind: Hashable { case count, megabytes }
+
+    var body: some View {
+        Section {
+            Picker("Keep saved states", selection: kindBinding) {
+                Text("By number").tag(Kind.count)
+                Text("By disk space").tag(Kind.megabytes)
+            }
+            switch library.historyLimit {
+            case .count(let count):
+                Stepper(value: countBinding(count), in: HistoryLimit.countRange) {
+                    HStack {
+                        Text("Per cape")
+                        Spacer()
+                        Text("Up to ^[\(count) state](inflect: true)").monospacedDigit()
+                    }
+                }
+            case .megabytes(let megabytes):
+                Picker("Per cape", selection: megabytesBinding(megabytes)) {
+                    ForEach(HistoryLimit.megabyteChoices, id: \.self) { value in
+                        Text("Up to \(value) MB").tag(value)
+                    }
+                }
+            }
+        } header: {
+            Text("History")
+        } footer: {
+            Text(footer)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.leading)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .task(id: library.historyLimit) { measure() }
+    }
+
+    private var footer: String {
+        var text = String(localized: "Each save keeps the state it replaces, so that Cape → History can bring it back. The state a cape came into the library with is always kept. Older states that no longer fit go to the Trash.")
+        if let usedSpace {
+            text += " " + String(localized: "The history takes \(usedSpace.formatted(.byteCount(style: .file))) now.")
+        }
+        return text
+    }
+
+    /// Adds up the history's files away from the main thread: a big library has many.
+    private func measure() {
+        let history = library.history
+        Task {
+            let size = await Task.detached { history.totalSize() }.value
+            usedSpace = size
+        }
+    }
+
+    private var kindBinding: Binding<Kind> {
+        Binding {
+            if case .megabytes = library.historyLimit { .megabytes } else { .count }
+        } set: { kind in
+            library.setHistoryLimit(kind == .count ? HistoryLimit.storedCount() : HistoryLimit.storedSpace())
+        }
+    }
+
+    private func countBinding(_ count: Int) -> Binding<Int> {
+        Binding { count } set: { library.setHistoryLimit(.count($0)) }
+    }
+
+    private func megabytesBinding(_ megabytes: Int) -> Binding<Int> {
+        Binding { megabytes } set: { library.setHistoryLimit(.megabytes($0)) }
     }
 }
