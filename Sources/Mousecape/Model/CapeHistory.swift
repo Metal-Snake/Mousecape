@@ -82,6 +82,12 @@ struct CapeHistory {
         let existing = versions(for: identifier)
         if existing.contains(where: { $0.kind == .original && Self.sameContents($0.url, file) }) { return }
         if let newest = existing.last(where: { $0.kind == .saved }), Self.sameContents(newest.url, file) { return }
+        try FileManager.default.copyItem(at: file, to: newSavedURL(for: identifier))
+        trimSavedVersions(for: identifier)
+    }
+
+    /// A free, dated name for a saved state.
+    private func newSavedURL(for identifier: String) throws -> URL {
         let capeFolder = try capeFolder(for: identifier)
         try FileManager.default.createDirectory(at: capeFolder, withIntermediateDirectories: true)
         // Local time, so the names match what Finder shows.
@@ -95,10 +101,39 @@ struct CapeHistory {
             destination = capeFolder.appending(path: "\(stamp) \(number).cape")
             number += 1
         }
-        try FileManager.default.copyItem(at: file, to: destination)
-        // Over the limit, the oldest go; failing that only leaves one too many.
+        return destination
+    }
+
+    /// Over the limit, the oldest saved states go; failing that only leaves one too many.
+    private func trimSavedVersions(for identifier: String) {
         let saved = versions(for: identifier).filter { $0.kind == .saved }
         for old in saved.dropLast(Self.savedLimit) { _ = try? moveToTrash(old.url) }
+    }
+
+    /// Before an import replaces a cape (the same theme imported again): its original and
+    /// its current state (`current`) become saved states, so that History can still bring
+    /// them back. `setOriginal` then makes the import the new original.
+    func keepStatesBeforeImport(for identifier: String, current: URL) throws {
+        let original = try originalURL(for: identifier)
+        if FileManager.default.fileExists(atPath: original.path) {
+            let newest = versions(for: identifier).last { $0.kind == .saved }
+            if let newest, Self.sameContents(newest.url, original) {
+                _ = try moveToTrash(original)               // kept already
+            } else {
+                // Moving keeps the file's date, so it stays the oldest state.
+                try FileManager.default.moveItem(at: original, to: newSavedURL(for: identifier))
+            }
+        }
+        try record(current, for: identifier)
+        trimSavedVersions(for: identifier)
+    }
+
+    /// Makes `file` the original, replacing the one there was.
+    func setOriginal(for identifier: String, from file: URL) throws {
+        let original = try originalURL(for: identifier)
+        try FileManager.default.createDirectory(at: capeFolder(for: identifier), withIntermediateDirectories: true)
+        if FileManager.default.fileExists(atPath: original.path) { try FileManager.default.removeItem(at: original) }
+        try FileManager.default.copyItem(at: file, to: original)
     }
 
     /// Moves the saved states (not the original) to the Trash.
@@ -106,7 +141,7 @@ struct CapeHistory {
         for version in versions(for: identifier) where version.kind == .saved { _ = try moveToTrash(version.url) }
     }
 
-    /// Moves a cape's whole history to the Trash (deleted, or imported again); returns
+    /// Moves a cape's whole history to the Trash (deleted, or left from a cape that is gone); returns
     /// where it went, nil when there was none.
     @discardableResult
     func discard(for identifier: String) throws -> URL? {

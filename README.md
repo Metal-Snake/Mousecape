@@ -198,7 +198,8 @@ Every cape keeps the state it came into the library with and the last 20 states 
 replaced. **Cape → History…** (⌘Y) lists them, compares any two (which cursors changed,
 and how, side by side) and restores any of them; restoring keeps the current state too.
 Edited capes are marked with a pencil, and **Revert to Original…** brings back the
-imported version. The history lives in `~/Library/Application Support/Mousecape/Versions`.
+imported version. Importing a cape again (or replacing it with another version of its
+theme) makes the import its new original; the states before it stay in the history. The history lives in `~/Library/Application Support/Mousecape/Versions`.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/history-dark.png">

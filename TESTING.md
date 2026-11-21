@@ -77,6 +77,9 @@ a manual test. What these tests found out about macOS is in [NOTES.md](NOTES.md)
   All installs Regular, Large and Extra-Large as three capes, and one message names the
   four cursors each leaves out. Opening it again with all three asks once ("Replace 3
   Capes?"); Replace keeps three capes, Keep Both adds three more ("… 2").
+- Importing again keeps the history: replacing an edited Large cape ("Large edited")
+  leaves the old original and the edited state as saved states in its `Versions`
+  folder, and the import becomes the new original (the cape isn't marked edited).
 - Undo in the editor: typing a name and ⌘Z in the focused field gives back the old name
   in one step; the menu says "Undo Name", and ⇧⌘Z types it again. Removing the I-beam
   and ⌘Z brings it back and shows it. Cancel still asks before discarding.
@@ -169,7 +172,9 @@ a manual test. What these tests found out about macOS is in [NOTES.md](NOTES.md)
       Revert to Original… in the app. Covered by `swift test` only.
 - [ ] **Dropping an archive with versions** on the library window. Opening it with the
       app is tested (above); a drop takes the same path.
-- [ ] **Importing a theme again:** replace the earlier import, and keep both.
+- [ ] **History after importing again:** the History sheet of a replaced cape should list
+      the old original and the edited state, and restore either. The files are checked
+      (above), not the sheet.
 - [ ] **macOS 26.** Tested on 15.6 and 27.x only.
 
 ## Tools

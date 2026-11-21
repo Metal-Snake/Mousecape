@@ -292,18 +292,41 @@ final class LibraryTests {
         #expect(library.versions(of: updated).map(\.kind) == [.original])
     }
 
-    @Test func importingAgainStartsOver() throws {
+    /// Importing a cape again makes the import its original, and keeps what it replaces:
+    /// the old original and the edited state, which History can restore.
+    @Test func importingAgainKeepsTheHistory() throws {
         let library = makeLibrary()
         _ = try importedAndEdited(library)
         let file = base.appending(path: "download.cape")
         try Cape(identifier: "test.theme", name: "Imported again", author: "").propertyListData().write(to: file)
         let imported = try library.importCape(at: file)
-        #expect(try names(library.versions(of: imported)) == ["Imported again"])
+        #expect(try names(library.versions(of: imported)) == ["Imported again", "Imported", "Edited"])
         #expect(library.editedIdentifiers.isEmpty)
+        #expect(files(in: trash).isEmpty)
+
         // The same for a converted theme imported again.
-        _ = try importedAndEdited(library)
         let converted = try library.replace(with: Cape(identifier: "test.theme", name: "Converted", author: ""))
-        #expect(try names(library.versions(of: converted)) == ["Converted"])
+        #expect(try names(library.versions(of: converted)) == ["Converted", "Imported", "Edited", "Imported again"])
+        #expect(library.editedIdentifiers.isEmpty)
+    }
+
+    /// An unedited cape imported again adds its state once, not as original and current.
+    @Test func importingAnUneditedCapeAgainKeepsItOnce() throws {
+        let library = makeLibrary()
+        try library.save(Cape(identifier: "test.theme", name: "First", author: ""), originalIdentifier: nil)
+        let converted = try library.replace(with: Cape(identifier: "test.theme", name: "Second", author: ""))
+        #expect(try names(library.versions(of: converted)) == ["Second", "First"])
+    }
+
+    /// A history whose cape is gone doesn't come back with a new import of that identifier.
+    @Test func importingDropsAHistoryWithoutCape() throws {
+        let library = makeLibrary()
+        let stale = try library.history.capeFolder(for: "test.theme")
+        try FileManager.default.createDirectory(at: stale, withIntermediateDirectories: true)
+        try Cape(identifier: "test.theme", name: "Stale", author: "").propertyListData()
+            .write(to: stale.appending(path: "2020-01-01 00-00-00.cape"))
+        let converted = try library.replace(with: Cape(identifier: "test.theme", name: "New", author: ""))
+        #expect(try names(library.versions(of: converted)) == ["New"])
     }
 
     // MARK: - Unsafe identifiers

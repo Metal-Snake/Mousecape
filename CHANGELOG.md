@@ -40,6 +40,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Importing a cape again, or replacing it with another version of its theme, keeps its
+  history: the import becomes the cape's new original, and its earlier original and
+  current state stay as saved states that History can restore. Before, the history was
+  moved to the Trash.
 - Finder's Get Info and the About window show the build number with the version, such
   as "3.1.0 (404)". The copyright names the fork's years up to the current one.
 

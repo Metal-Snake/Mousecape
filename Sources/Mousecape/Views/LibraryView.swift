@@ -212,15 +212,15 @@ struct LibraryView: View {
         guard let pending = model.pendingReplacement else { return "" }
         if case .converted(let versions) = pending.source, versions.count > 1 {
             if pending.count == versions.count {
-                return String(localized: "All \(versions.count) versions are in the library already. Keep Both adds them as new capes.")
+                return String(localized: "All \(versions.count) versions are in the library already. Replace keeps their current state in their history; Keep Both adds them as new capes.")
             }
             if pending.count == 1 {
-                return String(localized: "Of the \(versions.count) versions, “\(pending.existing.name)” is in the library already. Keep Both adds it as a new cape.")
+                return String(localized: "Of the \(versions.count) versions, “\(pending.existing.name)” is in the library already. Replace keeps its current state in its history; Keep Both adds it as a new cape.")
             }
             let names = versions.compactMap(\.existing?.name).formatted(.list(type: .and))
-            return String(localized: "Of the \(versions.count) versions, these are in the library already: \(names). Keep Both adds them as new capes.")
+            return String(localized: "Of the \(versions.count) versions, these are in the library already: \(names). Replace keeps their current state in their history; Keep Both adds them as new capes.")
         }
-        return String(localized: "A cape with the same identifier is already in the library.")
+        return String(localized: "A cape with the same identifier is already in the library. Replace keeps its current state in its history.")
     }
 
     private var deleteTitle: String {

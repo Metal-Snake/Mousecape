@@ -215,20 +215,31 @@ final class Library {
         return capes.first { $0.identifier == cape.identifier }
     }
 
-    /// Copies a `.cape` file into the library (replacing a cape with the same identifier,
-    /// and with it that cape's history: the import is the new starting point).
+    /// Copies a `.cape` file into the library, replacing a cape with the same identifier.
+    /// The import becomes the cape's original; the replaced states stay in its history.
     @discardableResult
     func importCape(at url: URL) throws -> Cape {
         let cape = try Cape(contentsOf: url)
         let destination = fileURL(for: cape.identifier)
-        // Opening the library's own file (e.g. from Finder) replaces nothing and keeps the
-        // history.
+        // Opening the library's own file (e.g. from Finder) replaces nothing.
         if url.standardizedFileURL != destination.standardizedFileURL {
-            try history.discard(for: cape.identifier)
+            try prepareHistoryForImport(of: cape.identifier, at: destination)
             try place(url, at: destination)
+            try history.setOriginal(for: cape.identifier, from: destination)
         }
         reload()
         return capes.first { $0.identifier == cape.identifier } ?? cape
+    }
+
+    /// Before an import writes `destination`: a cape that is there keeps its states in its
+    /// history (first, so that nothing is overwritten when that fails); a history without a
+    /// cape is left over and goes.
+    private func prepareHistoryForImport(of identifier: String, at destination: URL) throws {
+        if FileManager.default.fileExists(atPath: destination.path) {
+            try history.keepStatesBeforeImport(for: identifier, current: destination)
+        } else {
+            try history.discard(for: identifier)
+        }
     }
 
     /// Writes a cape built in memory (MightyMouse conversion, cursor dump) into the library.
@@ -245,12 +256,15 @@ final class Library {
     }
 
     /// Writes a cape converted on import over the one with the same identifier (a theme
-    /// imported again); an applied cape is applied again. Like any import, it starts over,
-    /// with a new history.
+    /// imported again); an applied cape is applied again. Like any import, it becomes the
+    /// cape's original; the replaced states stay in its history.
     @discardableResult
     func replace(with cape: Cape) throws -> Cape {
-        try history.discard(for: cape.identifier)
-        try cape.propertyListData().write(to: fileURL(for: cape.identifier), options: .atomic)
+        let destination = fileURL(for: cape.identifier)
+        let data = try cape.propertyListData()
+        try prepareHistoryForImport(of: cape.identifier, at: destination)
+        try data.write(to: destination, options: .atomic)
+        try history.setOriginal(for: cape.identifier, from: destination)
         reload()
         let result = capes.first { $0.identifier == cape.identifier } ?? cape
         if cape.identifier == appliedIdentifier { try apply(result) }
