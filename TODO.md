@@ -76,6 +76,11 @@ there is no x86_64 build.
 - [ ] **Gallery follow-ups.** More sources than pling.com. Mark themes imported by hand
   too (only gallery installs are known now; names alone are too vague, as with Bibata's
   20 variants).
+- [ ] **Gallery: which file a double-click installs.** It takes the first installable
+  file. For Bibata Modern Classic that is the Windows zip, and the import picked its
+  Extra-Large variant instead of the Linux archive (HiDPI, normal size). Prefer Linux
+  archives and capes, or ask when a theme offers several files. The details also say
+  Install Again on every file, not only on the one that was installed.
 - [ ] **Menu bar extra** for switching capes quickly.
 - [ ] **Cursor trails:** a line that follows the pointer and shrinks back into it when it
       stops (MaCursor has one; GPL-3.0, so only the idea).

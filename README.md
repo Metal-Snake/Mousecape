@@ -11,7 +11,8 @@ around it is rewritten in SwiftUI.
 - macOS 14 Sonoma or later, Apple silicon only; tested on macOS 15.6 and 27.0.1
   ([TESTING.md](TESTING.md))
 - Builds with the Xcode Command Line Tools alone (no Xcode project)
-- No third-party dependencies, no network access
+- No third-party dependencies; no network access except the online gallery of cursor
+  themes, and only while its window is open
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/library-dark.png">
@@ -84,18 +85,38 @@ to replace it or keep both.
 
 **File → Browse Cursor Themes Online…** (⇧⌘O, or the globe in the toolbar) shows the
 cursor themes on [pling.com](https://www.pling.com), the catalogue behind gnome-look.org
-and store.kde.org, about 1,200 of them. Search them, sort them by downloads, date, rating
-or name (⌘F jumps to the search field on macOS 15 and later), and double-click one to
-install it; click it for its previews, description,
-files and licence. Themes you installed from here are marked **Installed**, with a link to
-the cape in your library. When the author uploads a new version, the mark says **Update
-Available**: double-click the theme to see, cursor by cursor, what the update changes
-before you take it. **Installed** at the top shows only these themes. An update keeps
-the cape's name and place; its previous state stays in the cape's history. A cape
-installed from here remembers where it came from (its page shows "From pling.com"), also
-when you copy it to another Mac or give it away. Most are Linux themes, which Mousecape converts on import like any
-other. The themes are made by others: check a theme's licence before you share or change
-it.
+and store.kde.org, about 1,200 of them. Search them, sort them by downloads, date,
+rating or name (⌘F jumps to the search field on macOS 15 and later), and double-click
+one to install it; click it for its previews, description, files and licence.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/gallery-overview-dark.png">
+  <img alt="The gallery of cursor themes online: a search for Bibata shows a grid of themes with previews, authors, downloads and licences; one is marked Update Available" src="docs/screenshots/gallery-overview-light.png">
+</picture>
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/gallery-detail-dark.png">
+  <img alt="The details of Bibata Modern Classic: its previews, author, downloads and licence, a note that it is in the library and has an update, and its files with Install Again buttons" src="docs/screenshots/gallery-detail-light.png">
+</picture>
+
+Themes you installed from here are marked **Installed**, with a link to the cape in your
+library. When the author uploads a new version, the mark says **Update Available**:
+double-click the theme to see, cursor by cursor, what the update changes before you take
+it. **Installed** at the top shows only these themes. An update keeps the cape's name
+and place; its previous state stays in the cape's history. A cape installed from here
+remembers where it came from (its page shows "From pling.com"), also when you copy it to
+another Mac or give it away. Most are Linux themes, which Mousecape converts on import
+like any other. The themes are made by others: check a theme's licence before you share
+or change it.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/gallery-update-dark.png">
+  <img alt="Update Bibata Modern Classic: the Arrow's hot spot changes and the Crosshair and Crosshair 2 cursors are added; Cancel and Update buttons" src="docs/screenshots/gallery-update-light.png">
+</picture>
+
+<sub>The gallery screenshots show Bibata themes by Kaiz (ful1e5) and others from pling.com,
+under GPL-3.0 and CC0. For the update, the installed copy was changed by hand so that there
+is something to compare.</sub>
 
 Mousecape goes online only while this window is open. It asks pling.com's public API (the
 one KDE uses for "Get New Stuff") for the list and the files, sends no data about you,
