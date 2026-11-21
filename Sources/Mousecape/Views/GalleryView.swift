@@ -62,8 +62,8 @@ struct GalleryView: View {
             }
         }
         .sheet(item: $installChoice) { choice in
-            ThemeChoiceView(choice: choice, isInstalled: isInstalled) { option in
-                model.install(option)
+            ThemeChoiceView(choice: choice, isInstalled: isInstalled) { options in
+                model.install(options)
                 openWindow(id: "library")
             }
         }

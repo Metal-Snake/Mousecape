@@ -52,8 +52,6 @@ there is no x86_64 build.
       guessed from English file names only. Packs from Korea, Japan or China often use
       names like `일반선택.ani` (Normal Select). Add keywords in more languages.
 - [ ] **Theme import follow-ups.**
-      - Archives with several themes (e.g. `banana-all.tar.xz`, Bibata's light and dark):
-        only the first is imported. Import all, or let the user choose.
       - Windows packs with colour variants in one folder (`normal-select_black.cur`,
         `…_white.cur`): the first by name wins. Detect the variants and ask.
       - Xcursor themes that `Inherits=` another theme for missing cursors: the inherited

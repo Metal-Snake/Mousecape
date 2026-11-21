@@ -124,20 +124,18 @@ final class AppModel {
                 let cape = try library.importCape(at: url)
                 selection = cape.id
                 if cape.identifier == library.appliedIdentifier { try library.reapply() }
-            case .converted(let cape, let skipped):
-                let saved = try library.replace(with: cape)
-                selection = saved.id
-                reportSkipped(skipped, in: saved)
+            case .converted(let versions):
+                try add(versions, replacing: true)
             }
         }
     }
 
-    /// Adds the converted theme next to the cape it would have replaced.
+    /// Adds the converted themes next to the capes they would have replaced.
     func keepBoth() {
-        guard let pending = pendingReplacement, case .converted(let cape, let skipped) = pending.source else { return }
+        guard let pending = pendingReplacement, case .converted(let versions) = pending.source else { return }
         pendingReplacement = nil
         defer { showNextReplacement() }
-        perform { try addConverted(cape, skipped: skipped) }
+        perform { try add(versions, replacing: false) }
     }
 
     /// Leaves the cape the dialog asks about as it is (Cancel, or the dialog closed).
@@ -197,7 +195,7 @@ final class AppModel {
                 } })
             }
             if options.count == 1 {
-                importTheme { (options[0].cape, options[0].skipped) }
+                importConverted(options.map { ($0.cape, $0.skipped) })
             } else {
                 offer(ThemeChoice(title: url.lastPathComponent, options: options))
             }
@@ -215,9 +213,17 @@ final class AppModel {
         return options
     }
 
-    /// Imports the version chosen in the library window.
-    func importVersion(_ option: ThemeOption) {
-        importTheme { (option.cape, option.skipped) }
+    /// Imports the versions chosen in the library window, each as a cape of its own.
+    func importVersions(_ options: [ThemeOption]) {
+        importConverted(Self.distinguished(options))
+    }
+
+    /// The chosen versions with names and identifiers that tell them apart.
+    private static func distinguished(_ options: [ThemeOption]) -> [(cape: Cape, skipped: [String])] {
+        let capes = ThemeVersions.distinguished(options.map { option in
+            ThemeVersions.Version(cape: option.cape, variant: option.variant, kind: option.kind.shortTitle)
+        })
+        return zip(capes, options).map { ($0, $1.skipped) }
     }
 
     private func offer(_ choice: ThemeChoice) {
@@ -234,22 +240,63 @@ final class AppModel {
         }
     }
 
-    /// Adds a cape converted from a cursor theme and says which cursors were left out. When
-    /// the library already has a cape with its identifier (the same theme imported before),
-    /// asks whether to replace it.
+    /// Adds a cape converted from a cursor theme and says which cursors were left out.
     private func importTheme(_ convert: () throws -> (cape: Cape, skipped: [String])) {
-        perform {
-            let (cape, skipped) = try convert()
-            if let existing = library.capes.first(where: { $0.identifier == cape.identifier }) {
-                askToReplace(PendingReplacement(source: .converted(cape, skipped: skipped), existing: existing))
-                return      // the dialog continues with confirmReplacement() or keepBoth()
-            }
-            try addConverted(cape, skipped: skipped)
+        perform { importConverted([try convert()]) }
+    }
+
+    /// Adds capes converted from cursor themes. When the library already has some of them
+    /// (the same version from the gallery, or a cape with the same identifier: the same
+    /// theme imported before), asks once whether to replace them.
+    private func importConverted(_ converted: [(cape: Cape, skipped: [String])]) {
+        var taken = Set<String>()       // two new capes may not replace the same one
+        let versions = converted.map { item in
+            let existing = installedCape(like: item.cape, except: taken)
+            if let existing { taken.insert(existing.identifier) }
+            return ConvertedVersion(cape: item.cape, skipped: item.skipped, existing: existing)
         }
+        let replaced = versions.compactMap(\.existing)
+        if let first = replaced.first {
+            askToReplace(PendingReplacement(source: .converted(versions), existing: first, count: replaced.count))
+            return      // the dialog continues with confirmReplacement() or keepBoth()
+        }
+        perform { try add(versions, replacing: false) }
+    }
+
+    /// The cape in the library a converted cape would replace: the one installed from the
+    /// same version of the same gallery theme, or else the one with its identifier.
+    private func installedCape(like cape: Cape, except taken: Set<String>) -> Cape? {
+        let candidates = library.capes.filter { !taken.contains($0.identifier) }
+        if let source = cape.source, let same = candidates.first(where: { installed in
+            installed.source.map { $0.site == source.site && $0.themeID == source.themeID
+                && $0.fileName == source.fileName && $0.variant == source.variant } ?? false
+        }) {
+            return same
+        }
+        return candidates.first { $0.identifier == cape.identifier }
+    }
+
+    /// Writes converted capes: over the capes they replace when `replacing`, else next to
+    /// them under a free identifier and name. Selects the first and says what was left out.
+    private func add(_ versions: [ConvertedVersion], replacing: Bool) throws {
+        var saved: [(cape: Cape, skipped: [String])] = []
+        for version in versions {
+            if replacing, let existing = version.existing {
+                var cape = version.cape
+                // The same version from the gallery keeps its place and name in the library.
+                cape.identifier = existing.identifier
+                if cape.source != nil, existing.source != nil { cape.name = existing.name }
+                saved.append((try library.replace(with: cape), version.skipped))
+            } else {
+                saved.append((try addConverted(version.cape), version.skipped))
+            }
+        }
+        if let first = saved.first { selection = first.cape.id }
+        reportSkipped(saved)
     }
 
     /// Adds a converted cape under a free identifier and name.
-    private func addConverted(_ converted: Cape, skipped: [String]) throws {
+    private func addConverted(_ converted: Cape) throws -> Cape {
         var cape = converted
         // Two themes of the same name ("kiriko" animated and static) shouldn't look alike.
         let names = Set(library.capes.map(\.name))
@@ -259,14 +306,28 @@ final class AppModel {
             while names.contains("\(base) \(number)") { number += 1 }
             cape.name = "\(base) \(number)"
         }
-        let added = try library.add(propertyList: cape.propertyList)
-        selection = added.id
-        reportSkipped(skipped, in: added)
+        return try library.add(propertyList: cape.propertyList)
     }
 
     private func reportSkipped(_ skipped: [String], in cape: Cape) {
-        guard !skipped.isEmpty else { return }
-        errorMessage = String(localized: "Imported “\(cape.name)”. Left out, as macOS has no matching cursor or the file couldn't be read: \(skipped.joined(separator: ", ")).")
+        reportSkipped([(cape, skipped)])
+    }
+
+    /// Says which cursors the imported capes left out, for all of them in one message.
+    private func reportSkipped(_ imported: [(cape: Cape, skipped: [String])]) {
+        let incomplete = imported.filter { !$0.skipped.isEmpty }
+        guard !incomplete.isEmpty else { return }
+        if imported.count == 1, let only = incomplete.first {
+            errorMessage = String(localized: "Imported “\(only.cape.name)”. Left out, as macOS has no matching cursor or the file couldn't be read: \(only.skipped.joined(separator: ", ")).")
+            return
+        }
+        if incomplete.count == imported.count, Set(incomplete.map(\.skipped)).count == 1 {
+            // Versions of one theme usually leave out the same cursors: name them once.
+            errorMessage = String(localized: "Imported \(imported.count) capes. Each leaves out, as macOS has no matching cursor or the file couldn't be read: \(incomplete[0].skipped.joined(separator: ", ")).")
+            return
+        }
+        let lists = incomplete.map { "\($0.cape.name): \($0.skipped.joined(separator: ", "))" }.joined(separator: "\n")
+        errorMessage = String(localized: "Imported \(imported.count) capes. Left out, as macOS has no matching cursor or the file couldn't be read:\n\(lists)")
     }
 
     // MARK: - Gallery
@@ -297,7 +358,7 @@ final class AppModel {
             }
             if options.isEmpty { throw firstError ?? ThemeImportError.noThemeFound }
             if options.count == 1 {
-                install(options[0])
+                install(options)
                 return nil
             }
             return ThemeChoice(title: theme.name, options: options)
@@ -307,10 +368,10 @@ final class AppModel {
         }
     }
 
-    /// Imports a version of a gallery theme like a dropped file: a question about replacing
-    /// a cape holds the converted cape, not the downloaded file.
-    func install(_ option: ThemeOption) {
-        importTheme { (option.cape, option.skipped) }
+    /// Imports versions of a gallery theme like a dropped file, each as a cape of its own: a
+    /// question about replacing capes holds the converted capes, not the downloaded file.
+    func install(_ options: [ThemeOption]) {
+        importConverted(Self.distinguished(options))
     }
 
     /// A downloaded file as capes: a cape as it is, a MaCursor theme, or every theme in an
@@ -532,16 +593,27 @@ final class AppModel {
 struct PendingReplacement {
     enum Source {
         case file(URL)
-        case converted(Cape, skipped: [String])
+        /// One or more versions of a theme, some of which replace capes.
+        case converted([ConvertedVersion])
     }
 
     let source: Source
+    /// The (first) cape it would replace.
     let existing: Cape
+    /// How many capes it would replace.
+    var count = 1
 
     /// A converted theme can also be added next to the existing cape, under a new identifier.
     var canKeepBoth: Bool {
         if case .converted = source { true } else { false }
     }
+}
+
+/// A cape converted from a theme, waiting to be added, and the cape it would replace.
+struct ConvertedVersion {
+    let cape: Cape
+    let skipped: [String]
+    let existing: Cape?
 }
 
 /// An update from the gallery, downloaded and converted but not saved yet.
@@ -571,6 +643,16 @@ struct ThemeOption: Identifiable {
             case .windows: String(localized: "Windows theme")
             case .cape: String(localized: "Cape")
             case .maCursor: String(localized: "MaCursor theme")
+            }
+        }
+
+        /// The kind in a cape's name, when versions of different kinds are installed.
+        var shortTitle: String {
+            switch self {
+            case .linux: String(localized: "Linux")
+            case .windows: String(localized: "Windows")
+            case .cape: String(localized: "Cape")
+            case .maCursor: String(localized: "MaCursor")
             }
         }
     }

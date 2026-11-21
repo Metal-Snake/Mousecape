@@ -76,7 +76,7 @@ reads:
 
 Themes can also come as archives (`.zip`, `.7z`, `.rar`, `.tar.gz`, `.tar.xz`, …); they
 are unpacked with the system's own tools. When an archive holds several versions of a
-theme (Regular, Large, Extra-Large), Mousecape asks which one to import and shows how
+theme (Regular, Large, Extra-Large), Mousecape asks which ones to import and shows how
 they differ. Converted cursors are sized to match macOS and lose their empty margins. Importing a cape that is already in your library asks whether
 to replace it or keep both.
 
@@ -102,7 +102,8 @@ one to install it; click it for its previews, description, files and licence.
 
 Many themes come in several versions: a Linux and a Windows file, or one archive with a
 Regular, a Large and an Extra-Large version. Mousecape then downloads them all and asks
-which one you want. It shows how they differ: a few cursors of each at their real size,
+which ones you want: tick more than one to install them side by side, each as a cape of
+its own. Versions of the same name get what tells them apart added to their name. It shows how they differ: a few cursors of each at their real size,
 and how many cursors each has, how large and how sharp they are and which are animated,
 with what differs in bold. It suggests the version with the most cursors, then the
 sharpest, then the one closest to the regular size. A cape remembers its version, so an
@@ -110,7 +111,7 @@ update brings the same one.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/gallery-choice-dark.png">
-  <img alt="Which version of Bibata Modern Classic: the Linux theme, suggested and installed, with 37 cursors and a 24 × 24 pt arrow, then the Extra-Large and Large Windows versions with 28 cursors and larger arrows, each with five sample cursors at their real size" src="docs/screenshots/gallery-choice-light.png">
+  <img alt="Which version of Bibata Modern Classic: the Linux theme, suggested and installed, with 37 cursors and a 24 × 24 pt arrow, then the Extra-Large and Large Windows versions with 28 cursors and larger arrows, each with five sample cursors at their real size; the Linux and the Large version are ticked, and the button reads Install 2 Versions" src="docs/screenshots/gallery-choice-light.png">
 </picture>
 
 Themes you installed from here are marked **Installed**, with a link to the cape in your

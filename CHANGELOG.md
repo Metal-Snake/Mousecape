@@ -30,8 +30,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   import. It shows how they differ: a few cursors of each at their real size, and the
   number of cursors, size, sharpness and animation, with what differs in bold. It
   suggests the version with the most cursors, then the sharpest, then the regular size.
-  A cape from the gallery remembers which version it is (`Variant` in its `Source`), so
-  an update takes the same one.
+  Several versions can be installed at once, each as a cape of its own; versions of the
+  same name get what tells them apart added to their name and identifier, and versions
+  already in the library are replaced after one question for all of them. A cape from
+  the gallery remembers which version it is (`Variant` in its `Source`), so an update
+  takes the same one.
 - Undo of Move to Trash in the library: the cape comes back with its history, and is
   applied again if it was applied.
 

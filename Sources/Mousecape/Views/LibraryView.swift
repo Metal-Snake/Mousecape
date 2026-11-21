@@ -66,7 +66,7 @@ struct LibraryView: View {
             HistoryView(model: model, cape: cape)
         }
         .sheet(item: $model.themeChoice) { choice in
-            ThemeChoiceView(choice: choice) { model.importVersion($0) }
+            ThemeChoiceView(choice: choice) { model.importVersions($0) }
         }
         .sheet(item: $model.editorSession) { session in
             CapeEditorView(session: session) { model.save($0, from: session) }
@@ -83,7 +83,7 @@ struct LibraryView: View {
             }
             Button("Cancel", role: .cancel) { model.cancelReplacement() }
         } message: {
-            Text("A cape with the same identifier is already in the library.")
+            Text(replaceMessage)
         }
         .confirmationDialog(revertTitle, isPresented: revertBinding) {
             Button("Revert") { model.confirmRevert() }
@@ -202,7 +202,25 @@ struct LibraryView: View {
     }
 
     private var replaceTitle: String {
-        String(localized: "Replace “\(model.pendingReplacement?.existing.name ?? "")”?")
+        guard let pending = model.pendingReplacement, pending.count > 1 else {
+            return String(localized: "Replace “\(model.pendingReplacement?.existing.name ?? "")”?")
+        }
+        return String(localized: "Replace \(pending.count) Capes?")
+    }
+
+    private var replaceMessage: String {
+        guard let pending = model.pendingReplacement else { return "" }
+        if case .converted(let versions) = pending.source, versions.count > 1 {
+            if pending.count == versions.count {
+                return String(localized: "All \(versions.count) versions are in the library already. Keep Both adds them as new capes.")
+            }
+            if pending.count == 1 {
+                return String(localized: "Of the \(versions.count) versions, “\(pending.existing.name)” is in the library already. Keep Both adds it as a new cape.")
+            }
+            let names = versions.compactMap(\.existing?.name).formatted(.list(type: .and))
+            return String(localized: "Of the \(versions.count) versions, these are in the library already: \(names). Keep Both adds them as new capes.")
+        }
+        return String(localized: "A cape with the same identifier is already in the library.")
     }
 
     private var deleteTitle: String {

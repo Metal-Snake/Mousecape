@@ -4,14 +4,30 @@ import CapeKit
 /// Asks which version of a theme to install when it offers several: several files (Linux
 /// and Windows), or one archive with a Regular, a Large and an Extra-Large version. It shows
 /// how they differ rather than only naming them: a few cursors of each at their real size,
-/// and the facts about each, with those that differ in bold. A suggestion is selected.
+/// and the facts about each, with those that differ in bold. A suggestion is selected; more
+/// versions can be ticked, and each becomes a cape of its own.
 struct ThemeChoiceView: View {
     let choice: ThemeChoice
     /// Whether a version is in the library already.
     var isInstalled: (ThemeOption) -> Bool = { _ in false }
-    let onChoose: (ThemeOption) -> Void
+    let onChoose: ([ThemeOption]) -> Void
     @Environment(\.dismiss) private var dismiss
-    @State private var selection: ThemeOption.ID?
+    @State private var selection: Set<ThemeOption.ID> = []
+
+    /// The ticked versions, in the order shown.
+    private var chosen: [ThemeOption] {
+        choice.options.filter { selection.contains($0.id) }
+    }
+
+    /// The names the ticked versions get in the library: versions of the same name get
+    /// what tells them apart added.
+    private var namesInLibrary: [ThemeOption.ID: String] {
+        let options = chosen
+        let capes = ThemeVersions.distinguished(options.map {
+            ThemeVersions.Version(cape: $0.cape, variant: $0.variant, kind: $0.kind.shortTitle)
+        })
+        return Dictionary(uniqueKeysWithValues: zip(options.map(\.id), capes.map(\.name)))
+    }
 
     /// The cursors each version shows, side by side: the everyday ones.
     static let sampleCursors = ["com.apple.coregraphics.Arrow", "com.apple.coregraphics.IBeam",
@@ -39,31 +55,36 @@ struct ThemeChoiceView: View {
             }
             ScrollView {
                 VStack(spacing: 8) {
+                    let names = namesInLibrary
                     ForEach(Array(choice.options.enumerated()), id: \.element.id) { index, option in
                         OptionRow(option: option, differences: differences, sampleHeight: sampleHeight,
-                                  isSelected: selection == option.id, isSuggested: index == choice.suggested,
-                                  isInstalled: isInstalled(option))
-                            .onTapGesture(count: 2) { choose(option) }
-                            .onTapGesture { selection = option.id }
+                                  isSelected: selection.contains(option.id), isSuggested: index == choice.suggested,
+                                  isInstalled: isInstalled(option),
+                                  nameInLibrary: names[option.id].flatMap { $0 == option.cape.name ? nil : $0 })
+                            .onTapGesture { toggle(option) }
                     }
                 }
             }
             HStack {
+                if selection.count < choice.options.count {
+                    Button("Select All") { selection = Set(choice.options.map(\.id)) }
+                } else {
+                    Button("Select Suggested") { selectSuggested() }
+                }
                 Spacer()
                 Button("Cancel", role: .cancel) { dismiss() }
                     .keyboardShortcut(.cancelAction)
-                Button("Install") {
-                    if let option = choice.options.first(where: { $0.id == selection }) { choose(option) }
+                Button(selection.count > 1 ? String(localized: "Install \(selection.count) Versions")
+                                           : String(localized: "Install")) {
+                    choose(chosen)
                 }
                 .keyboardShortcut(.defaultAction)
-                .disabled(selection == nil)
+                .disabled(selection.isEmpty)
             }
         }
         .padding(20)
         .frame(minWidth: 660, idealWidth: 720, minHeight: 420, idealHeight: 580)
-        .onAppear {
-            selection = choice.suggested.map { choice.options[$0].id } ?? choice.options.first?.id
-        }
+        .onAppear { selectSuggested() }
     }
 
     /// Says what tells the versions apart, in words.
@@ -74,16 +95,25 @@ struct ThemeChoiceView: View {
         if differences.contains(.sharpness) { parts.append(String(localized: "sharpness on Retina displays")) }
         if differences.contains(.animation) { parts.append(String(localized: "animation")) }
         let count = choice.options.count
+        let several = String(localized: "Tick more than one to install them side by side.")
         guard !parts.isEmpty else {
-            return String(localized: "It comes in \(count) versions that look the same to Mousecape; they may differ only in what macOS has no place for.")
+            return String(localized: "It comes in \(count) versions that look the same to Mousecape; they may differ only in what macOS has no place for.") + " " + several
         }
         let list = parts.formatted(.list(type: .and))
-        return String(localized: "It comes in \(count) versions. They differ in \(list): what differs is in bold, and the cursors are shown at their real size.")
+        return String(localized: "It comes in \(count) versions. They differ in \(list): what differs is in bold, and the cursors are shown at their real size.") + " " + several
     }
 
-    private func choose(_ option: ThemeOption) {
+    private func toggle(_ option: ThemeOption) {
+        if selection.contains(option.id) { selection.remove(option.id) } else { selection.insert(option.id) }
+    }
+
+    private func selectSuggested() {
+        selection = Set([(choice.suggested.map { choice.options[$0] } ?? choice.options.first)?.id].compactMap { $0 })
+    }
+
+    private func choose(_ options: [ThemeOption]) {
         dismiss()
-        onChoose(option)
+        onChoose(options)
     }
 }
 
@@ -95,10 +125,12 @@ private struct OptionRow: View {
     let isSelected: Bool
     let isSuggested: Bool
     let isInstalled: Bool
+    /// The name it gets in the library, when that differs from its own.
+    let nameInLibrary: String?
 
     var body: some View {
         HStack(alignment: .top, spacing: 12) {
-            Image(systemName: isSelected ? "largecircle.fill.circle" : "circle")
+            Image(systemName: isSelected ? "checkmark.square.fill" : "square")
                 .foregroundStyle(isSelected ? AnyShapeStyle(.tint) : AnyShapeStyle(.secondary))
                 .font(.title3)
             VStack(alignment: .leading, spacing: 8) {
@@ -113,6 +145,11 @@ private struct OptionRow: View {
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
                     .truncationMode(.middle)
+                if let nameInLibrary {
+                    Text("Added as “\(nameInLibrary)”")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
                 samples
                 facts
             }
