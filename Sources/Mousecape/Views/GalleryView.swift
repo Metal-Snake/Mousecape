@@ -208,7 +208,7 @@ struct GalleryView: View {
 }
 
 /// One theme in the grid: preview, name, author, what the grid is ordered by (downloads,
-/// date added or rating) and licence, and a mark when it is already in the library.
+/// date added, date changed or rating) and licence, and a mark when it is already in the library.
 private struct ThemeCard: View {
     let theme: PlingTheme
     let isDownloading: Bool
@@ -264,6 +264,9 @@ private struct ThemeCard: View {
         case .newest where theme.created != nil:
             Label(theme.created!.formatted(date: .abbreviated, time: .omitted), systemImage: "calendar")
                 .help("Added to pling.com")
+        case .updated where theme.changed != nil:
+            Label(theme.changed!.formatted(date: .abbreviated, time: .omitted), systemImage: "clock.arrow.circlepath")
+                .help("Last changed on pling.com")
         case .rating:
             Label(theme.rating.formatted(.number.precision(.fractionLength(1))), systemImage: "star")
                 .help("Rating on pling.com, out of 10")

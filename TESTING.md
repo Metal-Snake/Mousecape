@@ -147,7 +147,8 @@ a manual test. What these tests found out about macOS is in [NOTES.md](NOTES.md)
   converted animated theme applies.
 - Online gallery order: Newest shows the date added on each card (Claude Cursors, Nov 23,
   2026 first), Highest Rated the rating (Bibata Modern Ice 9.2 first), Most Downloaded
-  the downloads. The details show "rated 9.2 of 10" and "added Oct 30, 2017" on a
+  the downloads. Recently Updated shows the date of the last change (Horse Cursor Theme,
+  added in August, second with Nov 21, 2026). The details show "rated 9.2 of 10" and "added Oct 30, 2017" on a
   second line without wrapping.
 - CPU use while open (on macOS 15.8.3 in a VM): before, 5 to 6 % with Obsidian or
   Svanslös Blue selected, also while the app was hidden, and 0 % with an empty library.

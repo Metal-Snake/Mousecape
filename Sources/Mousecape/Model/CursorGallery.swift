@@ -93,6 +93,7 @@ final class CursorGallery {
                 switch sort {
                 case .popular: first.downloads > second.downloads
                 case .newest: (first.created ?? .distantPast) > (second.created ?? .distantPast)
+                case .updated: (first.changed ?? .distantPast) > (second.changed ?? .distantPast)
                 case .rating: first.score > second.score
                 case .name: first.name.localizedStandardCompare(second.name) == .orderedAscending
                 }

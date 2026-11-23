@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- The online gallery sorts by last change too (Recently Updated), and shows the date of
+  the last change on each theme then.
+
 ### Changed
 
 - The online gallery shows on each theme the value it is sorted by: the date the theme

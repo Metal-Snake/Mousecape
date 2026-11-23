@@ -17,6 +17,9 @@ public enum PlingCatalog {
     public enum Sort: String, CaseIterable, Identifiable, Sendable {
         case popular = "down"
         case newest = "new"         // by `created`
+        /// By the last change. pling.com sorts by a time of its own, close to `changed`
+        /// but not always the same: themes changed on nearby days can swap places.
+        case updated = "update"
         case rating = "high"
         case name = "alpha"
 
@@ -26,6 +29,7 @@ public enum PlingCatalog {
             switch self {
             case .popular: String(localized: "Most Downloaded")
             case .newest: String(localized: "Newest")
+            case .updated: String(localized: "Recently Updated")
             case .rating: String(localized: "Highest Rated")
             case .name: String(localized: "Name")
             }

@@ -88,6 +88,15 @@ private var fullEntry: [String: Any] { [
     #expect(PlingCatalog.themeURL(id: 42).absoluteString.hasSuffix("/content/data/42?format=json"))
 }
 
+/// The orders and the API's names for them; an unknown name gets "new" without an error,
+/// so a typo here would go unnoticed.
+@Test(arguments: [(PlingCatalog.Sort.popular, "down"), (.newest, "new"), (.updated, "update"),
+                  (.rating, "high"), (.name, "alpha")])
+func ordersUseTheAPINames(sort: PlingCatalog.Sort, name: String) throws {
+    let items = try #require(URLComponents(url: PlingCatalog.listURL(sort: sort), resolvingAgainstBaseURL: false)?.queryItems)
+    #expect(items.first { $0.name == "sortmode" }?.value == name)
+}
+
 @Test(arguments: [("a/b/c.tar.gz", "c.tar.gz"), ("..", "download"), (".x.zip", "x.zip"),
                   ("~/t.zip", "t.zip"), ("a\u{0}b:c.zip", "abc.zip"), ("", "download")])
 func cleansFileNames(name: String, expected: String) {
