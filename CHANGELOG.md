@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Animated cursor previews show each frame's own duration when a cursor has them
+  (`FrameDurations`, e.g. from Windows `.ani` files); before, every frame showed equally
+  long.
+
+### Fixed
+
+- The app no longer uses CPU while it shows animated cursors. Each animated preview made
+  SwiftUI draw the window again for every frame, even while the window was hidden: about
+  5 % CPU as long as a cape with animated cursors was selected. Core Animation now plays
+  the previews.
+
 ## [3.2.0] - 2026-11-21
 
 ### Added

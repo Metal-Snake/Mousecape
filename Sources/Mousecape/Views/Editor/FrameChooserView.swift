@@ -232,17 +232,12 @@ private struct PreviewBox: View {
 
     var body: some View {
         VStack(spacing: 6) {
-            TimelineView(.animation(minimumInterval: max(durations?.min() ?? duration, 0.01), paused: frames.count < 2)) { context in
-                ZStack {
-                    CheckerboardBackground()
-                    if !frames.isEmpty {
-                        let index = frameIndex(at: context.date.timeIntervalSinceReferenceDate)
-                        Image(decorative: frames[index], scale: 1)
-                            .resizable()
-                            .interpolation(.high)
-                            .aspectRatio(1 / aspect, contentMode: .fit)
-                            .padding(10)
-                    }
+            ZStack {
+                CheckerboardBackground()
+                if !frames.isEmpty {
+                    AnimatedFrames(frames: frames, frameDuration: duration, durations: durations)
+                        .aspectRatio(1 / aspect, contentMode: .fit)
+                        .padding(10)
                 }
             }
             .frame(width: 120, height: 120)
@@ -251,18 +246,6 @@ private struct PreviewBox: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
-    }
-
-    private func frameIndex(at time: TimeInterval) -> Int {
-        guard let durations, durations.count == frames.count, case let total = durations.reduce(0, +), total > 0 else {
-            return Int(time / max(duration, 0.01)) % frames.count
-        }
-        var moment = time.truncatingRemainder(dividingBy: total)
-        for (index, length) in durations.enumerated() {
-            if moment < length { return index }
-            moment -= length
-        }
-        return frames.count - 1
     }
 }
 

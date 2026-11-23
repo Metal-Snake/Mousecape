@@ -145,6 +145,10 @@ a manual test. What these tests found out about macOS is in [NOTES.md](NOTES.md)
 - The editor: setting the hot spot by click, Choose Frames, saving; resizable sheets.
 - Windows cursors: a theme `.zip`, a theme folder and a single `.cur` import; the
   converted animated theme applies.
+- CPU use while open (on macOS 15.8.3 in a VM): before, 5 to 6 % with Obsidian or
+  Svanslös Blue selected, also while the app was hidden, and 0 % with an empty library.
+  With the previews played by Core Animation, 0 % for both; the previews still animate,
+  and clicks and the context menu on a sidebar preview still reach the row.
 
 ## Still to verify
 
