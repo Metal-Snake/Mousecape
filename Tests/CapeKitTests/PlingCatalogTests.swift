@@ -18,7 +18,7 @@ private var fullEntry: [String: Any] { [
     "previewpic2": "http://images.pling.com/cache/770x540-4/img/00/01/1234/b.png",
     "smallpreviewpic1": "https://images.pling.com/cache/770x540-4/img/00/01/1234/a.png",
     "downloads": "1225883", "score": 87, "tags": "linux,GPLv3,cursor",
-    "changed": "2026-11-19T20:31:07+00:00", "ghns_excluded": 0,
+    "created": "2026-11-19T17:24:09+00:00", "changed": "2026-11-19T20:31:07+00:00", "ghns_excluded": 0,
     "downloadname1": "Test-cursors.tar.xz", "downloadlink1": "https://files.pling.com/dl/1/Test-cursors.tar.xz",
     "downloadsize1": 167, "downloadmd5sum1": "773AE8CB0FC173312F03AFFAFBD8AA4E",
     "downloadname2": "../../.hidden/evil.zip", "downloadlink2": "https://files.pling.com/dl/2/evil.zip",
@@ -37,7 +37,9 @@ private var fullEntry: [String: Any] { [
     #expect(theme.downloads == 1_225_883)
     #expect(theme.score == 87)
     #expect(theme.licence == "GPL-3.0")
-    #expect(theme.changed != nil)
+    #expect(theme.rating == 8.7)
+    #expect(theme.created == (try Date("2026-11-19T17:24:09Z", strategy: .iso8601)))
+    #expect(theme.changed == (try Date("2026-11-19T20:31:07Z", strategy: .iso8601)))
     // Only HTTPS links; the small preview from the image cache's smaller size.
     #expect(theme.previews.count == 1)
     #expect(theme.thumbnail?.absoluteString == "https://images.pling.com/cache/280x171/img/00/01/1234/a.png")

@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The online gallery shows on each theme the value it is sorted by: the date the theme
+  was added to pling.com for Newest, its rating out of 10 for Highest Rated, and the
+  downloads otherwise. The details show the rating and the date added too.
+- Installed themes in the gallery, sorted by Newest, follow the date added, as the
+  catalogue does, rather than the date of their last change.
+
 - Animated cursor previews show each frame's own duration when a cursor has them
   (`FrameDurations`, e.g. from Windows `.ani` files); before, every frame showed equally
   long.

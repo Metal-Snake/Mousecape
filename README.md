@@ -86,9 +86,10 @@ to replace it or keep both.
 
 **File → Browse Cursor Themes Online…** (⇧⌘O, or the globe in the toolbar) shows the
 cursor themes on [pling.com](https://www.pling.com), the catalogue behind gnome-look.org
-and store.kde.org, about 1,200 of them. Search them, sort them by downloads, date,
-rating or name (⌘F jumps to the search field on macOS 15 and later), and double-click
-one to install it; click it for its previews, description, files and licence.
+and store.kde.org, about 1,200 of them. Search them, sort them by downloads, date added,
+rating or name (⌘F jumps to the search field on macOS 15 and later); each theme shows
+the value you sort by. Double-click one to install it; click it for its previews,
+description, files, rating and licence.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/gallery-overview-dark.png">

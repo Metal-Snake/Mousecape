@@ -102,7 +102,7 @@ struct GalleryView: View {
                         let update = model.update(for: theme)
                         ThemeCard(theme: theme, isDownloading: gallery.downloading.contains(theme.id),
                                   installedCape: model.library.cape(installedFromGalleryTheme: theme.id),
-                                  hasUpdate: update != nil)
+                                  hasUpdate: update != nil, sort: gallery.sort)
                             .onTapGesture(count: 2) {
                                 if let update {
                                     updateRequest = UpdateRequest(theme: theme, file: update)
@@ -207,13 +207,14 @@ struct GalleryView: View {
     }
 }
 
-/// One theme in the grid: preview, name, author, downloads and licence, and a mark when
-/// it is already in the library.
+/// One theme in the grid: preview, name, author, what the grid is ordered by (downloads,
+/// date added or rating) and licence, and a mark when it is already in the library.
 private struct ThemeCard: View {
     let theme: PlingTheme
     let isDownloading: Bool
     let installedCape: Cape?
     let hasUpdate: Bool
+    let sort: PlingCatalog.Sort
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -241,9 +242,8 @@ private struct ThemeCard: View {
                 Text(theme.author)
                     .lineLimit(1)
                 Spacer()
-                Label("\(theme.downloads.formatted(.number.notation(.compactName)))", systemImage: "arrow.down.circle")
+                orderValue
                     .labelStyle(.titleAndIcon)
-                    .help("Downloads")
             }
             .font(.caption)
             .foregroundStyle(.secondary)
@@ -254,6 +254,23 @@ private struct ThemeCard: View {
         .contentShape(RoundedRectangle(cornerRadius: 10))
         .help(hasUpdate ? "Double-click to see what the update changes; click for details"
                         : "Double-click to install; click for details")
+    }
+
+    /// The value the grid is ordered by, so that the order makes sense at a glance. By
+    /// name, the name says it already; the downloads show then, as by default.
+    @ViewBuilder
+    private var orderValue: some View {
+        switch sort {
+        case .newest where theme.created != nil:
+            Label(theme.created!.formatted(date: .abbreviated, time: .omitted), systemImage: "calendar")
+                .help("Added to pling.com")
+        case .rating:
+            Label(theme.rating.formatted(.number.precision(.fractionLength(1))), systemImage: "star")
+                .help("Rating on pling.com, out of 10")
+        default:
+            Label("\(theme.downloads.formatted(.number.notation(.compactName)))", systemImage: "arrow.down.circle")
+                .help("Downloads")
+        }
     }
 }
 
@@ -374,14 +391,26 @@ private struct ThemeDetailView: View {
         VStack(alignment: .leading, spacing: 4) {
             Text(theme.name)
                 .font(.title2.weight(.semibold))
-            HStack(spacing: 12) {
-                Text("by \(theme.author)")
-                Text("\(theme.downloads.formatted()) downloads")
-                if let changed = theme.changed {
-                    Text("updated \(changed.formatted(date: .abbreviated, time: .omitted))")
+            // Who and how well liked; then when, and the licence. Two lines, so that no
+            // part wraps on its own.
+            VStack(alignment: .leading, spacing: 4) {
+                HStack(spacing: 12) {
+                    Text("by \(theme.author)")
+                    Text("\(theme.downloads.formatted()) downloads")
+                    Text("rated \(theme.rating.formatted(.number.precision(.fractionLength(1)))) of 10")
                 }
-                LicenceBadge(licence: theme.licence)
+                HStack(spacing: 12) {
+                    if let created = theme.created {
+                        Text("added \(created.formatted(date: .abbreviated, time: .omitted))")
+                    }
+                    // A change on the day it was added is part of putting it up.
+                    if let changed = theme.changed, changed.timeIntervalSince(theme.created ?? .distantPast) > 86_400 {
+                        Text("updated \(changed.formatted(date: .abbreviated, time: .omitted))")
+                    }
+                    LicenceBadge(licence: theme.licence)
+                }
             }
+            .lineLimit(1)
             .font(.callout)
             .foregroundStyle(.secondary)
             if let installedCape {

@@ -16,7 +16,7 @@ public enum PlingCatalog {
 
     public enum Sort: String, CaseIterable, Identifiable, Sendable {
         case popular = "down"
-        case newest = "new"
+        case newest = "new"         // by `created`
         case rating = "high"
         case name = "alpha"
 
@@ -151,8 +151,13 @@ public struct PlingTheme: Identifiable, Hashable, Sendable {
     public let downloads: Int
     /// 0 to 100; 50 means no votes either way.
     public let score: Int
+    /// The score as pling.com shows it: 0.0 to 10.0.
+    public var rating: Double { Double(score) / 10 }
     /// The licence named in the tags, such as "GPL-3.0"; nil when none is named.
     public let licence: String?
+    /// When the theme was put on pling.com; "Newest" sorts by this.
+    public let created: Date?
+    /// When it was last changed (a new file, a new description).
     public let changed: Date?
     public let files: [File]
     /// The catalogue keeps this theme out of apps; it is only offered on the website.
@@ -185,6 +190,7 @@ public struct PlingTheme: Identifiable, Hashable, Sendable {
         let tags = Set((PlingCatalog.string(entry["tags"]) ?? "").lowercased().split(separator: ",")
             .map { $0.trimmingCharacters(in: .whitespaces) })
         licence = Self.licences.first { tags.contains($0.tag) }?.name
+        created = PlingCatalog.string(entry["created"]).flatMap { try? Date($0, strategy: .iso8601) }
         changed = PlingCatalog.string(entry["changed"]).flatMap { try? Date($0, strategy: .iso8601) }
         isExcludedFromApps = (PlingCatalog.integer(entry["ghns_excluded"]) ?? 0) != 0
         files = (1...20).compactMap { number in

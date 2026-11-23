@@ -92,7 +92,7 @@ final class CursorGallery {
             themes = found.sorted { first, second in
                 switch sort {
                 case .popular: first.downloads > second.downloads
-                case .newest: (first.changed ?? .distantPast) > (second.changed ?? .distantPast)
+                case .newest: (first.created ?? .distantPast) > (second.created ?? .distantPast)
                 case .rating: first.score > second.score
                 case .name: first.name.localizedStandardCompare(second.name) == .orderedAscending
                 }
