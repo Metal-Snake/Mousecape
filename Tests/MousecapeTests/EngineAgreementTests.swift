@@ -17,6 +17,17 @@ func pointerRuleMatchesEngine(identifier: String) {
     #expect(MCCursorIsPointer(identifier) == CursorNames.isPointer(identifier))
 }
 
+/// Hot spots around the edges of the rule: left third, middle, right part, lower half.
+@Test(arguments: [(1.0, 1.0), (8.0, 1.0), (9.6, 1.0), (9.7, 2.0), (15.0, 0.0), (15.0, 7.9), (15.0, 8.0), (15.0, 15.0)])
+func leftHandedArrowRuleMatchesEngine(x: Double, y: Double) {
+    let arrow = CapeCursor(identifier: "com.apple.coregraphics.Arrow", frameCount: 1, hotSpot: CGPoint(x: x, y: y),
+                           size: CGSize(width: 16, height: 16), representations: [])
+    #expect(MCHotSpotIsLeftHanded(x, y, 16, 16) == arrow.pointsLikeLeftHandedArrow)
+    let cape = Cape(identifier: "test", name: "T", author: "", cursors: [arrow])
+    let cursors = cape.propertyList["Cursors"] as? [String: Any] ?? [:]
+    #expect(MCCapeIsDrawnLeftHanded(cursors) == cape.isDrawnLeftHanded)
+}
+
 @Test func imageSizeLimitMatchesEngine() {
     #expect(Int(MCMaximumImagePixels) == CursorSheet.maximumPixels)
 }

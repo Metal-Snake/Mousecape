@@ -8,6 +8,9 @@ struct CursorEditorView: View {
     @Binding var cursor: CapeCursor
     /// The cursor's problems within its cape (left-handed hints included).
     let problems: [CursorProblem]
+    /// The cape is drawn for the left hand (its arrow points to the top right), so
+    /// "Automatic" mirrors nothing in left-handed mode.
+    var inLeftHandedCape = false
 
     @State private var importError: String?
     @State private var choosingFrames = false
@@ -88,14 +91,16 @@ struct CursorEditorView: View {
                 .font(.caption)
                 .help("Show the cursor as left-handed mode does")
         }
-        .task(id: cursor) { leftHandedCursor = cursor.leftHanded }
+        .task(id: LeftHandedKey(cursor: cursor, inLeftHandedCape: inLeftHandedCape)) {
+            leftHandedCursor = cursor.leftHanded(inLeftHandedCape: inLeftHandedCape)
+        }
     }
 
     /// A click in the preview: in the left-handed preview it sets the left-handed hot spot
     /// (own images) or the hot spot it mirrors from.
     private func setHotSpot(_ point: CGPoint) {
         guard previewLeftHanded else { cursor.hotSpot = point; return }
-        switch cursor.leftHandedLook {
+        switch cursor.leftHandedLook(inLeftHandedCape: inLeftHandedCape) {
         case .ownImages: cursor.leftHandedHotSpot = point
         case .mirrored: cursor.hotSpot = CGPoint(x: cursor.size.width - point.x - 1, y: point.y)
         case .unchanged: cursor.hotSpot = point
@@ -258,7 +263,7 @@ struct CursorEditorView: View {
             Text("Left-handed mode")
                 .font(.headline)
             Picker("Left-handed mode", selection: leftHandedMode) {
-                Text(CursorNames.isPointer(cursor.identifier) ? "Automatic (Mirror)" : "Automatic (Don't Mirror)")
+                Text(cursor.mirroredAutomatically(inLeftHandedCape: inLeftHandedCape) ? "Automatic (Mirror)" : "Automatic (Don't Mirror)")
                     .tag(LeftHandedMode.automatic)
                 Text("Mirror").tag(LeftHandedMode.mirror)
                 Text("Don't Mirror").tag(LeftHandedMode.dontMirror)
@@ -299,6 +304,8 @@ struct CursorEditorView: View {
 
     private var leftHandedExplanation: String {
         switch leftHandedMode.wrappedValue {
+        case .automatic where inLeftHandedCape:
+            String(localized: "This cape is drawn for the left hand (its arrow points to the top right), so left-handed mode leaves it as it is.")
         case .automatic:
             String(localized: "Pointers (arrow, hands, busy and the like) are mirrored, the others are left as they are.")
         case .mirror:
@@ -487,4 +494,11 @@ struct CheckerboardBackground: View {
             }
         }
     }
+}
+
+/// What the left-handed preview depends on: the cursor, and whether its cape is drawn for
+/// the left hand (which changes when the arrow's hot spot moves).
+private struct LeftHandedKey: Equatable {
+    let cursor: CapeCursor
+    let inLeftHandedCape: Bool
 }

@@ -46,9 +46,27 @@ extension CapeCursor {
 
     public var hasOwnLeftHandedImages: Bool { !leftHandedRepresentations.isEmpty }
 
-    public var leftHandedLook: LeftHandedLook {
+    /// How the cursor looks in left-handed mode in a cape drawn for the right hand.
+    public var leftHandedLook: LeftHandedLook { leftHandedLook(inLeftHandedCape: false) }
+
+    /// How the cursor looks in left-handed mode; in a cape drawn for the left hand
+    /// (`Cape.isDrawnLeftHanded`) nothing is mirrored unless the cursor asks for it.
+    public func leftHandedLook(inLeftHandedCape: Bool) -> LeftHandedLook {
         if hasOwnLeftHandedImages { return .ownImages }
-        return mirrorForLeftHanded ?? CursorNames.isPointer(identifier) ? .mirrored : .unchanged
+        return mirrorForLeftHanded ?? mirroredAutomatically(inLeftHandedCape: inLeftHandedCape) ? .mirrored : .unchanged
+    }
+
+    /// What "Automatic" does: mirror the pointers, unless the cape is drawn for the left
+    /// hand already.
+    public func mirroredAutomatically(inLeftHandedCape: Bool) -> Bool {
+        !inLeftHandedCape && CursorNames.isPointer(identifier)
+    }
+
+    /// Whether the hot spot is where a left-handed arrow has its tip: the right part of the
+    /// upper half. A right-handed arrow has it in the left third, an arrow pointing straight
+    /// up in the middle. The same rule as `MCHotSpotIsLeftHanded` in the engine.
+    public var pointsLikeLeftHandedArrow: Bool {
+        size.width > 0 && size.height > 0 && hotSpot.x > size.width * 0.6 && hotSpot.y < size.height * 0.5
     }
 
     /// The hot spot of the mirrored cursor, as the engine computes it.
@@ -75,10 +93,12 @@ extension CapeCursor {
 
     /// The cursor as left-handed mode shows it (own images, mirrored, or unchanged); nil if
     /// mirroring fails.
-    public var leftHanded: CapeCursor? {
+    public var leftHanded: CapeCursor? { leftHanded(inLeftHandedCape: false) }
+
+    public func leftHanded(inLeftHandedCape: Bool) -> CapeCursor? {
         var copy = self
         copy.leftHandedRepresentations = []
-        switch leftHandedLook {
+        switch leftHandedLook(inLeftHandedCape: inLeftHandedCape) {
         case .unchanged:
             return copy
         case .ownImages:
@@ -117,14 +137,21 @@ extension CapeCursor {
 }
 
 extension Cape {
+    /// Drawn for the left hand already: the arrow points to the top right. Left-handed mode
+    /// mirrors nothing of such a cape unless a cursor asks for it, since mirroring would
+    /// make it right-handed again. The same rule as `MCCapeIsDrawnLeftHanded`.
+    public var isDrawnLeftHanded: Bool {
+        cursors.first { $0.identifier == "com.apple.coregraphics.Arrow" }?.pointsLikeLeftHandedArrow ?? false
+    }
+
     /// How a cursor of this cape looks in left-handed mode, as the engine applies it: a
     /// variant such as IBeamS (or core cursor 1) without a setting of its own takes its
-    /// base's mirror setting.
+    /// base's mirror setting, and a cape drawn for the left hand isn't mirrored.
     public func leftHandedLook(of cursor: CapeCursor) -> CapeCursor.LeftHandedLook {
         guard cursor.mirrorForLeftHanded == nil, !cursor.hasOwnLeftHandedImages,
               let base = CursorNames.baseOfVariant(cursor.identifier),
               let flag = cursors.first(where: { $0.identifier == base })?.mirrorForLeftHanded else {
-            return cursor.leftHandedLook
+            return cursor.leftHandedLook(inLeftHandedCape: isDrawnLeftHanded)
         }
         return flag ? .mirrored : .unchanged
     }

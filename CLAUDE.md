@@ -78,6 +78,8 @@ checks that they agree. If you change one side, change the other in the same com
 - the pointer list for left-handed mirroring: `MCPointerCursorIdentifiers` ↔ `CursorNames.pointers`
 - frame choice by time: `MCFramesByTime` ↔ `FrameSelection.byTime`
 - core cursors 0 and 1 as the arrow and the I-beam: `MCBaseCursorForCoreAlias` ↔ `CursorNames.coreAliases`
+- a cape drawn for the left hand (its arrow's hot spot): `MCHotSpotIsLeftHanded` /
+  `MCCapeIsDrawnLeftHanded` ↔ `CapeCursor.pointsLikeLeftHandedArrow` / `Cape.isDrawnLeftHanded`
 
 ## Security posture
 

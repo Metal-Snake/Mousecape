@@ -118,3 +118,24 @@ private func cursor(_ identifier: String, hotSpot: CGPoint = CGPoint(x: 1, y: 1)
     cape.cursors[0].mirrorForLeftHanded = false
     #expect(cape.unevenMirroring.isEmpty)
 }
+
+/// A cape whose arrow points to the top right is drawn for the left hand: left-handed mode
+/// leaves its pointers as they are, unless a cursor asks to be mirrored.
+@Test func capesDrawnForTheLeftHandAreNotMirroredBack() throws {
+    var cape = Cape(identifier: "test", name: "T", author: "", cursors: [
+        try cursor("com.apple.coregraphics.Arrow", hotSpot: CGPoint(x: 14, y: 1)),
+        try cursor("com.apple.coregraphics.Wait", hotSpot: CGPoint(x: 14, y: 1)),
+        try cursor("com.apple.coregraphics.ArrowS", hotSpot: CGPoint(x: 14, y: 1)),
+    ])
+    #expect(cape.isDrawnLeftHanded)
+    #expect(cape.cursors.allSatisfy { cape.leftHandedLook(of: $0) == .unchanged })
+    #expect(cape.unevenMirroring.isEmpty)
+    cape.cursors[1].mirrorForLeftHanded = true                                      // its own say still counts
+    #expect(cape.leftHandedLook(of: cape.cursors[1]) == .mirrored)
+    // The arrow decides: pointing to the top left (or straight up), the cape is right-handed.
+    for x in [1.0, 7.5] {
+        cape.cursors[0].hotSpot.x = x
+        #expect(!cape.isDrawnLeftHanded)
+        #expect(cape.leftHandedLook(of: cape.cursors[0]) == .mirrored)
+    }
+}

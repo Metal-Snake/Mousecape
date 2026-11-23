@@ -188,7 +188,8 @@ applied, so the timing stays.
 ### Left-handed mode
 
 By default, left-handed mode mirrors the pointers (arrow, hands, busy and the like) and
-leaves the rest. Each cursor can say otherwise under **Left-handed mode** in the editor:
+leaves the rest. A cape drawn for the left hand already, with an arrow that points to the
+top right, is left as it is: mirroring would make it right-handed again. Each cursor can say otherwise under **Left-handed mode** in the editor:
 **Mirror**, **Don't Mirror**, or **Own Images**, its own left-handed artwork with its own
 hot spot for where a mirrored image looks wrong. The **Left-handed** switch under the
 preview shows the result. These settings are saved in the cape, so they travel with it.

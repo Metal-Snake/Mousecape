@@ -319,6 +319,27 @@ BOOL MCIsSafeIdentifier(NSString *identifier) {
     return [identifier rangeOfCharacterFromSet:unsafe].location == NSNotFound;
 }
 
+BOOL MCHotSpotIsLeftHanded(double x, double y, double width, double height) {
+    // A right-handed arrow has its tip in the left third; an arrow pointing straight up has
+    // it in the middle. Only a tip clearly to the right counts.
+    return width > 0 && height > 0 && x > width * 0.6 && y < height * 0.5;
+}
+
+BOOL MCCapeIsDrawnLeftHanded(NSDictionary *cursors) {
+    if (![cursors isKindOfClass:[NSDictionary class]])
+        return NO;
+    NSDictionary *arrow = cursors[@"com.apple.coregraphics.Arrow"];
+    if (![arrow isKindOfClass:[NSDictionary class]])
+        return NO;
+    NSNumber *x = arrow[MCCursorDictionaryHotSpotXKey], *y = arrow[MCCursorDictionaryHotSpotYKey];
+    NSNumber *width = arrow[MCCursorDictionaryPointsWideKey], *height = arrow[MCCursorDictionaryPointsHighKey];
+    for (id value in @[x ?: [NSNull null], y ?: [NSNull null], width ?: [NSNull null], height ?: [NSNull null]]) {
+        if (![value isKindOfClass:[NSNumber class]])
+            return NO;
+    }
+    return MCHotSpotIsLeftHanded(x.doubleValue, y.doubleValue, width.doubleValue, height.doubleValue);
+}
+
 BOOL MCCursorIsPointer(NSString *identifier) {
     // A variant such as ArrowS is a pointer when its base is: on macOS 27 ArrowS is the
     // arrow people see, so left-handed mode has to mirror it too. Core cursor 0 is the

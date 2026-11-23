@@ -89,6 +89,13 @@ extern NSString *MMGet(NSString *prompt);
 
 extern CGError MCIsCursorRegistered(CGSConnectionID cid, char *cursorName, bool *registered);
 extern BOOL MCCursorIsPointer(NSString *identifier);
+// Whether a hot spot at (x, y) in a cursor of size width × height is where a left-handed
+// arrow has its tip: the right part of the upper half. The same rule as
+// CapeCursor.pointsLikeLeftHandedArrow in CapeKit.
+extern BOOL MCHotSpotIsLeftHanded(double x, double y, double width, double height);
+// Whether a cape (its Cursors dictionary) is drawn for the left hand: its arrow points to
+// the top right. Left-handed mode doesn't mirror such a cape unless a cursor asks for it.
+extern BOOL MCCapeIsDrawnLeftHanded(NSDictionary *cursors);
 // Whether a cape or cursor identifier is safe as a file name (identifiers come from cape
 // files and become paths): not empty, no "/", ":" or "\\", no control characters, no
 // leading dot or tilde. The same rule as Cape.isValidIdentifier in CapeKit.

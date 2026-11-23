@@ -271,6 +271,24 @@ BOOL applyCape(NSDictionary *dictionary) {
         }
         MCSetDefault(extras.allObjects, MCPreferencesAppliedExtraCursorsKey);
 
+        // A cape drawn for the left hand already would turn right-handed again if its
+        // pointers were mirrored. Its cursors without a say of their own stay as they are;
+        // one that asks to be mirrored still is. (Only left-handed mode reads the flag.)
+        if (MCCapeIsDrawnLeftHanded(cursors)) {
+            MMLog("Drawn for the left hand: pointers are not mirrored");
+            NSMutableDictionary *settled = [NSMutableDictionary dictionaryWithCapacity:cursors.count];
+            for (NSString *key in cursors) {
+                NSDictionary *cursor = cursors[key];
+                if ([cursor isKindOfClass:[NSDictionary class]] && !cursor[MCCursorDictionaryMirrorForLeftHandedKey]) {
+                    NSMutableDictionary *unmirrored = [[cursor mutableCopy] autorelease];
+                    unmirrored[MCCursorDictionaryMirrorForLeftHandedKey] = @NO;
+                    cursor = unmirrored;
+                }
+                settled[key] = cursor;
+            }
+            cursors = settled;
+        }
+
         // A cursor that fails is skipped; one bad cursor should not leave the cape half applied.
         NSUInteger failed = 0;
         for (NSString *key in cursors) {

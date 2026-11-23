@@ -14,6 +14,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Left-handed mode no longer mirrors capes drawn for the left hand back to the right. A
+  cape whose arrow points to the top right (its hot spot is in the right part of the
+  upper half) stays as it is; a cursor set to Mirror in the editor is still mirrored. The
+  editor's Automatic then reads "Don't Mirror" and says why.
 - The online gallery shows on each theme the value it is sorted by: the date the theme
   was added to pling.com for Newest, its rating out of 10 for Highest Rated, and the
   downloads otherwise. The details show the rating and the date added too.

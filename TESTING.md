@@ -145,6 +145,12 @@ a manual test. What these tests found out about macOS is in [NOTES.md](NOTES.md)
 - The editor: setting the hot spot by click, Choose Frames, saving; resizable sheets.
 - Windows cursors: a theme `.zip`, a theme folder and a single `.cur` import; the
   converted animated theme applies.
+- Capes drawn for the left hand (macOS 15.8.3, left-handed mode on): a copy of
+  Svanslös Blue with every image flipped and the hot spots moved (arrow 15,4 of 20×24)
+  applies unmirrored, the registered arrow keeps 15,4 and Wait 23,4; the 3.2.0 engine
+  turned it back to 4,4. The plain Svanslös Blue is still mirrored (arrow 4 → 15). The
+  editor shows the arrow pointing to the top right in the left-handed preview, and
+  "Automatic (Don't Mirror)" with the explanation.
 - Online gallery order: Newest shows the date added on each card (Claude Cursors, Nov 23,
   2026 first), Highest Rated the rating (Bibata Modern Ice 9.2 first), Most Downloaded
   the downloads. Recently Updated shows the date of the last change (Horse Cursor Theme,

@@ -101,7 +101,8 @@ struct CapeEditorView: View {
             CapeInfoForm(cape: draftBinding, problems: problems) { session.selection = .cursor($0) }
         case .cursor(let identifier):
             if let binding = cursorBinding(identifier) {
-                CursorEditorView(cursor: binding, problems: problems[identifier] ?? [])
+                CursorEditorView(cursor: binding, problems: problems[identifier] ?? [],
+                                 inLeftHandedCape: draft.isDrawnLeftHanded)
                     .id(identifier)
             } else {
                 ContentUnavailableView("No Cursor Selected", systemImage: "cursorarrow")
