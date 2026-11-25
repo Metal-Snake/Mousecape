@@ -100,4 +100,8 @@ private struct TestAgent {
     let trashed = test.home.appending(path: ".Trash/Mousecape.app")
     try FileManager.default.createDirectory(at: trashed, withIntermediateDirectories: true)
     #expect(LaunchAgent.appIsGone(bundleIdentifier: unknown, recordedPath: trashed.path))
+    // So does another volume's Trash.
+    let otherTrash = test.home.appending(path: ".Trashes/501/Mousecape.app")
+    try FileManager.default.createDirectory(at: otherTrash, withIntermediateDirectories: true)
+    #expect(LaunchAgent.appIsGone(bundleIdentifier: unknown, recordedPath: otherTrash.path))
 }

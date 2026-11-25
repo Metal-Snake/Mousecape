@@ -198,12 +198,16 @@ public struct LaunchAgent: Sendable {
     /// Services knows outside the Trash. The agent asks this at start; a moved app is still
     /// found, and the app updates the path when it next opens.
     public static func appIsGone(bundleIdentifier: String, recordedPath: String?) -> Bool {
-        if let recordedPath, FileManager.default.fileExists(atPath: recordedPath),
-           !recordedPath.contains("/.Trash/") {
+        if let recordedPath, FileManager.default.fileExists(atPath: recordedPath), !isInTrash(recordedPath) {
             return false
         }
         let apps = NSWorkspace.shared.urlsForApplications(withBundleIdentifier: bundleIdentifier)
-        return !apps.contains { !$0.path.contains("/.Trash/") && FileManager.default.fileExists(atPath: $0.path) }
+        return !apps.contains { !isInTrash($0.path) && FileManager.default.fileExists(atPath: $0.path) }
+    }
+
+    /// In the user's Trash (`~/.Trash`) or another volume's (`/Volumes/X/.Trashes/<uid>`).
+    static func isInTrash(_ path: String) -> Bool {
+        path.contains("/.Trash/") || path.contains("/.Trashes/")
     }
 
     /// For the agent once its app is gone: removes its plist and its copy of `mousecloak`,

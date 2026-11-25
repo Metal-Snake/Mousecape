@@ -9,12 +9,9 @@ import ServiceManagement
 /// `mousecloak --repair-agent`.
 @MainActor @Observable
 final class LoginAgent {
-    /// This app's agent. Outside an app bundle (`swift run`) it still gets one, under the
-    /// default identifier, as before.
-    private let agent: LaunchAgent = LaunchAgent.current ?? LaunchAgent(
-        bundleIdentifier: Bundle.main.bundleIdentifier ?? LaunchAgent.defaultBundleIdentifier,
-        appURL: Bundle.main.bundleURL,
-        build: Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "")
+    /// This app's agent. Nil outside an app bundle (`swift run`): such a build has no
+    /// `mousecloak` to copy, and must not touch the installed app's agent or choice.
+    private let agent: LaunchAgent? = LaunchAgent.current
 
     private(set) var isEnabled = false
     /// Turned on, but launchd isn't running it (e.g. switched off under System Settings →
@@ -26,17 +23,26 @@ final class LoginAgent {
         refresh()
     }
 
-    var logURL: URL { agent.logURL }
-
+    /// The choice is stored only once it took effect, so a failed install doesn't leave the
+    /// switch on. When only loading failed (launchd refuses it until approved in Login
+    /// Items), the plist and copy are in place, so the agent counts as on and needing approval.
     func setEnabled(_ enabled: Bool) {
         lastError = nil
-        agent.setEnabledPreference(enabled)
+        guard let agent else {
+            lastError = String(localized: "The background agent works only in Mousecape.app, not in this build.")
+            return
+        }
         do {
             if enabled {
                 try agent.install()
             } else {
                 try agent.uninstall()
             }
+            agent.setEnabledPreference(enabled)
+        } catch LaunchAgent.AgentError.launchctl(let output) where enabled {
+            agent.setEnabledPreference(true)
+            NSLog("Mousecape agent: %@", output)
+            lastError = LaunchAgent.AgentError.launchctl(output).localizedDescription
         } catch {
             NSLog("Mousecape agent: %@", "\(error)")
             lastError = error.localizedDescription
@@ -45,6 +51,11 @@ final class LoginAgent {
     }
 
     func refresh() {
+        guard let agent else {
+            isEnabled = false
+            needsApproval = false
+            return
+        }
         isEnabled = agent.isEnabled
         needsApproval = isEnabled && !agent.isLoaded
     }
@@ -53,6 +64,7 @@ final class LoginAgent {
     /// removes it on every upgrade), and keeps the plist pointing at this copy and build of
     /// the app (it may have moved or been updated) and loaded.
     func repairIfNeeded() {
+        guard let agent else { return }
         do {
             try agent.repairIfNeeded()
         } catch {
