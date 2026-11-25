@@ -120,10 +120,10 @@ above is done, or a real problem calls for them.
       used directly ([NOTES.md](NOTES.md#frame-limit), found by CX330-YCH's fork of
       Mousecape-swiftUI, confirmed here on macOS 15.8.3). That fork finds the unexported
       call by matching SHA-256 digests of SkyLight's code per macOS build (25G241, 26B131,
-      26C5035r), so it breaks with every update. Before anything else: check that such a
-      cursor plays all its frames on screen, and that macOS 27 behaves the same. Only then
-      weigh a way to find the call that survives updates, with the reduction to 24 frames
-      as the fallback. No clear licence: the idea only.
+      26C5035r), so it breaks with every update. On macOS 15.8.3 such a cursor plays all
+      its frames on screen (48 tested). Next: check macOS 27 with
+      `Scripts/frame-limit-probe.m`, then weigh a way to find the call that survives
+      updates, with the reduction to 24 frames as the fallback. No clear licence: the idea only.
 
 ## Housekeeping
 

@@ -20,8 +20,9 @@ passes them to the internal, unexported `_CGSRegisterCursorImages`, which sends 
 the window server. Called directly, that function registers 25, 48 and 100 frames, and
 `CGSCopyRegisteredCursorImages` returns them all. The server side
 (`_CGXRegisterCursorImages`, `CGXCursorCreate`, CoreDisplay's `CursorBitmapCreate`)
-checks only that the pixel data fits. Whether the window server also plays more than 24
-frames on screen is untested. On macOS 26 the wrapper is `SLSRegisterCursorWithImages2`
+checks only that the pixel data fits. The window server also plays them: an arrow with 48
+numbered frames, registered this way as `Arrow`, `ArrowS` and `com.apple.cursor.0`,
+counted 1 to 48 without gaps at 0.25 s each (`frame-limit-probe --play`). On macOS 26 the wrapper is `SLSRegisterCursorWithImages2`
 (found by CX330-YCH's fork of Mousecape-swiftUI). Using the internal call would mean
 finding an unexported function in SkyLight's code, which changes with each macOS build.
 

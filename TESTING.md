@@ -22,8 +22,8 @@ a manual test. What these tests found out about macOS is in [NOTES.md](NOTES.md)
   On macOS 15.8.3, names under `com.apple.coregraphics.` can't be removed with either.
 - The frame limit (`Scripts/frame-limit-probe.m`, on macOS 15.8.3): the public call
   refuses 25 frames or more, the internal IPC call it wraps registers 100
-  ([NOTES.md](NOTES.md#frame-limit)). Not tested: whether such a cursor plays all its
-  frames on screen, and the same on macOS 27.
+  ([NOTES.md](NOTES.md#frame-limit)). With `--play`, an arrow with 48 numbered frames
+  plays all of them on screen. Not tested: the same on macOS 27.
 
 **On macOS 27.2.1** (the build released as 3.1.0):
 
