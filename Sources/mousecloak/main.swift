@@ -174,7 +174,27 @@ case .listen:
     // (never-ending) process exits.
     setvbuf(stdout, nil, _IOLBF, 0)
     print("mousecloak agent started \(Date())")
+    removeAgentIfAppIsGone()
     listener()
+}
+
+// MARK: - --listen
+
+/// The agent runs from a copy outside the app (LaunchAgent), so it would outlive an app
+/// moved to the Trash and deleted. When its plist names the app and no copy of the app is
+/// left, it removes itself. Launch Services may not be ready right after login, so it looks
+/// again a minute later before giving up.
+func removeAgentIfAppIsGone() {
+    let environment = ProcessInfo.processInfo.environment
+    guard let identifier = environment[LaunchAgent.appIdentifierVariable] else { return }
+    let path = environment[LaunchAgent.appPathVariable]
+    guard LaunchAgent.appIsGone(bundleIdentifier: identifier, recordedPath: path) else { return }
+    print("Mousecape (\(identifier)) not found; looking again in a minute")
+    sleep(60)
+    guard LaunchAgent.appIsGone(bundleIdentifier: identifier, recordedPath: path) else { return }
+    print("Mousecape is gone; removing the background agent")
+    LaunchAgent(bundleIdentifier: identifier, appURL: URL(fileURLWithPath: path ?? "/"), build: "").removeItself()
+    exit(EXIT_SUCCESS)
 }
 
 // MARK: - --list

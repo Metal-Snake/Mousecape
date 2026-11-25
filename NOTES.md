@@ -149,3 +149,11 @@ and the I-beam (and their `S` variants). It is no way back from a cape.
 - **Name in Login Items:** for a plain launch agent, System Settings → Login Items shows
   the program's name ("mousecloak"). `AssociatedBundleIdentifiers` only counts for apps
   with an Apple team ID.
+- **Moving the app:** the Finder refuses to move or delete an app while a process runs
+  from its bundle ("is open"), and the agent counted. So it runs from a copy of
+  `mousecloak` in `~/Library/Application Support/Mousecape/Agent/<bundle id>/`. `mv`,
+  Homebrew and Launch Services don't care.
+- **Homebrew (7.0.16):** a cask's `uninstall` stanza runs on upgrades too, and its
+  `launchctl` directive deletes the agent's plist. `delete` runs `rm` with sudo, so it asks
+  for a password. Install steps run in a sandbox that may unload launch agents
+  (`launchctl bootout`) but not load them (`bootstrap` fails with error 5).

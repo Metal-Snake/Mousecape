@@ -63,7 +63,10 @@ Key facts:
   `~/Library/LaunchAgents/<bundle id>.listener.plist`, written by `LaunchAgent`
   (LoginAgentKit) and loaded with `launchctl`. It is deliberately not SMAppService: that
   pinned the agent to the exact build of an app without a team ID. Don't switch it back.
-  Whether it should run is the preference `MCLoginAgentEnabled` in the app's own domain,
+  It runs a copy of `mousecloak` in `~/Library/Application Support/Mousecape/Agent/`,
+  not the one in the bundle, so the Finder can move the app; the agent removes itself
+  when no copy of the app is left. Whether it should run is the preference
+  `MCLoginAgentEnabled` in the app's own domain,
   not the plist's existence: Homebrew's cask removes the plist on every upgrade. The app
   at launch and `mousecloak --repair-agent` (run by the cask after installing) put it
   back. Homebrew's sandbox can't load it, so after `brew upgrade` it starts at the next

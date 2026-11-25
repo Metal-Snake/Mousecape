@@ -15,6 +15,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `mousecloak --repair-agent` sets up the background agent again when it is turned on in
   Settings but missing or outdated. The Homebrew cask runs it after every install.
 
+### Changed
+
+- The background agent runs from a copy of `mousecloak` in
+  `~/Library/Application Support/Mousecape/Agent`, not from inside the app, so the Finder
+  can move or delete Mousecape while the agent is on. Mousecape keeps the copy up to date
+  when it opens; once no copy of the app is left, the agent removes itself at the next
+  login.
+
 ### Fixed
 
 - Cursors whose hot spot lies on their right or bottom edge apply. macOS refuses them, so

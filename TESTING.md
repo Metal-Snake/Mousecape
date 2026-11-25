@@ -39,6 +39,12 @@ a manual test. What these tests found out about macOS is in [NOTES.md](NOTES.md)
   `launchctl bootstrap` (error 5), so the agent starts only at the next login or when the
   app opens; run outside the sandbox, `--repair-agent` loads it at once. `brew uninstall`
   removes the app, the agent and its plist and keeps the setting.
+- The agent from a copy (on macOS 15.8.3): `--repair-agent` moves an agent that ran from
+  the bundle to `~/Library/Application Support/Mousecape/Agent/<bundle id>/mousecloak`,
+  which then applies the cape; `lsof` finds no Mousecape process in the bundle. A test
+  agent whose app doesn't exist removes its plist and copy and unloads itself after a
+  minute. With the cask: install, upgrade and uninstall need no password, and uninstall
+  removes the copy. Not tested yet: moving the app in the Finder with the agent on.
 - For the probe on another Mac, copy the built probe and
   `Scripts/frame-limit-test.sh` there and run the script in Terminal; it writes
   `frame-limit-report-<build>.txt` next to itself.
