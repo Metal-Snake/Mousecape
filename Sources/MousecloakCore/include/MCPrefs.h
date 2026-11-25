@@ -19,6 +19,8 @@ extern NSString *MCPreferencesCursorScaleKey;
 extern NSString *MCPreferencesDoubleActionKey;
 extern NSString *MCPreferencesHandednessKey;
 extern NSString *MCPreferencesAppliedExtraCursorsKey;
+// The cursors of the applied cape that macOS refused at the last apply (identifiers).
+extern NSString *MCPreferencesFailedCursorsKey;
 extern NSString *MCSuppressDeleteLibraryConfirmationKey;
 extern NSString *MCSuppressDeleteCursorConfirmationKey;
 extern id MCDefaultFor(NSString *key, NSString *user, NSString *host);

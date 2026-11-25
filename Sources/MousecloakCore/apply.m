@@ -126,6 +126,15 @@ NSUInteger MCAppliedFrameLimit(NSArray *images, NSUInteger frameCount) {
 }
 
 BOOL applyCursorForIdentifier(NSUInteger frameCount, CGFloat frameDuration, CGPoint hotSpot, CGSize size, NSArray *images, NSString *ident, NSUInteger repeatCount) {
+    // macOS takes a hot spot only inside the cursor (0 <= x < width, 0 <= y < height) and
+    // refuses the cursor otherwise (error 1000). Themes, Xcursor ones especially, put it on
+    // the right or bottom edge, or mirroring moves it just past the left one: move it in.
+    CGPoint inside = CGPointMake(MAX(0, MIN(hotSpot.x, size.width - 1)), MAX(0, MIN(hotSpot.y, size.height - 1)));
+    if (!CGPointEqualToPoint(inside, hotSpot)) {
+        MMLog("Moving the hot spot of %s from (%.1f, %.1f) to (%.1f, %.1f), inside the cursor", ident.UTF8String,
+              hotSpot.x, hotSpot.y, inside.x, inside.y);
+        hotSpot = inside;
+    }
     // More frames than the limit (MCMaxFrameCount, or more with long animations): reduce.
     NSUInteger limit = MCAppliedFrameLimit(images, frameCount);
     if (frameCount > limit)
@@ -322,7 +331,9 @@ BOOL applyCape(NSDictionary *dictionary) {
         }
 
         // A cursor that fails is skipped; one bad cursor should not leave the cape half applied.
+        // Which ones failed is kept for the app, which names them.
         NSUInteger failed = 0;
+        NSMutableArray *failedCursors = [NSMutableArray array];
         for (NSString *key in cursors) {
             NSDictionary *cape = cursors[key];
             // A variant such as IBeamS (or core cursor 1) with an entry of its own takes its
@@ -343,6 +354,7 @@ BOOL applyCape(NSDictionary *dictionary) {
             if (!success) {
                 MMLog(BOLD RED "Failed to hook identifier %s, skipping it" RESET, key.UTF8String);
                 failed++;
+                [failedCursors addObject:key];
             }
         }
 
@@ -381,6 +393,7 @@ BOOL applyCape(NSDictionary *dictionary) {
         }
         
         MCSetDefault(dictionary[MCCursorDictionaryIdentifierKey], MCPreferencesAppliedCursorKey);
+        MCSetDefault(failedCursors, MCPreferencesFailedCursorsKey);
         
         if (failed > 0) {
             MMLog(BOLD YELLOW "Applied %s, but %lu cursors failed" RESET, name.UTF8String, (unsigned long)failed);

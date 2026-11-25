@@ -63,6 +63,12 @@ enum EnginePreferences {
         return CFPreferencesCopyAppValue("MCAppliedCursor" as CFString, domain as CFString) as? String
     }
 
+    /// The cursors of the applied cape that macOS refused at the last apply.
+    static var failedCursors: [String] {
+        CFPreferencesAppSynchronize(domain as CFString)
+        return CFPreferencesCopyAppValue("MCFailedCursors" as CFString, domain as CFString) as? [String] ?? []
+    }
+
     /// Cursor scale the agent restores at login and on display changes. Nil until the
     /// user picks one; the agent then leaves the system's scale alone.
     static var cursorScale: Float? {

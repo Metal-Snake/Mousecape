@@ -234,3 +234,12 @@ func acceptsAnyDensity(width: Int, height: Int) {
     #expect(c.appliedFrameCount(longAnimations: false) == 24)   // sampled
     #expect(c.appliedFrameCount(longAnimations: true) == 41)    // exact
 }
+
+/// macOS refuses a hot spot on the right or bottom edge (x == width), as Xcursor themes
+/// like Katana have; inside the last point is fine.
+@Test(arguments: [(32.0, 3.0, false), (31.0, 3.0, true), (31.9, 5.9, true), (1.0, 6.0, false), (-1.0, 0.0, false)])
+func hotSpotOnTheEdgeIsFlagged(x: Double, y: Double, fine: Bool) {
+    let c = CapeCursor(identifier: "com.apple.cursor.17", frameCount: 1, hotSpot: CGPoint(x: x, y: y),
+                       size: CGSize(width: 32, height: 6), representations: [png(width: 32, height: 6)])
+    #expect(c.problems.contains(.hotSpotOutside) == !fine)
+}

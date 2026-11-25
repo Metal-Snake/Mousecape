@@ -41,6 +41,14 @@ uses the public call. `MOUSECAPE_SHORT_ANIMATIONS=1` turns the long path off for
 A registered cursor has one frame duration for all its frames. Animations whose frames
 last differently long can only keep their timing by repeating frames.
 
+## Hot spot
+
+The hot spot must lie inside the cursor: `0 ≤ x < width` and `0 ≤ y < height`, in points.
+`CGSRegisterCursorWithImages` refuses anything else with error 1000, a hot spot exactly on
+the right or bottom edge too (seen in its code on macOS 15.8.3, and with the Xcursor theme
+Katana, whose resize cursors have their hot spot at x = 32 of 32). The engine moves such a
+hot spot one point in.
+
 ## Registrations last for the session
 
 `CGSRemoveRegisteredCursor` takes a flag. With `false`, only the process that registered

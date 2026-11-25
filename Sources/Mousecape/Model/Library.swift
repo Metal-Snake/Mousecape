@@ -196,7 +196,10 @@ final class Library {
         // The engine skips cursors it cannot register; the cape still counts as applied.
         appliedIdentifier = EnginePreferences.appliedCapeIdentifier
         guard succeeded else {
-            if appliedIdentifier == cape.identifier { throw LibraryError.partiallyApplied(cape.name) }
+            if appliedIdentifier == cape.identifier {
+                let names = EnginePreferences.failedCursors.map(CursorNames.name(for:)).sorted()
+                throw LibraryError.partiallyApplied(cape.name, cursors: names)
+            }
             throw LibraryError.applyFailed(cape.name)
         }
     }
@@ -485,7 +488,7 @@ struct TrashedCape {
 enum LibraryError: LocalizedError {
     case notInLibrary
     case applyFailed(String)
-    case partiallyApplied(String)
+    case partiallyApplied(String, cursors: [String])
     case dumpFailed
     case conversionFailed
     case invalidIdentifier
@@ -506,7 +509,9 @@ enum LibraryError: LocalizedError {
         case .noOriginal(let name): String(localized: "There is no original of “\(name)” to go back to.")
         case .notInTrash(let name): String(localized: "“\(name)” can't be put back: it is no longer in the Trash.")
         case .applyFailed(let name): String(localized: "“\(name)” could not be applied.")
-        case .partiallyApplied(let name):
+        case .partiallyApplied(let name, let cursors) where !cursors.isEmpty:
+            String(localized: "“\(name)” is applied, but macOS rejected these cursors: \(cursors.formatted(.list(type: .and))). Check them in the editor.")
+        case .partiallyApplied(let name, _):
             String(localized: "“\(name)” is applied, but some of its cursors were rejected by macOS. Check them in the editor.")
         case .dumpFailed: String(localized: "The current cursors could not be captured.")
         case .conversionFailed: String(localized: "The MightyMouse file could not be converted.")
