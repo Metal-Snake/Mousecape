@@ -1,5 +1,6 @@
 import AppKit
 import CapeKit
+import MousecloakCore
 
 /// What `--create` takes from the command line. Everything is optional: a missing cape
 /// detail has a default, and the cursors' values come from their images and settings files.
@@ -56,7 +57,9 @@ func createCape(from inputPath: String, output: String?, options: CreateOptions)
     guard Cape.isValidIdentifier(cape.identifier) else {
         fail("\(cape.identifier) can't be a cape identifier (it becomes a file name)")
     }
-    for (identifier, problems) in cape.problems(leftHanded: false).sorted(by: { $0.key < $1.key }) {
+    let longAnimations = MCLongAnimationsAvailable()
+    for (identifier, problems) in cape.problems(leftHanded: false, longAnimations: longAnimations)
+        .sorted(by: { $0.key < $1.key }) {
         for problem in problems { print("Warning: \(identifier): \(problem)") }
     }
 

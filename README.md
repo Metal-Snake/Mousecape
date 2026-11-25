@@ -145,8 +145,8 @@ pling.com keeps out of apps are not shown.
 Select a cape and click **Apply** (⌘↩), or double-click it; **Cape → Reset to Default Cursors** (⇧⌘R) brings
 the macOS cursors back. When Mousecape starts, it applies the cape marked as applied
 again, in case the cursors on screen have changed since. A cape with problems gets a badge in the sidebar, and its page
-says what happens to which cursor: macOS shows at most 24 frames of an animation, so
-longer ones are reduced when applied; a cursor whose images don't fit is flagged. Click a
+says what happens to which cursor: an animation with more frames than Mousecape can
+apply (usually 256) is reduced; a cursor whose images don't fit is flagged. Click a
 line to open that cursor in the editor.
 
 Reset brings back the cursors that were on screen before Mousecape applied a cape, which
@@ -174,8 +174,10 @@ moved to the Trash back.
 An animated cursor is one image with all frames stacked vertically, first frame at the
 top. Mousecape walks down the image one frame at a time, each frame the cursor's size.
 
-macOS shows at most 24 frames. **Choose…** next to the frame count picks which frames to
-keep (every n-th, spread evenly, the first ones, or your own pick), with the original and
+Mousecape applies up to 256 frames, fewer for very large images. macOS's own call for
+cursors takes only 24; Mousecape goes past it (tested on macOS 15 and 27) and, if that
+ever fails on a new macOS version, reduces longer animations to 24 frames as before.
+**Choose…** next to the frame count picks which frames to keep (every n-th, spread evenly, the first ones, or your own pick), with the original and
 the result playing side by side. Animations imported from Windows or Linux whose frames
 last differently long keep each frame's duration; they are picked **By Time** when
 applied, so the timing stays.

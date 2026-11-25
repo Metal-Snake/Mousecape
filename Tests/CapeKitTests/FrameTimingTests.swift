@@ -44,7 +44,7 @@ private func shadedSheet(count: Int, side: Int = 4) throws -> Data {
     #expect(cursor.frameDurations == [0.1, 0.2, 0.3])
     #expect(abs(cursor.frameDuration - 0.2) < 1e-9)                    // the average, for macOS
     #expect(cursor.problems.contains(.timedByDurations(from: 3, to: 6)))   // 100/200/300 ms → 100 ms slots
-    #expect(cursor.appliedFrameCount == 6)
+    #expect(cursor.appliedFrameCount() == 6)
     let copy = try CapeCursor(identifier: cursor.identifier, propertyList: cursor.propertyList)
     #expect(copy.frameDurations == [0.1, 0.2, 0.3])
 }

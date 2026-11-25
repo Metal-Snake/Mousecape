@@ -126,18 +126,19 @@ struct CursorEditorView: View {
                 }
             }
             LabeledContent("Frames") {
-                if cursor.frameCount > CapeCursor.maximumFrameCount {
+                if cursor.frameCount > frameLimit {
                     // More than macOS takes: only reducing makes sense, not stepping.
                     HStack {
                         Text("\(cursor.frameCount)")
                             .monospacedDigit()
-                        Button("Reduce to \(cursor.appliedFrameCount)", action: reduceFrames)
+                        Button("Reduce to \(cursor.appliedFrameCount(longAnimations: Engine.longAnimations))",
+                               action: reduceFrames)
                         Button("Choose…") { choosingFrames = true }
                             .help("Pick which frames to keep")
                     }
                 } else {
                     HStack {
-                        Stepper(value: $cursor.frameCount, in: 1...CapeCursor.maximumFrameCount) {
+                        Stepper(value: $cursor.frameCount, in: 1...frameLimit) {
                             Text("\(cursor.frameCount)")
                                 .monospacedDigit()
                         }
@@ -341,9 +342,12 @@ struct CursorEditorView: View {
         }
     }
 
+    /// The most frames this cursor keeps when applied (more with long animations).
+    private var frameLimit: Int { cursor.frameLimit(longAnimations: Engine.longAnimations) }
+
     /// Keeps every n-th frame for good, the way the engine would when applying.
     private func reduceFrames() {
-        if let reduced = cursor.reducingFrames() {
+        if let reduced = cursor.reducingFrames(longAnimations: Engine.longAnimations) {
             cursor = reduced
         } else {
             importError = String(localized: "The images of \(cursor.name) could not be read, so its frames were not reduced.")

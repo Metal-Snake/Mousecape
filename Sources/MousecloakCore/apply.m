@@ -12,6 +12,7 @@
 #import "restore.h"
 #import "MCPrefs.h"
 #import "NSBitmapImageRep+ColorSpace.h"
+#import "longanim.h"
 
 // Rebuilds each vertically stacked sheet from the frames at `indices` (in that order,
 // repeats allowed), `count` frames in all.
@@ -49,14 +50,14 @@ static NSUInteger gcdOf(NSUInteger a, NSUInteger b) {
 }
 
 // For frames with their own durations: the frames to show (into `indices`, room for
-// MCMaxFrameCount) and one duration for all, so the animation keeps its timing. Repeats
-// each frame in units of the durations' common divisor when that fits (exact); otherwise
-// samples the loop at MCMaxFrameCount evenly spaced moments, the middle of each slot.
+// `limit`) and one duration for all, so the animation keeps its timing. Repeats each frame
+// in units of the durations' common divisor when that fits in `limit` frames (exact);
+// otherwise samples the loop at `limit` evenly spaced moments, the middle of each slot.
 // The same as FrameSelection.byTime in CapeKit. Returns the number of frames, 0 if the
 // durations can't be used.
-NSUInteger MCFramesByTime(NSArray *durations, NSUInteger *indices, CGFloat *duration) {
+NSUInteger MCFramesByTime(NSArray *durations, NSUInteger *indices, CGFloat *duration, NSUInteger limit) {
     NSUInteger n = durations.count;
-    if (n == 0) return 0;
+    if (n == 0 || limit == 0) return 0;
     double total = 0;
     for (NSNumber *d in durations) {
         if (![d isKindOfClass:[NSNumber class]] || d.doubleValue <= 0) return 0;
@@ -74,7 +75,7 @@ NSUInteger MCFramesByTime(NSArray *durations, NSUInteger *indices, CGFloat *dura
         }
         if (!whole) continue;
         for (NSNumber *d in durations) expanded += (NSUInteger)round(d.doubleValue / units[u]) / divisor;
-        if (expanded <= MCMaxFrameCount) {
+        if (expanded <= limit) {
             NSUInteger k = 0;
             for (NSUInteger i = 0; i < n; i++) {
                 NSUInteger repeats = (NSUInteger)round([durations[i] doubleValue] / units[u]) / divisor;
@@ -85,8 +86,8 @@ NSUInteger MCFramesByTime(NSArray *durations, NSUInteger *indices, CGFloat *dura
         }
         break;
     }
-    double slot = total / MCMaxFrameCount;
-    for (NSUInteger k = 0; k < MCMaxFrameCount; k++) {
+    double slot = total / limit;
+    for (NSUInteger k = 0; k < limit; k++) {
         double moment = (k + 0.5) * slot, end = 0;
         NSUInteger frame = n - 1;
         for (NSUInteger i = 0; i < n; i++) {
@@ -96,24 +97,52 @@ NSUInteger MCFramesByTime(NSArray *durations, NSUInteger *indices, CGFloat *dura
         indices[k] = frame;
     }
     *duration = slot;
-    return MCMaxFrameCount;
+    return limit;
+}
+
+// Keeps every n-th frame, n as small as possible to stay within `limit`, and shows each
+// one n times as long, so the animation still runs at the same speed. Returns NO, and
+// changes nothing, if the sheets can't be rebuilt.
+static BOOL reduceFrames(NSArray **images, NSUInteger *frameCount, CGFloat *frameDuration, NSUInteger limit,
+                         NSString *ident) {
+    NSUInteger step = (*frameCount + limit - 1) / limit;
+    NSUInteger count = (*frameCount + step - 1) / step;
+    NSUInteger indices[MCMaxLongFrameCount];
+    for (NSUInteger k = 0; k < count; k++) indices[k] = k * step;
+    NSArray *sheets = sheetsWithFrames(*images, *frameCount, indices, count);
+    if (!sheets)
+        return NO;
+    MMLog("Reducing %s from %lu to %lu frames", ident.UTF8String, (unsigned long)*frameCount, (unsigned long)count);
+    *images = sheets;
+    *frameDuration *= step;
+    *frameCount = count;
+    return YES;
+}
+
+NSUInteger MCAppliedFrameLimit(NSArray *images, NSUInteger frameCount) {
+    if (frameCount <= MCMaxFrameCount)
+        return MCMaxFrameCount;
+    return MCFrameLimit(MCPixelsPerFrame(images, frameCount), MCLongAnimationsAvailable());
 }
 
 BOOL applyCursorForIdentifier(NSUInteger frameCount, CGFloat frameDuration, CGPoint hotSpot, CGSize size, NSArray *images, NSString *ident, NSUInteger repeatCount) {
-    if (frameCount > MCMaxFrameCount) {
-        // Too many frames for the window server: keep every n-th frame and show each one
-        // n times as long, so the animation still runs at the same speed.
-        NSUInteger step = (frameCount + MCMaxFrameCount - 1) / MCMaxFrameCount;
-        NSUInteger count = (frameCount + step - 1) / step;
-        NSUInteger indices[MCMaxFrameCount];
-        for (NSUInteger k = 0; k < count; k++) indices[k] = k * step;
-        NSArray *sheets = sheetsWithFrames(images, frameCount, indices, count);
-        if (sheets) {
-            MMLog("Reducing %s from %lu to %lu frames", ident.UTF8String, (unsigned long)frameCount, (unsigned long)count);
-            images = sheets;
-            frameDuration *= step;
-            frameCount = count;
+    // More frames than the limit (MCMaxFrameCount, or more with long animations): reduce.
+    NSUInteger limit = MCAppliedFrameLimit(images, frameCount);
+    if (frameCount > limit)
+        reduceFrames(&images, &frameCount, &frameDuration, limit, ident);
+
+    // Over MCMaxFrameCount only through the internal call (longanim.m). If that fails,
+    // fall back to MCMaxFrameCount frames and the public call.
+    if (frameCount > MCMaxFrameCount && frameCount <= MCMaxLongFrameCount) {
+        CGError err = MCRegisterLongCursor(CGSMainConnectionID(), ident.UTF8String, size, hotSpot,
+                                           frameCount, frameDuration, images);
+        if (err == kCGErrorSuccess) {
+            MMLog("Registered %s with %lu frames", ident.UTF8String, (unsigned long)frameCount);
+            return YES;
         }
+        MMLog(YELLOW "Registering %s with %lu frames failed (error %d), reducing to %d" RESET,
+              ident.UTF8String, (unsigned long)frameCount, err, MCMaxFrameCount);
+        reduceFrames(&images, &frameCount, &frameDuration, MCMaxFrameCount, ident);
     }
     if (frameCount > MCMaxFrameCount || frameCount < 1) {
         MMLog(BOLD RED "Frame count of %s out of range [1...24]", ident.UTF8String);
@@ -228,9 +257,12 @@ BOOL applyCapeForIdentifier(NSDictionary *cursor, NSString *identifier, BOOL res
     // pick the frames by time instead of keeping every n-th one at the average.
     NSArray *durations = cursor[MCCursorDictionaryFrameDurationsKey];
     if (!restore && [durations isKindOfClass:[NSArray class]] && durations.count == count && count > 1) {
-        NSUInteger indices[MCMaxFrameCount];
+        // As many frames as a cursor with these images may have, so the timing is exact
+        // more often.
+        NSUInteger indices[MCMaxLongFrameCount];
         CGFloat timed = duration;
-        NSUInteger timedCount = MCFramesByTime(durations, indices, &timed);
+        NSUInteger limit = MCFrameLimit(MCPixelsPerFrame(images, count), MCLongAnimationsAvailable());
+        NSUInteger timedCount = MCFramesByTime(durations, indices, &timed, limit);
         NSArray *timedSheets = timedCount > 0 ? sheetsWithFrames(images, count, indices, timedCount) : nil;
         if (timedSheets) {
             MMLog("Timing %s by its frame durations: %lu frames of %.3f s", identifier.UTF8String,

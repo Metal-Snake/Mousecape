@@ -23,7 +23,7 @@ struct CapeEditorView: View {
 
     /// Problems per cursor, as the library shows them (left-handed hints included).
     private var problems: [String: [CursorProblem]] {
-        draft.problems(leftHanded: EnginePreferences.leftHanded)
+        draft.problems(leftHanded: EnginePreferences.leftHanded, longAnimations: Engine.longAnimations)
     }
 
     private var hasChanges: Bool { session.hasChanges }

@@ -115,17 +115,6 @@ above is done, or a real problem calls for them.
       if it stops halfway, the scale stays at 16. Treat 16 as "not the user's choice" when
       reading the scale, as MaCursor does.
 
-- [ ] **Animations longer than 24 frames.** The limit is a check in SkyLight's client
-      wrapper; through the wrapper's internal IPC call the window server registers and
-      plays longer animations (48 frames seen, on macOS 15.8.3 and 27.2.1;
-      [NOTES.md](NOTES.md#frame-limit)). Found by CX330-YCH's fork of Mousecape-swiftUI,
-      which locates the call by SHA-256 digests of SkyLight's code per build and so
-      breaks with every update. `Scripts/frame-limit-probe.m` finds it by the name
-      `dladdr` gives it instead, among the wrapper's calls. To decide: whether the engine
-      should use that call for cursors over 24 frames, with today's reduction as the
-      fallback whenever the call can't be found or a 24-frame check registration doesn't
-      read back right. No clear licence: the idea only.
-
 ## Housekeeping
 
 - [ ] **Related projects.** Once a month, check the original Mousecape, MaCursor, the

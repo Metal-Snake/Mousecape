@@ -55,13 +55,27 @@ private let timingCases: [[Double]] = [
     [0.033, 0.017, 0.1, 0.25, 0.005],
 ]
 
-@Test(arguments: timingCases)
-func framesByTimeMatchesEngine(durations: [Double]) {
-    var indices = [UInt](repeating: 0, count: CapeCursor.maximumFrameCount)
+@Test(arguments: timingCases, [CapeCursor.maximumFrameCount, 40, CapeCursor.longAnimationFrameLimit])
+func framesByTimeMatchesEngine(durations: [Double], limit: Int) {
+    var indices = [UInt](repeating: 0, count: limit)
     var duration: CGFloat = 0
-    let count = Int(MCFramesByTime(durations, &indices, &duration))
-    let expected = FrameSelection.byTime(durations: durations)
+    let count = Int(MCFramesByTime(durations, &indices, &duration, UInt(limit)))
+    let expected = FrameSelection.byTime(durations: durations, count: limit)
     let frames: [Int] = indices[..<count].map { Int($0) }
     #expect(frames == expected.frames)
     #expect(abs(Double(duration) - expected.duration) < 1e-9)
+}
+
+@Test func longAnimationLimitsMatchEngine() {
+    #expect(Int(MCMaxFrameCount) == CapeCursor.maximumFrameCount)
+    #expect(Int(MCMaxLongFrameCount) == CapeCursor.longAnimationFrameLimit)
+    #expect(Int(MCMaxLongAnimationPixels) == CapeCursor.longAnimationPixelLimit)
+}
+
+/// Pixels per frame from tiny cursors to huge ones, around where the pixel limit starts to
+/// bite (65,536 pixels per frame allow 256 frames, 699,051 only 24).
+@Test(arguments: [0, 1, 1_024, 65_536, 65_537, 133_000, 699_050, 699_051, 699_052, 10_000_000], [false, true])
+func frameLimitMatchesEngine(pixelsPerFrame: Int, longAnimations: Bool) {
+    #expect(Int(MCFrameLimit(UInt(pixelsPerFrame), longAnimations))
+            == CapeCursor.frameLimit(pixelsPerFrame: pixelsPerFrame, longAnimations: longAnimations))
 }

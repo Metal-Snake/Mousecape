@@ -183,7 +183,7 @@ final class Library {
     func updateProblems() {
         let leftHanded = EnginePreferences.leftHanded
         problems = Dictionary(uniqueKeysWithValues: capes.compactMap { cape in
-            let found = cape.problems(leftHanded: leftHanded)
+            let found = cape.problems(leftHanded: leftHanded, longAnimations: Engine.longAnimations)
             return found.isEmpty ? nil : (cape.id, found)
         })
     }

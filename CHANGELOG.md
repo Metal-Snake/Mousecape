@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Animations with more than 24 frames apply with all their frames, up to 256 (fewer for
+  very large images). macOS's registration call refuses more than 24 frames, though the
+  window server shows more; Mousecape now goes past that check. It first tests the way
+  past it once and falls back to reducing to 24 frames, as before, when anything looks
+  different. Frames with their own durations keep their timing exactly more often.
+
 ## [3.3.0] - 2026-11-23
 
 ### Added

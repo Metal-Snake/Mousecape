@@ -17,6 +17,15 @@ enum Engine {
         applyDefaultCursors()
     }
 
+    /// Whether the engine registers animations with more than
+    /// `CapeCursor.maximumFrameCount` frames (up to `CapeCursor.longAnimationFrameLimit`).
+    /// It goes past a check in macOS's own code and turns this off when anything looks
+    /// different from what it was tested on (NOTES.md, "Frame limit"). Checked once per
+    /// process, with a test registration that leaves the cursor on screen alone.
+    nonisolated static var longAnimations: Bool {
+        MCLongAnimationsAvailable()
+    }
+
     static var scale: Float {
         get { cursorScale() }
         set { _ = setCursorScale(newValue) }

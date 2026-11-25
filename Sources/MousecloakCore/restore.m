@@ -29,8 +29,9 @@ static BOOL registrationMatches(NSString *ident, NSDictionary *reference) {
     }
     // A backup over the frame limit is applied reduced, so compare with that in mind.
     NSUInteger expectedFrames = [reference[MCCursorDictionaryFrameCountKey] unsignedIntegerValue];
-    if (expectedFrames > MCMaxFrameCount) {
-        NSUInteger step = (expectedFrames + MCMaxFrameCount - 1) / MCMaxFrameCount;
+    NSUInteger limit = MCAppliedFrameLimit(reference[MCCursorDictionaryRepresentationsKey], expectedFrames);
+    if (expectedFrames > limit) {
+        NSUInteger step = (expectedFrames + limit - 1) / limit;
         expectedFrames = (expectedFrames + step - 1) / step;
     }
     if ([now[MCCursorDictionaryFrameCountKey] unsignedIntegerValue] != expectedFrames)

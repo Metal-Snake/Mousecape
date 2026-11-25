@@ -18,7 +18,8 @@ struct FrameChooserView: View {
     @State private var frames: [CGImage] = []
     @State private var failed = false
 
-    private let limit = CapeCursor.maximumFrameCount
+    /// The most frames the cursor keeps when applied (more with long animations).
+    private let limit: Int
 
     enum Preset: Hashable {
         case byTime, everyNth, spread, first, custom
@@ -27,15 +28,17 @@ struct FrameChooserView: View {
     init(cursor: CapeCursor, onApply: @escaping (CapeCursor) -> Void) {
         self.cursor = cursor
         self.onApply = onApply
+        let limit = cursor.frameLimit(longAnimations: Engine.longAnimations)
+        self.limit = limit
         // Frames with their own durations start out chosen by time, which keeps the timing.
         if let durations = cursor.frameDurations {
-            let timing = FrameSelection.byTime(durations: durations)
+            let timing = FrameSelection.byTime(durations: durations, count: limit)
             _preset = State(initialValue: .byTime)
             _timeSequence = State(initialValue: timing.frames)
             _kept = State(initialValue: Set(timing.frames))
             _frameDuration = State(initialValue: timing.duration)
         } else {
-            let initial = FrameSelection.everyNth(of: cursor.frameCount)
+            let initial = FrameSelection.everyNth(of: cursor.frameCount, limit: limit)
             _preset = State(initialValue: .everyNth)
             _kept = State(initialValue: Set(initial))
             _frameDuration = State(initialValue: FrameSelection.loopPreservingDuration(
@@ -197,11 +200,11 @@ struct FrameChooserView: View {
         defer { if !durationEdited { frameDuration = loopPreservingDuration } }
         switch preset {
         case .byTime:
-            timeSequence = FrameSelection.byTime(durations: cursor.frameDurations ?? []).frames
+            timeSequence = FrameSelection.byTime(durations: cursor.frameDurations ?? [], count: limit).frames
             kept = Set(timeSequence)
-        case .everyNth: kept = Set(FrameSelection.everyNth(of: cursor.frameCount))
-        case .spread: kept = Set(FrameSelection.spread(of: cursor.frameCount))
-        case .first: kept = Set(FrameSelection.first(of: cursor.frameCount))
+        case .everyNth: kept = Set(FrameSelection.everyNth(of: cursor.frameCount, limit: limit))
+        case .spread: kept = Set(FrameSelection.spread(of: cursor.frameCount, count: limit))
+        case .first: kept = Set(FrameSelection.first(of: cursor.frameCount, count: limit))
         case .custom: break
         }
     }

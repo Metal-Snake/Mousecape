@@ -24,6 +24,7 @@ swift test --filter CapeKitTests  # one target; --filter also takes a test name
 Scripts/build-app.sh [--zip]      # release build → dist/Mousecape.app (signed, see script header)
 Scripts/release.sh                # test, build, tag vX.Y.Z, push, GitHub release (newest CHANGELOG version)
 MOUSECAPE_LIBRARY=/some/dir …     # point the app at a throwaway library folder
+MOUSECAPE_SHORT_ANIMATIONS=1 …    # engine without long animations (reduce to 24 frames)
 ```
 
 The Command Line Tools are enough. String catalogs (`.xcstrings`) can't be compiled
@@ -61,9 +62,11 @@ Key facts:
   `~/Library/LaunchAgents/<bundle id>.listener.plist`, written by `LoginAgent` and loaded
   with `launchctl`. It is deliberately not SMAppService: that pinned the agent to the exact
   build of an app without a team ID. Don't switch it back.
-- **Window server limits** shape much of the code. Registering a cursor allows at most 24
-  frames (`CapeCursor.maximumFrameCount`; a check in SkyLight's client code, see NOTES.md). Longer animations are reduced at apply time (every
-  n-th frame, or by time when `FrameDurations` exists). A reset removes the backups it
+- **Window server limits** shape much of the code. macOS's registration call allows at
+  most 24 frames (`CapeCursor.maximumFrameCount`), a check in SkyLight's client code.
+  `longanim.m` goes past it when a test registration works, up to 256 frames and 2^24
+  pixels per cursor (NOTES.md "Frame limit"). Longer animations are reduced at apply time
+  (every n-th frame, or by time when `FrameDurations` exists). A reset removes the backups it
   restored (with the global flag, the only one that works across processes), so the next
   apply backs up afresh. Names under `com.apple.coregraphics.` can't be unregistered at
   all, so a variant like `ArrowS` lasts until logout (NOTES.md has the details). On macOS 27,
@@ -77,6 +80,8 @@ checks that they agree. If you change one side, change the other in the same com
 - the identifier rule: `MCIsSafeIdentifier` ↔ `Cape.isValidIdentifier`
 - the pointer list for left-handed mirroring: `MCPointerCursorIdentifiers` ↔ `CursorNames.pointers`
 - frame choice by time: `MCFramesByTime` ↔ `FrameSelection.byTime`
+- the frame limit with long animations: `MCFrameLimit` / `MCPixelsPerFrame` ↔
+  `CapeCursor.frameLimit(pixelsPerFrame:longAnimations:)` / `pixelsPerFrame`
 - core cursors 0 and 1 as the arrow and the I-beam: `MCBaseCursorForCoreAlias` ↔ `CursorNames.coreAliases`
 - a cape drawn for the left hand (its arrow's hot spot): `MCHotSpotIsLeftHanded` /
   `MCCapeIsDrawnLeftHanded` ↔ `CapeCursor.pointsLikeLeftHandedArrow` / `Cape.isDrawnLeftHanded`

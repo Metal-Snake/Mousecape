@@ -31,8 +31,16 @@ extern NSString *defaultCursors[];
 // Cursors some capes register that macOS does not have by default (newer variants of the
 // arrow and I-beam). Reset removes them again unless the system had them before.
 extern NSString *extraCursors[];
-// The window server refuses animations with more frames than this.
+// CGSRegisterCursorWithImages refuses animations with more frames than this. The check
+// sits in SkyLight's client code; the window server itself takes more (NOTES.md, "Frame
+// limit"), which longanim.m uses when it can.
 #define MCMaxFrameCount 24
+// The most frames longanim.m registers for one cursor, and the most pixels, all its
+// images together: longer animations are still reduced, so one cursor can't take
+// hundreds of MB in the window server. The same as CapeCursor.longAnimationFrameLimit and
+// .longAnimationPixelLimit in CapeKit.
+#define MCMaxLongFrameCount 256
+#define MCMaxLongAnimationPixels (1 << 24)
 extern NSString *MCErrorDomain;
 extern NSDictionary *cursorNameMap;
 

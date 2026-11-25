@@ -9,34 +9,72 @@ extension CapeCursor {
     /// the screen (NOTES.md), so a cape may hold others too, like 3x or 4x.
     public static let standardScales = [1, 2, 5, 10]
 
-    /// The window server refuses more frames than this.
+    /// macOS's call for registering cursors refuses more frames than this. The check sits in
+    /// SkyLight's client code; the engine gets past it when it can (`longAnimations`,
+    /// NOTES.md "Frame limit").
     public static let maximumFrameCount = 24
 
-    /// Frames left when applying a longer animation: the engine keeps every n-th frame.
-    public static func reducedFrameCount(_ frameCount: Int) -> Int {
-        guard frameCount > maximumFrameCount else { return frameCount }
-        let step = (frameCount + maximumFrameCount - 1) / maximumFrameCount
+    /// With long animations, the most frames the engine registers for one cursor
+    /// (`MCMaxLongFrameCount`).
+    public static let longAnimationFrameLimit = 256
+
+    /// With long animations, the most pixels of one cursor, all frames of all its images
+    /// together (`MCMaxLongAnimationPixels`), so one cursor can't take hundreds of MB in
+    /// the window server.
+    public static let longAnimationPixelLimit = 1 << 24
+
+    /// The most frames a cursor may have when applied, given the pixels of one frame in all
+    /// its images together. The same as `MCFrameLimit` in the engine.
+    public static func frameLimit(pixelsPerFrame: Int, longAnimations: Bool) -> Int {
+        guard longAnimations else { return maximumFrameCount }
+        let fitting = pixelsPerFrame > 0 ? longAnimationPixelLimit / pixelsPerFrame : longAnimationFrameLimit
+        return max(maximumFrameCount, min(longAnimationFrameLimit, fitting))
+    }
+
+    /// The pixels of one frame in all images together, read from the image headers. The
+    /// same sum as `MCPixelsPerFrame` in the engine.
+    public var pixelsPerFrame: Int {
+        guard frameCount > 0 else { return 0 }
+        return representations.reduce(0) { sum, data in
+            guard let pixels = Self.pixelSize(of: data) else { return sum }
+            return sum + Int(pixels.width) * (Int(pixels.height) / frameCount)
+        }
+    }
+
+    /// The most frames this cursor may have when applied: `maximumFrameCount`, or more
+    /// when the engine can register long animations (`Engine.longAnimations` in the app).
+    public func frameLimit(longAnimations: Bool) -> Int {
+        Self.frameLimit(pixelsPerFrame: pixelsPerFrame, longAnimations: longAnimations)
+    }
+
+    /// Frames left when applying an animation longer than `limit`: the engine keeps every
+    /// n-th frame.
+    public static func reducedFrameCount(_ frameCount: Int, limit: Int = maximumFrameCount) -> Int {
+        guard frameCount > limit else { return frameCount }
+        let step = (frameCount + limit - 1) / limit
         return (frameCount + step - 1) / step
     }
 
     /// How many frames the engine registers when applying: frames with their own durations
     /// are picked by time, longer animations reduced to every n-th frame.
-    public var appliedFrameCount: Int {
-        if let frameDurations { return FrameSelection.byTime(durations: frameDurations).frames.count }
-        return Self.reducedFrameCount(frameCount)
+    public func appliedFrameCount(longAnimations: Bool = false) -> Int {
+        let limit = frameLimit(longAnimations: longAnimations)
+        if let frameDurations { return FrameSelection.byTime(durations: frameDurations, count: limit).frames.count }
+        return Self.reducedFrameCount(frameCount, limit: limit)
     }
 
     /// A copy within the frame limit, the same way the engine reduces it when applying:
     /// frames with their own durations are picked by time; otherwise every n-th frame is
     /// kept and shown n times as long, so the animation keeps its speed. Returns the cursor
     /// unchanged when there's nothing to do, nil if an image can't be decoded.
-    public func reducingFrames() -> CapeCursor? {
+    public func reducingFrames(longAnimations: Bool = false) -> CapeCursor? {
+        let limit = frameLimit(longAnimations: longAnimations)
         if let frameDurations {
-            let timing = FrameSelection.byTime(durations: frameDurations)
+            let timing = FrameSelection.byTime(durations: frameDurations, count: limit)
             return keepingFrames(timing.frames, frameDuration: timing.duration)
         }
-        guard frameCount > Self.maximumFrameCount else { return self }
-        let kept = FrameSelection.everyNth(of: frameCount)
+        guard frameCount > limit else { return self }
+        let kept = FrameSelection.everyNth(of: frameCount, limit: limit)
         return keepingFrames(kept, frameDuration: FrameSelection.loopPreservingDuration(
             frameDuration: frameDuration, frameCount: frameCount, kept: kept.count))
     }
@@ -151,15 +189,21 @@ extension CapeCursor {
         CGSize(width: size.width * Double(scale), height: size.height * Double(scale) * Double(frameCount))
     }
 
-    /// Everything that would stop this cursor from applying, or make it look wrong.
-    public var problems: [CursorProblem] {
+    /// Everything that would stop this cursor from applying, or make it look wrong, without
+    /// long animations.
+    public var problems: [CursorProblem] { problems(longAnimations: false) }
+
+    /// Everything that would stop this cursor from applying, or make it look wrong; with
+    /// `longAnimations`, animations up to `frameLimit(longAnimations:)` frames are kept.
+    public func problems(longAnimations: Bool) -> [CursorProblem] {
         var problems: [CursorProblem] = []
         if representations.isEmpty { problems.append(.noImages) }
         if frameCount < 1 { problems.append(.frameCountOutOfRange) }
+        let limit = frameLimit(longAnimations: longAnimations)
         if frameDurations != nil {
-            problems.append(.timedByDurations(from: frameCount, to: appliedFrameCount))
-        } else if frameCount > Self.maximumFrameCount {
-            problems.append(.framesWillBeReduced(from: frameCount, to: Self.reducedFrameCount(frameCount)))
+            problems.append(.timedByDurations(from: frameCount, to: appliedFrameCount(longAnimations: longAnimations)))
+        } else if frameCount > limit {
+            problems.append(.framesWillBeReduced(from: frameCount, to: Self.reducedFrameCount(frameCount, limit: limit)))
         }
         if hotSpot.x < 0 || hotSpot.y < 0 || hotSpot.x > size.width || hotSpot.y > size.height {
             problems.append(.hotSpotOutside)
@@ -291,7 +335,7 @@ public enum CursorProblem: Equatable, Sendable, CustomStringConvertible {
         case .frameCountOutOfRange:
             String(localized: "A cursor needs at least one frame.")
         case .framesWillBeReduced(let from, let to):
-            String(localized: "macOS shows at most \(CapeCursor.maximumFrameCount) frames; the \(from) frames are reduced to \(to) when applied.")
+            String(localized: "More frames than macOS shows: the \(from) frames are reduced to \(to) when applied.")
         case .timedByDurations(let from, let to):
             String(localized: "The \(from) frames have different durations, but macOS shows every frame equally long: when applied, they become \(to) frames picked by time, so the timing stays.")
         case .notMirroredLikeArrow:
@@ -361,10 +405,11 @@ extension Cape {
     }
 
     /// Problems per cursor identifier, only for cursors that have any; in left-handed mode
-    /// also the cursors mirrored unlike the arrow (`unevenMirroring`).
-    public func problems(leftHanded: Bool) -> [String: [CursorProblem]] {
+    /// also the cursors mirrored unlike the arrow (`unevenMirroring`). `longAnimations` as
+    /// in `CapeCursor.problems(longAnimations:)`.
+    public func problems(leftHanded: Bool, longAnimations: Bool = false) -> [String: [CursorProblem]] {
         var found: [String: [CursorProblem]] = Dictionary(uniqueKeysWithValues: cursors.compactMap { cursor in
-            let problems = cursor.problems
+            let problems = cursor.problems(longAnimations: longAnimations)
             return problems.isEmpty ? nil : (cursor.identifier, problems)
         })
         if leftHanded {
@@ -374,7 +419,9 @@ extension Cape {
     }
 }
 
-/// Ways to pick the frames of an animation that has more than macOS shows.
+/// Ways to pick the frames of an animation that has more than macOS shows. `limit` and
+/// `count` default to `CapeCursor.maximumFrameCount`; with long animations, pass the
+/// cursor's `frameLimit(longAnimations:)`.
 public enum FrameSelection {
     /// Every n-th frame, n as small as possible to stay within the limit (what the engine
     /// does when applying).

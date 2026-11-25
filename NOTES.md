@@ -32,6 +32,12 @@ frames plays them all. The internal call isn't exported, but `dladdr` names it, 
 program can find it among the calls the exported wrapper makes. Its address and the
 wrapper's code change with each macOS build.
 
+The engine uses this (`longanim.m`): it finds the call by name, checks it once per
+process with a test registration of 25 frames on its own connection, and then registers
+animations of up to 256 frames, and at most 2^24 pixels per cursor, through it. When the
+call isn't found, the test fails, or a registration fails, it reduces to 24 frames and
+uses the public call. `MOUSECAPE_SHORT_ANIMATIONS=1` turns the long path off for testing.
+
 A registered cursor has one frame duration for all its frames. Animations whose frames
 last differently long can only keep their timing by repeating frames.
 

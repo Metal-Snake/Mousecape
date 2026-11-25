@@ -197,3 +197,40 @@ func acceptsAnyDensity(width: Int, height: Int) {
     let cape = try Cape(contentsOf: sampleURL)
     #expect(cape.problems.isEmpty)
 }
+
+/// With long animations the engine keeps up to 256 frames, fewer for big images.
+@Test func longAnimationsKeepMoreFrames() throws {
+    // 30 frames of 10 × 10 px: 100 pixels a frame, far below the pixel limit.
+    var c = CapeCursor(identifier: "com.apple.coregraphics.Wait", frameCount: 30, frameDuration: 0.02,
+                       size: CGSize(width: 10, height: 10), representations: [png(width: 10, height: 300)])
+    #expect(c.pixelsPerFrame == 100)
+    #expect(c.frameLimit(longAnimations: false) == 24)
+    #expect(c.frameLimit(longAnimations: true) == 256)
+    #expect(c.problems(longAnimations: true).isEmpty)
+    #expect(c.problems(longAnimations: false) == [.framesWillBeReduced(from: 30, to: 15)])
+    #expect(c.appliedFrameCount(longAnimations: true) == 30)
+    #expect(try #require(c.reducingFrames(longAnimations: true)).frameCount == 30)
+
+    // 300 frames: over 256 even with long animations, so every 2nd frame.
+    c.frameCount = 300
+    c.representations = [png(width: 10, height: 3000)]
+    #expect(c.appliedFrameCount(longAnimations: true) == 150)
+}
+
+@Test func pixelLimitLowersTheFrameLimit() {
+    // 256 frames of 65,536 pixels fill the pixel limit exactly; a pixel more allows 255.
+    #expect(CapeCursor.frameLimit(pixelsPerFrame: 65_536, longAnimations: true) == 256)
+    #expect(CapeCursor.frameLimit(pixelsPerFrame: 65_537, longAnimations: true) == 255)
+    // Big images never go below what macOS takes anyway.
+    #expect(CapeCursor.frameLimit(pixelsPerFrame: 10_000_000, longAnimations: true) == 24)
+    #expect(CapeCursor.frameLimit(pixelsPerFrame: 1, longAnimations: false) == 24)
+}
+
+/// Frames with their own durations are expanded exactly when that fits the larger limit.
+@Test func longAnimationsTimeFramesExactly() {
+    // 1 and 40 jiffies: 41 frames exactly, which only fit with long animations.
+    let c = CapeCursor(identifier: "com.apple.coregraphics.Wait", frameCount: 2, frameDurations: [1.0 / 60, 40.0 / 60],
+                       size: CGSize(width: 4, height: 4), representations: [png(width: 4, height: 8)])
+    #expect(c.appliedFrameCount(longAnimations: false) == 24)   // sampled
+    #expect(c.appliedFrameCount(longAnimations: true) == 41)    // exact
+}
