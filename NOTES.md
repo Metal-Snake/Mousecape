@@ -22,9 +22,15 @@ the window server. Called directly, that function registers 25, 48 and 100 frame
 (`_CGXRegisterCursorImages`, `CGXCursorCreate`, CoreDisplay's `CursorBitmapCreate`)
 checks only that the pixel data fits. The window server also plays them: an arrow with 48
 numbered frames, registered this way as `Arrow`, `ArrowS` and `com.apple.cursor.0`,
-counted 1 to 48 without gaps at 0.25 s each (`frame-limit-probe --play`). On macOS 26 the wrapper is `SLSRegisterCursorWithImages2`
-(found by CX330-YCH's fork of Mousecape-swiftUI). Using the internal call would mean
-finding an unexported function in SkyLight's code, which changes with each macOS build.
+counted 1 to 48 without gaps at 0.25 s each (`frame-limit-probe --play`).
+
+macOS 27.2.1 (26B131) behaves the same. There the wrapper is
+`SLSRegisterCursorWithImages2` (as CX330-YCH's fork of Mousecape-swiftUI found on macOS
+26); `CGSRegisterCursorWithImages` still refuses 25 frames or more, the same
+`_CGSRegisterCursorImages`, called the same way, registers 100, and an arrow with 48
+frames plays them all. The internal call isn't exported, but `dladdr` names it, so a
+program can find it among the calls the exported wrapper makes. Its address and the
+wrapper's code change with each macOS build.
 
 A registered cursor has one frame duration for all its frames. Animations whose frames
 last differently long can only keep their timing by repeating frames.

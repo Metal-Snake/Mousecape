@@ -116,15 +116,15 @@ above is done, or a real problem calls for them.
       reading the scale, as MaCursor does.
 
 - [ ] **Animations longer than 24 frames.** The limit is a check in SkyLight's client
-      wrapper; the window server stores 100 frames when the wrapper's internal IPC call is
-      used directly ([NOTES.md](NOTES.md#frame-limit), found by CX330-YCH's fork of
-      Mousecape-swiftUI, confirmed here on macOS 15.8.3). That fork finds the unexported
-      call by matching SHA-256 digests of SkyLight's code per macOS build (25G241, 26B131,
-      26C5035r), so it breaks with every update. On macOS 15.8.3 such a cursor plays all
-      its frames on screen (48 tested). Next: check macOS 27 with
-      `Scripts/frame-limit-test.sh` (it finds the internal call by name, no fixed
-      offsets), then weigh a way to find the call that survives
-      updates, with the reduction to 24 frames as the fallback. No clear licence: the idea only.
+      wrapper; through the wrapper's internal IPC call the window server registers and
+      plays longer animations (48 frames seen, on macOS 15.8.3 and 27.2.1;
+      [NOTES.md](NOTES.md#frame-limit)). Found by CX330-YCH's fork of Mousecape-swiftUI,
+      which locates the call by SHA-256 digests of SkyLight's code per build and so
+      breaks with every update. `Scripts/frame-limit-probe.m` finds it by the name
+      `dladdr` gives it instead, among the wrapper's calls. To decide: whether the engine
+      should use that call for cursors over 24 frames, with today's reduction as the
+      fallback whenever the call can't be found or a 24-frame check registration doesn't
+      read back right. No clear licence: the idea only.
 
 ## Housekeeping
 

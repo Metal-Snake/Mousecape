@@ -20,12 +20,12 @@ a manual test. What these tests found out about macOS is in [NOTES.md](NOTES.md)
   that another, finished process registered can't be removed with the non-global flag,
   but can with the global one ([NOTES.md](NOTES.md#registrations-last-for-the-session)).
   On macOS 15.8.3, names under `com.apple.coregraphics.` can't be removed with either.
-- The frame limit (`Scripts/frame-limit-probe.m`, on macOS 15.8.3): the public call
-  refuses 25 frames or more, the internal IPC call it wraps registers 100
+- The frame limit (`Scripts/frame-limit-probe.m`, on macOS 15.8.3 and 27.2.1): the
+  public call refuses 25 frames or more, the internal IPC call it wraps registers 100
   ([NOTES.md](NOTES.md#frame-limit)). With `--play`, an arrow with 48 numbered frames
-  plays all of them on screen. Not tested: the same on macOS 27. For that, copy the
-  built probe and `Scripts/frame-limit-test.sh` to that Mac and run the script in
-  Terminal; it writes `frame-limit-report-<build>.txt` next to itself.
+  plays all of them on screen. On another Mac, copy the built probe and
+  `Scripts/frame-limit-test.sh` there and run the script in Terminal; it writes
+  `frame-limit-report-<build>.txt` next to itself.
 
 **On macOS 27.2.1** (the build released as 3.1.0):
 
