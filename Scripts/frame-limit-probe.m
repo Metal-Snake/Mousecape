@@ -12,17 +12,23 @@
 // changes the arrow on screen until the next apply or reset, e.g.
 // `mousecloak --apply <cape>` or `mousecloak --reset`.
 //
-// The internal call is found at offsets seen on macOS 15.8.3 (24H241); on any other
-// build the probe stops.
+// The internal call isn't exported. The probe finds it among the calls the exported
+// wrapper makes (SLSRegisterCursorWithImages2 from macOS 26 on, SLSRegisterCursorWithImages
+// before): by its name `_CGSRegisterCursorImages`, which dladdr knows, or, without names,
+// as the one call into SkyLight's own code after the call that looks up the connection's
+// port. If that isn't clear, it stops. Before --play registers
+// anything globally, a 24-frame registration through that call must read back right.
+// Every run prints a report, with the wrapper's bytes for disassembling elsewhere.
 //
-//   cc -fobjc-arc Scripts/frame-limit-probe.m -o /tmp/frame-limit-probe \
-//      -F/System/Library/PrivateFrameworks -framework SkyLight \
-//      -framework CoreGraphics -framework AppKit
+//   cc -fobjc-arc -mmacosx-version-min=14.0 Scripts/frame-limit-probe.m \
+//      -o /tmp/frame-limit-probe -F/System/Library/PrivateFrameworks \
+//      -framework SkyLight -framework CoreGraphics -framework AppKit
 //   /tmp/frame-limit-probe [--play [frames]]
 
 #import <AppKit/AppKit.h>
 #import <CoreGraphics/CoreGraphics.h>
 #import <dlfcn.h>
+#import <libunwind.h>
 #import <string.h>
 #import <sys/sysctl.h>
 
@@ -36,7 +42,8 @@ extern CGError CGSRemoveRegisteredCursor(CGSConnectionID, const char *, bool);
 extern CGError CGSGetRegisteredCursorDataSize(CGSConnectionID, const char *, size_t *);
 
 typedef mach_port_t (*ConnectionPortFunction)(CGSConnectionID);
-// _CGSRegisterCursorImages as SLSRegisterCursorWithImages calls it on 24H241. The
+// _CGSRegisterCursorImages as SLSRegisterCursorWithImages calls it on 24H241 (and as the
+// fork CX330-YCH/Mousecape-swiftUI calls it on macOS 26). The
 // descriptors are four numbers per image: width and height in pixels, the offset of its
 // pixels in `pixels`, and their count. Pixels are premultiplied BGRA (32-bit little endian).
 typedef CGError (*RegisterIPCFunction)(mach_port_t, const char *, uint32_t global, uint32_t instantly,
@@ -58,19 +65,88 @@ static void *branchTarget(const uint8_t *site) {
     return (void *)((uintptr_t)site + 4LL * displacement);
 }
 
-// Finds the internal calls from the wrapper's code, at the offsets seen on 24H241.
-static BOOL findInternalCalls(void) {
-    char build[32] = {0}; size_t length = sizeof build;
-    sysctlbyname("kern.osversion", build, &length, NULL, 0);
-    if (strcmp(build, "24H241") != 0) { printf("Build %s, not 24H241; stopping.\n", build); return NO; }
-    uint8_t *wrapper = dlsym(RTLD_DEFAULT, "SLSRegisterCursorWithImages");
-    if (!wrapper) return NO;
-    connectionPort = branchTarget(wrapper + 712);
-    registerIPC = branchTarget(wrapper + 772);
-    void *expectedPort = dlsym(RTLD_DEFAULT, "CGSGetConnectionPortById");
-    if (!connectionPort || !registerIPC || (expectedPort && expectedPort != (void *)connectionPort)) {
-        printf("Unexpected wrapper layout; stopping.\n"); return NO;
+static void *exportedFunction(const char *name) { return dlsym(RTLD_DEFAULT, name); }
+
+// Whether the code at `address` is a stub that jumps into another library: within its
+// first four instructions, an indirect branch (BR or BRAA) with no call before it.
+static BOOL isStub(const uint8_t *address) {
+    for (int index = 0; index < 4; index++) {
+        uint32_t word; memcpy(&word, address + 4 * index, 4);
+        if ((word & 0xfffffc1f) == 0xd61f0000 || (word & 0xfffffc00) == 0xd71f0800) return YES;
     }
+    return NO;
+}
+
+// The end of the function that starts at `start`, from its unwind information. Compact
+// unwind entries cover runs of functions that unwind alike, so the entry may start before
+// `start` and could end after the function; capped at 4 KB. A range too long only adds
+// calls, and with more than one candidate the probe stops.
+static BOOL functionExtent(void *start, uintptr_t *end) {
+    unw_context_t context; unw_cursor_t cursor; unw_proc_info_t info;
+    if (unw_getcontext(&context) || unw_init_local(&cursor, &context) ||
+        unw_set_reg(&cursor, UNW_REG_IP, (unw_word_t)start + 4) || unw_get_proc_info(&cursor, &info) ||
+        info.start_ip > (unw_word_t)start || info.end_ip <= (unw_word_t)start + 4) return NO;
+    *end = MIN((uintptr_t)info.end_ip, (uintptr_t)start + 4096);
+    return YES;
+}
+
+// Finds the internal calls among the calls the exported wrapper makes, and reports them.
+static BOOL findInternalCalls(void) {
+    char build[32] = {0}, version[32] = {0}, model[64] = {0};
+    size_t length = sizeof build; sysctlbyname("kern.osversion", build, &length, NULL, 0);
+    length = sizeof version; sysctlbyname("kern.osproductversion", version, &length, NULL, 0);
+    length = sizeof model; sysctlbyname("hw.model", model, &length, NULL, 0);
+    printf("macOS %s (%s), %s\n", version, build, model);
+
+    const char *wrapperName = "SLSRegisterCursorWithImages2";
+    uint8_t *wrapper = exportedFunction(wrapperName);
+    if (!wrapper) { wrapperName = "SLSRegisterCursorWithImages"; wrapper = exportedFunction(wrapperName); }
+    uintptr_t wrapperEnd = 0;
+    if (!wrapper || !functionExtent(wrapper, &wrapperEnd)) { printf("Wrapper not found; stopping.\n"); return NO; }
+    Dl_info wrapperImage; dladdr(wrapper, &wrapperImage);
+    printf("Wrapper %s at %p, %lu bytes, in %s\n", wrapperName, wrapper,
+           (unsigned long)(wrapperEnd - (uintptr_t)wrapper), wrapperImage.dli_fname);
+
+    // dladdr names SkyLight's internal functions too (seen on 24H241, and the fork relies
+    // on it on macOS 26), so names come first. Without names: the one call into
+    // SkyLight's own code after the port lookup.
+    long portOffset = -1;
+    int named = 0, unnamed = 0;
+    RegisterIPCFunction namedCall = NULL, unnamedCall = NULL;
+    for (uint8_t *site = wrapper; (uintptr_t)site < wrapperEnd; site += 4) {
+        uint8_t *target = branchTarget(site);
+        if (!target) continue;
+        Dl_info targetInfo = {0};
+        dladdr(target, &targetInfo);
+        const char *name = targetInfo.dli_saddr == target && targetInfo.dli_sname ? targetInfo.dli_sname : "";
+        const char *kind;
+        if (isStub(target)) {
+            kind = "stub";
+        } else if (!strcmp(name, "CGSGetConnectionPortById") || !strcmp(name, "SLSGetConnectionPortById")) {
+            kind = "connection port"; portOffset = site - wrapper;
+            connectionPort = (ConnectionPortFunction)target;
+        } else if (!strcmp(name, "_CGSRegisterCursorImages")) {
+            kind = "registration (by name)"; named++; namedCall = (RegisterIPCFunction)target;
+        } else if (targetInfo.dli_fbase != wrapperImage.dli_fbase) {
+            kind = "other library";
+        } else if (portOffset >= 0 && !name[0]) {
+            kind = "unnamed, after the port"; unnamed++; unnamedCall = (RegisterIPCFunction)target;
+        } else {
+            kind = "other";
+        }
+        printf("  +%-5ld BL %p  %-24s %s\n", (long)(site - wrapper), target, kind, name);
+    }
+    printf("Wrapper bytes:");
+    for (uint8_t *byte = wrapper; (uintptr_t)byte < wrapperEnd; byte++)
+        printf("%s%02x", ((byte - wrapper) % 32) ? "" : "\n  ", *byte);
+    printf("\n");
+    registerIPC = named == 1 ? namedCall : (named == 0 && unnamed == 1 ? unnamedCall : NULL);
+    if (!connectionPort || !registerIPC) {
+        printf("Expected the port call and one registration call; found %d by name, %d unnamed. Stopping.\n",
+               named, unnamed);
+        return NO;
+    }
+    printf("Using %p as the internal registration call.\n", registerIPC);
     return YES;
 }
 
@@ -158,19 +234,23 @@ static CGError registerDirectly(CGSConnectionID connection, const char *name, BO
     return error;
 }
 
-static void readBack(CGSConnectionID connection, const char *name, int expectedFrames) {
+// Prints what the window server stored under `name`; returns its frame count, or -1.
+static long readBack(CGSConnectionID connection, const char *name, int expectedFrames) {
     CGSize size; CGPoint hotSpot; NSUInteger frames = 0; CGFloat duration = 0; CFArrayRef images = NULL;
     CGError error = CGSCopyRegisteredCursorImages(connection, name, &size, &hotSpot, &frames, &duration, &images);
-    if (error) { printf("    readback: error %d\n", error); return; }
+    if (error) { printf("    readback: error %d\n", error); return -1; }
     CGImageRef first = images && CFArrayGetCount(images) ? (CGImageRef)CFArrayGetValueAtIndex(images, 0) : NULL;
     printf("    readback: frames %lu (expected %d), duration %.4f, size %.0fx%.0f, image %zux%zu\n",
            (unsigned long)frames, expectedFrames, duration, size.width, size.height,
            first ? CGImageGetWidth(first) : 0, first ? CGImageGetHeight(first) : 0);
     if (images) CFRelease(images);
+    return (long)frames;
 }
 
-// Compares the public wrapper with the internal call, for this connection only.
-static int compareCalls(CGSConnectionID connection) {
+// Compares the public wrapper with the internal call, for this connection only. Returns
+// whether the internal call registered 24 frames and they read back right, which shows
+// it is the right function, called the right way.
+static BOOL compareCalls(CGSConnectionID connection) {
     const char *name = "org.mousecape.test.frame-limit";
     int counts[] = {24, 25, 48, 100};
 
@@ -187,17 +267,22 @@ static int compareCalls(CGSConnectionID connection) {
         CGImageRelease(sheet);
     }
 
-    printf("Internal IPC call _CGSRegisterCursorImages at %p:\n", registerIPC);
+    printf("Internal IPC call at %p:\n", registerIPC);
+    BOOL verified = NO;
     for (int i = 0; i < 4; i++) {
         CGImageRef sheet = makeSheet(counts[i], 1, NO);
         CGError error = registerDirectly(connection, name, NO, counts[i], @[(__bridge id)sheet],
                                          CGPointMake(2, 2), 0.05f);
         printf("  %3d frames: error %d\n", counts[i], error);
-        if (!error) readBack(connection, name, counts[i]);
+        long stored = error ? -1 : readBack(connection, name, counts[i]);
         CGSRemoveRegisteredCursor(connection, name, false);
         CGImageRelease(sheet);
+        if (i == 0) {
+            verified = (stored == 24);
+            if (!verified) { printf("The internal call didn't register 24 frames right; stopping.\n"); break; }
+        }
     }
-    return 0;
+    return verified;
 }
 
 // Registers a numbered arrow globally, under the names the engine uses for the arrow.
@@ -223,13 +308,13 @@ static int play(CGSConnectionID connection, int frames) {
 
 int main(int argc, char *argv[]) {
     @autoreleasepool {
+        setvbuf(stdout, NULL, _IOLBF, 0);   // keep the report even if a call crashes
+        BOOL playing = argc > 1 && strcmp(argv[1], "--play") == 0;
+        int frames = playing && argc > 2 ? atoi(argv[2]) : 48;
+        if (frames < 1 || frames > 512) { printf("Frames must be 1 to 512.\n"); return 1; }
         if (!findInternalCalls()) return 1;
         CGSConnectionID connection = CGSMainConnectionID();
-        if (argc > 1 && strcmp(argv[1], "--play") == 0) {
-            int frames = argc > 2 ? atoi(argv[2]) : 48;
-            if (frames < 1 || frames > 512) { printf("Frames must be 1 to 512.\n"); return 1; }
-            return play(connection, frames);
-        }
-        return compareCalls(connection);
+        if (!compareCalls(connection)) return 2;
+        return playing ? play(connection, frames) : 0;
     }
 }

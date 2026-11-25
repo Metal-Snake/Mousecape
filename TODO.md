@@ -122,7 +122,8 @@ above is done, or a real problem calls for them.
       call by matching SHA-256 digests of SkyLight's code per macOS build (25G241, 26B131,
       26C5035r), so it breaks with every update. On macOS 15.8.3 such a cursor plays all
       its frames on screen (48 tested). Next: check macOS 27 with
-      `Scripts/frame-limit-probe.m`, then weigh a way to find the call that survives
+      `Scripts/frame-limit-test.sh` (it finds the internal call by name, no fixed
+      offsets), then weigh a way to find the call that survives
       updates, with the reduction to 24 frames as the fallback. No clear licence: the idea only.
 
 ## Housekeeping
