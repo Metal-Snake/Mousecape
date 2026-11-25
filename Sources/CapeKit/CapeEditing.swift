@@ -335,7 +335,7 @@ public enum CursorProblem: Equatable, Sendable, CustomStringConvertible {
         case .frameCountOutOfRange:
             String(localized: "A cursor needs at least one frame.")
         case .framesWillBeReduced(let from, let to):
-            String(localized: "More frames than macOS shows: the \(from) frames are reduced to \(to) when applied.")
+            String(localized: "More frames than Mousecape applies: the \(from) frames are reduced to \(to) when applied.")
         case .timedByDurations(let from, let to):
             String(localized: "The \(from) frames have different durations, but macOS shows every frame equally long: when applied, they become \(to) frames picked by time, so the timing stays.")
         case .notMirroredLikeArrow:

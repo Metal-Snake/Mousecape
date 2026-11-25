@@ -1,7 +1,7 @@
 import SwiftUI
 import CapeKit
 
-/// Picks which frames of an animation to keep: for cursors over macOS's frame limit, or
+/// Picks which frames of an animation to keep: for cursors over the frame limit, or
 /// to thin out any animation. Original and result play side by side.
 struct FrameChooserView: View {
     let cursor: CapeCursor
@@ -94,8 +94,8 @@ struct FrameChooserView: View {
             Text("Choose Frames — \(cursor.name)")
                 .font(.title2.weight(.semibold))
             Text(cursor.frameDurations != nil
-                 ? "The frames have different durations, but macOS shows every frame equally long, and at most \(limit) of them. By Time picks the frame shown at \(limit) evenly spaced moments of the loop, so the timing stays; the other choices keep the loop's length."
-                 : "macOS shows at most \(limit) frames of an animation. Pick the ones to keep; by default one loop keeps its length, so the animation runs at the same speed.")
+                 ? "The frames have different durations, but macOS shows every frame equally long, and Mousecape applies at most \(limit) of them. By Time picks the frame shown at \(limit) evenly spaced moments of the loop, so the timing stays; the other choices keep the loop's length."
+                 : "Mousecape applies at most \(limit) frames of an animation. Pick the ones to keep; by default one loop keeps its length, so the animation runs at the same speed.")
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
         }

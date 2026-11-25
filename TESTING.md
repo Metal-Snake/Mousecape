@@ -28,8 +28,10 @@ a manual test. What these tests found out about macOS is in [NOTES.md](NOTES.md)
   cape with a 48-frame arrow applies with all 48 frames to `Arrow`, `ArrowS` and core
   cursor 0 and counts 1 to 48 on screen (mirrored); with `FrameDurations` alternating 2
   and 1 jiffies it applies 72 frames of 1/60 s; with `MOUSECAPE_SHORT_ANIMATIONS=1` it
-  falls back to 24 frames; reset afterwards brings back the arrow. Not tested yet: the
-  app's warnings, Reduce button and frame chooser with long animations.
+  falls back to 24 frames; reset afterwards brings back the arrow.
+- The app with long animations (on macOS 15.8.3): a 48-frame cursor has no warning and a
+  frame stepper; a 300-frame one says it is reduced to 150, offers "Reduce to 150", and
+  the frame chooser keeps every 2nd frame (150), with "Spread 256 evenly" and "First 256".
 - For the probe on another Mac, copy the built probe and
   `Scripts/frame-limit-test.sh` there and run the script in Terminal; it writes
   `frame-limit-report-<build>.txt` next to itself.
