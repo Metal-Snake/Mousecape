@@ -192,6 +192,21 @@ private func pixel(_ image: CGImage, _ x: Int, _ y: Int) -> NSColor {
     #expect(cursor.problems.isEmpty)
 }
 
+/// Bibata's Windows files go up to 128 px: a 32-point cursor gets 4x too, so it stays sharp
+/// at a larger cursor size.
+@Test func addsTheSourcesHighestDensity() throws {
+    let cursor = try WindowsCursor.capeCursor(from: solidCur(size: 128, rgba: [255, 0, 0, 255], hotSpot: (8, 4)),
+                                              identifier: "com.apple.coregraphics.Arrow")
+    #expect(cursor.scales == [1, 2, 4])
+    #expect(cursor.problems.isEmpty)
+}
+
+@Test(arguments: [(1.0, [1]), (1.5, [1]), (2.0, [1, 2]), (3.0, [1, 2, 3]), (4.0, [1, 2, 4]), (5.0, [1, 2, 5]),
+                  (6.5, [1, 2, 5, 6]), (10.7, [1, 2, 5, 10]), (16.0, [1, 2, 5, 10])])
+func importScalesAddTheHighestWholeDensity(density: Double, scales: [Int]) {
+    #expect(CapeCursor.importScales(sourceDensity: density) == scales)
+}
+
 @Test func convertsAnimation() throws {
     let frames = [solidCur(size: 32, rgba: [255, 0, 0, 255]), solidCur(size: 32, rgba: [0, 0, 255, 255])]
     let cursor = try WindowsCursor.capeCursor(from: aniFile(frames: frames, defaultRate: 6),

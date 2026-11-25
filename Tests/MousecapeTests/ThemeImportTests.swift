@@ -132,7 +132,7 @@ final class ThemeImportTests {
             return (cape.name, cape.cursors.first?.scales ?? [])
         }
         #expect(name == "modern-v2")
-        #expect(scales == [1, 2])          // 2x needs 64 px images: x1 (32 px) would give 1x only
+        #expect(scales == [1, 2, 3])       // from x3 (96 px); x1 (32 px) would give 1x only
     }
 
     /// A Windows theme folder with an `install.inf` named `scheme` and an arrow of `size` px.

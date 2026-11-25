@@ -9,6 +9,18 @@ extension CapeCursor {
     /// the screen (NOTES.md), so a cape may hold others too, like 3x or 4x.
     public static let standardScales = [1, 2, 5, 10]
 
+    /// The densities an importer makes from a source with `sourceDensity` times the pixels of
+    /// 1x: the standard ones it reaches, and the highest whole density it holds (3x from 96
+    /// pixels for a 32-point cursor, 4x from 128), at most 10x. macOS takes any density
+    /// and picks the smallest dense enough for the screen and the cursor size, so the extra
+    /// one keeps an enlarged cursor sharp instead of scaling 2x up.
+    public static func importScales(sourceDensity: Double) -> [Int] {
+        var scales = standardScales.filter { $0 == 1 || Double($0) <= sourceDensity }
+        let highest = min(Int(sourceDensity.rounded(.down)), standardScales.max() ?? 10)
+        if highest > 1, !scales.contains(highest) { scales.append(highest) }
+        return scales.sorted()
+    }
+
     /// macOS's call for registering cursors refuses more frames than this. The check sits in
     /// SkyLight's client code; the engine gets past it when it can (`longAnimations`,
     /// NOTES.md "Frame limit").

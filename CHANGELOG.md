@@ -17,6 +17,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Imported Windows and Linux cursors keep the highest density their files hold: a
+  Windows cursor with 128-pixel images gets 4x besides 1x and 2x, a Linux theme from 24
+  to 96 pixels 4x too. An enlarged cursor stays sharp instead of macOS scaling up the 2x
+  images. Large and Extra-Large versions of a Windows theme stay versions of their own:
+  they draw a larger cursor, not the same one in more pixels.
 - The background agent runs from a copy of `mousecloak` in
   `~/Library/Application Support/Mousecape/Agent`, not from inside the app, so the Finder
   can move or delete Mousecape while the agent is on. Mousecape keeps the copy up to date

@@ -83,12 +83,6 @@ there is no x86_64 build.
 - [ ] **Gallery follow-ups.** More sources than pling.com. Mark themes imported by hand
   too (only gallery installs are known now; names alone are too vague, as with Bibata's
   20 variants).
-- [ ] **Large and Extra-Large Windows sets as pixel densities.** Windows themes often come
-      in sizes (e.g. 32, 48 and 64 px); Mousecape makes one cape of each, so only 1x
-      exists and the cursor is blurry on Retina screens or at a larger cursor size. When
-      the sizes are the same artwork (same cursor roles, sizes in the same ratio, hot spots
-      scaled alike), merge them into one cape with 1x, 1.5x and 2x images, so macOS picks
-      the sharp one. Both in the gallery's version choice and in archive imports.
 - [ ] **Menu bar extra** for switching capes quickly.
 - [ ] **A cape for light mode and one for dark mode**, switched by the agent when the system
       appearance changes (`AppleInterfaceThemeChangedNotification`). Idea from

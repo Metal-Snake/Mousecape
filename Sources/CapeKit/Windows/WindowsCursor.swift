@@ -8,8 +8,9 @@ public enum WindowsCursor {
     public static let pointSize = 32
 
     /// A cape cursor for `identifier` from the contents of a `.cur`, `.ico` or `.ani` file.
-    /// Images are resampled to 1x and 2x (and 5x when the source is large enough), and the
-    /// transparent margin around the artwork is cut off.
+    /// Images are resampled to 1x and to each higher density the source holds
+    /// (`CapeCursor.importScales`: 2x and 4x from 128 px), and the transparent margin around
+    /// the artwork is cut off.
     public static func capeCursor(from data: Data, identifier: String) throws -> CapeCursor {
         let frames: [WindowsIconImage]
         var frameDuration = 1.0
@@ -33,8 +34,8 @@ public enum WindowsCursor {
         let hotSpot = CGPoint(x: (first.hotSpot.x * toPoints).rounded(), y: (first.hotSpot.y * toPoints).rounded())
 
         // Every frame drawn into one sheet per scale. Scales above the source's own
-        // resolution would only add blur.
-        let scales = CapeCursor.standardScales.filter { $0 == 1 || pointWidth * Double($0) <= Double(source.width) }
+        // resolution would only add blur; the highest it holds is added (4x from 128 px).
+        let scales = CapeCursor.importScales(sourceDensity: Double(source.width) / pointWidth)
         var representations: [Data] = []
         for scale in scales {
             let width = Int(pointWidth) * scale, height = Int(pointHeight) * scale

@@ -39,6 +39,10 @@ a manual test. What these tests found out about macOS is in [NOTES.md](NOTES.md)
   `launchctl bootstrap` (error 5), so the agent starts only at the next login or when the
   app opens; run outside the sandbox, `--repair-agent` loads it at once. `brew uninstall`
   removes the app, the agent and its plist and keeps the setting.
+- Import densities (on macOS 15.8.3): Bibata Modern Classic Regular for Windows (files
+  up to 128 px) imports with 1x, 2x and 4x (the arrow 19 × 22 pt with 76 × 88 px), its
+  busy cursor with 3x (96 px frames), and applies with all of them. Its Large and
+  Extra-Large versions have the same image sizes with larger artwork.
 - The agent from a copy (on macOS 15.8.3): `--repair-agent` moves an agent that ran from
   the bundle to `~/Library/Application Support/Mousecape/Agent/<bundle id>/mousecloak`,
   which then applies the cape; `lsof` finds no Mousecape process in the bundle. A test

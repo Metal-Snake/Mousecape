@@ -116,7 +116,8 @@ public enum Xcursor {
     /// shows its 48-pixel images unscaled there, so scaling them down to 24 points would
     /// make the cursor half as large as on Linux. Higher scales take the file's images of a
     /// multiple of that size when it has them (else the next larger ones, scaled down);
-    /// scales larger than the file's largest images are left out. The transparent margin
+    /// scales larger than the file's largest images are left out, and the highest density
+    /// they hold is added (`CapeCursor.importScales`: 4x from 96 pixels over 24). The transparent margin
     /// around the artwork is cut off.
     public static func capeCursor(from data: Data, identifier: String) throws -> CapeCursor {
         let all = try images(from: data)
@@ -135,7 +136,7 @@ public enum Xcursor {
                                           durations: base.map { max($0.delay, 1) }, unit: 0.001)
 
         var representations: [Data] = []
-        for scale in CapeCursor.standardScales where scale == 1 || baseSize * scale <= largestSize {
+        for scale in CapeCursor.importScales(sourceDensity: Double(largestSize) / Double(baseSize)) {
             // The smallest size at least as large as needed, with the same frames.
             let source = scale == 1 ? base : bySize.keys.sorted()
                 .first { $0 >= baseSize * scale && bySize[$0]!.count == base.count }

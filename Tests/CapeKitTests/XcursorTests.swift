@@ -68,6 +68,16 @@ private func centreColour(_ png: Data, frameHeight: Int) throws -> [UInt8] {
     #expect(cursor.scales == [1, 2])                            // 2x from the 64-pixel images
 }
 
+/// Sizes 24 to 96: 96 pixels over 24 points are 4x, so that becomes a density of its own.
+@Test func xcursorGetsTheHighestDensityToo() throws {
+    let file = xcursorFile([24, 32, 48, 64, 96].map {
+        XcursorTestImage(nominalSize: $0, width: $0, height: $0, hotSpot: ($0 / 8, $0 / 8))
+    })
+    let cursor = try Xcursor.capeCursor(from: file, identifier: "x")
+    #expect(cursor.size == CGSize(width: 24, height: 24))
+    #expect(cursor.scales == [1, 2, 4])
+}
+
 @Test func convertsXcursorAnimation() throws {
     // Three frames, 20/40/20 ms: repeated in 20 ms units.
     let frames = [20, 40, 20].map { XcursorTestImage(nominalSize: 24, width: 24, height: 24, hotSpot: (12, 12), delay: $0) }
