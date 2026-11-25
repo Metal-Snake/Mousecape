@@ -42,8 +42,8 @@ grep -q "^\[$VERSION\]: " CHANGELOG.md || die "CHANGELOG.md has no link for [$VE
 security find-certificate -c "Mousecape Code Signing" >/dev/null 2>&1 \
     || die "no \"Mousecape Code Signing\" certificate (run Scripts/make-signing-certificate.sh)"
 gh auth status >/dev/null 2>&1 || die "gh is not logged in"
-git ls-remote --exit-code "https://github.com/$TAP_REPO.git" main >/dev/null 2>&1 \
-    || die "can't reach the Homebrew tap $TAP_REPO"
+[ "$(gh api "repos/$TAP_REPO" --jq .permissions.push 2>/dev/null)" = "true" ] \
+    || die "gh can't push to the Homebrew tap $TAP_REPO"
 
 NOTES="$(mktemp)"
 TAP_DIR="$(mktemp -d)"
@@ -101,6 +101,12 @@ sed -i '' -E -e "s/^  version \"[^\"]*\"/  version \"$VERSION\"/" \
               -e "s/^  sha256 \"[^\"]*\"/  sha256 \"$CHECKSUM\"/" "$CASK"
 grep -q "^  version \"$VERSION\"" "$CASK" && grep -q "^  sha256 \"$CHECKSUM\"" "$CASK" \
     || die "could not update $CASK"
-git -C "$TAP_DIR" commit --quiet -am "feat(mousecape): update to $VERSION"
-git -C "$TAP_DIR" push --quiet origin main
+# Run again for the same version, the cask may already be up to date.
+if git -C "$TAP_DIR" diff --quiet; then
+    echo "The cask already has $VERSION"
+else
+    git -C "$TAP_DIR" commit --quiet -am "feat(mousecape): update to $VERSION"
+    # Pushed with gh's login, checked above, whatever git's own credentials are.
+    git -C "$TAP_DIR" -c credential.helper= -c credential.helper='!gh auth git-credential' push --quiet origin main
+fi
 echo "==> Done: $TAG, and brew install --cask metal-snake/tap/mousecape installs it"
