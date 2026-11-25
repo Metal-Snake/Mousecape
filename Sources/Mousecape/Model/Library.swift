@@ -197,7 +197,8 @@ final class Library {
         appliedIdentifier = EnginePreferences.appliedCapeIdentifier
         guard succeeded else {
             if appliedIdentifier == cape.identifier {
-                let names = EnginePreferences.failedCursors.map(CursorNames.name(for:)).sorted()
+                // Unknown identifiers (custom or newer names) by themselves, each name once.
+                let names = Set(EnginePreferences.failedCursors.map { CursorNames.all[$0] ?? $0 }).sorted()
                 throw LibraryError.partiallyApplied(cape.name, cursors: names)
             }
             throw LibraryError.applyFailed(cape.name)
