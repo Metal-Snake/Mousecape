@@ -32,6 +32,13 @@ a manual test. What these tests found out about macOS is in [NOTES.md](NOTES.md)
 - The app with long animations (on macOS 15.8.3): a 48-frame cursor has no warning and a
   frame stepper; a 300-frame one says it is reduced to 150, offers "Reduce to 150", and
   the frame chooser keeps every 2nd frame (150), with "Spread 256 evenly" and "First 256".
+- Homebrew (on macOS 15.8.3, Homebrew 7.0.16): installing 3.4.0 from the tap, then
+  upgrading to local test builds whose cask runs `mousecloak --repair-agent`: the old
+  version's uninstall removes the agent's plist, the new version writes it again for
+  `/Applications/Mousecape.app` with the new build. Homebrew's sandbox refuses
+  `launchctl bootstrap` (error 5), so the agent starts only at the next login or when the
+  app opens; run outside the sandbox, `--repair-agent` loads it at once. `brew uninstall`
+  removes the app, the agent and its plist and keeps the setting.
 - For the probe on another Mac, copy the built probe and
   `Scripts/frame-limit-test.sh` there and run the script in Terminal; it writes
   `frame-limit-report-<build>.txt` next to itself.

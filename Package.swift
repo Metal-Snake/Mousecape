@@ -25,16 +25,21 @@ let package = Package(
         .target(
             name: "CapeKit"
         ),
+        // The background agent's launchd job and the user's choice whether it runs, shared
+        // by the app and `mousecloak --repair-agent`.
+        .target(
+            name: "LoginAgentKit"
+        ),
         // Command line tool; `mousecloak --listen` is also the background agent that
         // re-applies the cape at login and on display changes.
         .executableTarget(
             name: "mousecloak",
-            dependencies: ["MousecloakCore", "CapeKit"]
+            dependencies: ["MousecloakCore", "CapeKit", "LoginAgentKit"]
         ),
         // SwiftUI app.
         .executableTarget(
             name: "Mousecape",
-            dependencies: ["MousecloakCore", "CapeKit"]
+            dependencies: ["MousecloakCore", "CapeKit", "LoginAgentKit"]
         ),
         // File builders shared by the test targets.
         .target(
@@ -47,7 +52,7 @@ let package = Package(
         ),
         .testTarget(
             name: "MousecapeTests",
-            dependencies: ["Mousecape", "CapeKit", "MousecloakCore", "TestSupport"]
+            dependencies: ["Mousecape", "CapeKit", "MousecloakCore", "LoginAgentKit", "TestSupport"]
         ),
     ]
 )

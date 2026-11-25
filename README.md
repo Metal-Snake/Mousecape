@@ -40,7 +40,8 @@ brew install --cask mousecape
 
 This also puts `mousecloak`, the command line tool, on your path, and removes the
 quarantine flag that would make macOS block the app (the `xattr` step below).
-`brew upgrade --cask mousecape` updates it.
+`brew upgrade --cask mousecape` updates it. An upgrade stops the background agent; if it
+is turned on, it starts again at the next login or when you open Mousecape.
 
 Or by hand: download `Mousecape-<version>.zip` from the
 [releases](https://github.com/Metal-Snake/Mousecape/releases), unzip it, move
@@ -276,6 +277,7 @@ testing new macOS versions (see [TESTING.md](TESTING.md)).
 |---|---|
 | `Sources/MousecloakCore` | The original cursor engine (Objective-C, manual retain/release) |
 | `Sources/mousecloak` | Command line tool and background agent |
+| `Sources/LoginAgentKit` | The background agent's launch agent file, shared by the app and the command line tool |
 | `Sources/CapeKit` | The cape format, cursor images, editing, the Windows and Xcursor importers, the pling.com catalogue (pure Swift) |
 | `Sources/Mousecape` | The SwiftUI app: library, history, editor, theme import, online gallery |
 | `Tests` | Swift Testing suites, and `TestSupport` with the file builders they share |

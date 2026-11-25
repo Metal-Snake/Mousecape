@@ -38,6 +38,7 @@ without Xcode, so don't add them.
 | `CapeKit` | Pure Swift, no private API | The `.cape` format (`Cape`, `CapeCursor`), sprite sheets (`CursorSheet`), the editing model and validation (`CapeEditing`), capes from folders of images (`CapeFolder`, for `mousecloak --create`), Undo steps (`EditHistory`, `CapeEditPart`), the pling.com catalogue (`Pling/`), what tells versions of a theme apart (`CapeSummary`) and names them when several are installed (`ThemeVersions`), diffs, left-handed rules, and the Windows (`Windows/`), Xcursor (`Xcursor/`) and MaCursor (`MaCursor/`) importers. |
 | `mousecloak` | Swift | CLI (`main.swift`, `--create` in `CreateCape.swift`). `mousecloak --listen` is also the background login agent. |
 | `Mousecape` | SwiftUI | The app. `Model/` holds `AppModel` (UI state and actions), `Library` (the capes folder), `CapeHistory`, `EditorSession` (the editor's draft and its Undo), `CursorGallery` (the online gallery and its downloads), `Engine` (the Swift face of the engine plus `EnginePreferences`), `LoginAgent` and `ThemeImport` (archives and folders). `Views/` holds the UI, with the editor under `Views/Editor/`. |
+| `LoginAgentKit` | Swift | The background agent's launchd job (`LaunchAgent`) and the user's choice whether it runs, shared by the app's `LoginAgent` and `mousecloak --repair-agent`. |
 | `TestSupport` | Swift | Builders for test files (PNG, `.cur`, Xcursor), shared by both test targets. |
 
 Key facts:
@@ -59,9 +60,14 @@ Key facts:
   lives in `…/Mousecape/Versions` (outside `capes/` on purpose). Deleting moves files to
   the Trash. Tests replace `Library.moveToTrash`.
 - **Agent.** A plain launch agent at
-  `~/Library/LaunchAgents/<bundle id>.listener.plist`, written by `LoginAgent` and loaded
-  with `launchctl`. It is deliberately not SMAppService: that pinned the agent to the exact
-  build of an app without a team ID. Don't switch it back.
+  `~/Library/LaunchAgents/<bundle id>.listener.plist`, written by `LaunchAgent`
+  (LoginAgentKit) and loaded with `launchctl`. It is deliberately not SMAppService: that
+  pinned the agent to the exact build of an app without a team ID. Don't switch it back.
+  Whether it should run is the preference `MCLoginAgentEnabled` in the app's own domain,
+  not the plist's existence: Homebrew's cask removes the plist on every upgrade. The app
+  at launch and `mousecloak --repair-agent` (run by the cask after installing) put it
+  back. Homebrew's sandbox can't load it, so after `brew upgrade` it starts at the next
+  login or when the app opens.
 - **Window server limits** shape much of the code. macOS's registration call allows at
   most 24 frames (`CapeCursor.maximumFrameCount`), a check in SkyLight's client code.
   `longanim.m` goes past it when a test registration works, up to 256 frames and 2^24

@@ -12,6 +12,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Install and update with Homebrew: `brew install --cask metal-snake/tap/mousecape`
   (after `brew trust metal-snake/tap` on Homebrew 7). The cask also links `mousecloak`
   and removes the quarantine flag.
+- `mousecloak --repair-agent` sets up the background agent again when it is turned on in
+  Settings but missing or outdated. The Homebrew cask runs it after every install.
+
+### Fixed
+
+- The background agent stays on when its launch agent file disappears, as on every
+  Homebrew upgrade: Mousecape keeps the setting itself and sets the agent up again when
+  it opens. Before, a missing file turned the setting off.
 
 ## [3.4.0] - 2026-11-25
 

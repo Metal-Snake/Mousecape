@@ -1,5 +1,6 @@
 import AppKit
 import CapeKit
+import LoginAgentKit
 import MousecloakCore
 
 // mousecloak: the command line front end of the cursor engine. Same options as the
@@ -22,6 +23,8 @@ MISCELLANEOUS
   -s, --scale [value]     Get, or set, the cursor scale
       --listen            Stay alive and re-apply the current cape on login and display changes
       --list              Show which cursors are registered, and their backups (for bug reports)
+      --repair-agent      Set up the background agent again if it is turned on in Settings
+                          but missing or outdated (Homebrew's cask runs this after installing)
   -h, --help              Show this help
 
 CREATING
@@ -42,7 +45,7 @@ CREATING
 
 enum Command {
     case apply(String), reset, create(String), convert(String), dump(String)
-    case export(String), scale(Float?), listen, list, help
+    case export(String), scale(Float?), listen, list, repairAgent, help
 }
 
 func fail(_ message: String) -> Never {
@@ -94,6 +97,7 @@ func parse(_ args: [String]) -> (Command, output: String?, create: CreateOptions
             }
         case "--listen": commands.append(.listen)
         case "--list": commands.append(.list)
+        case "--repair-agent": commands.append(.repairAgent)
         case "-h", "-?", "--help": commands.append(.help)
         case "--suppressCopyright": break   // accepted for compatibility with older agents
         default: fail("unknown option \(arg), try --help")
@@ -143,6 +147,24 @@ case .scale(let value):
     }
 case .list:
     listRegisteredCursors()
+case .repairAgent:
+    // Homebrew removes the agent's plist on every upgrade, not only on uninstall; this puts
+    // it back, running this copy and build of the app, when the user has it turned on.
+    // Homebrew runs it in a sandbox that may not load launch agents; the plist is written
+    // all the same, so launchd starts the agent at the next login, and the app loads it
+    // when it next opens.
+    guard let agent = LaunchAgent.current else { fail("--repair-agent only works from inside Mousecape.app") }
+    do {
+        if try agent.repairIfNeeded() {
+            print("Background agent set up for \(agent.appURL.path)")
+        } else {
+            print(agent.isEnabled ? "Background agent is up to date" : "Background agent is turned off in Settings")
+        }
+    } catch LaunchAgent.AgentError.launchctl {
+        print("Background agent set up for \(agent.appURL.path); it starts at the next login, or when Mousecape opens")
+    } catch {
+        fail(error.localizedDescription)
+    }
 case .listen:
     // mousecloak lives inside Mousecape.app, so once the engine loads Cocoa the system
     // takes the agent for the app itself: a Dock icon that bounces forever. Declare it a
