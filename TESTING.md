@@ -24,12 +24,12 @@ a manual test. What these tests found out about macOS is in [NOTES.md](NOTES.md)
   public call refuses 25 frames or more, the internal IPC call it wraps registers 100
   ([NOTES.md](NOTES.md#frame-limit)). With `--play`, an arrow with 48 numbered frames
   plays all of them on screen.
-- Long animations in the engine (on macOS 15.8.3, left-handed mode on): a cape with a
-  48-frame arrow applies with all 48 frames to `Arrow`, `ArrowS` and core cursor 0 and
-  counts 1 to 48 on screen (mirrored); with `FrameDurations` alternating 2 and 1 jiffies
-  it applies 72 frames of 1/60 s; with `MOUSECAPE_SHORT_ANIMATIONS=1` it falls back to 24
-  frames; reset afterwards brings back the arrow. Not tested yet: the same on macOS
-  27, and the app's warnings, Reduce button and frame chooser with long animations.
+- Long animations in the engine (on macOS 15.8.3 and 27.2.1, left-handed mode on): a
+  cape with a 48-frame arrow applies with all 48 frames to `Arrow`, `ArrowS` and core
+  cursor 0 and counts 1 to 48 on screen (mirrored); with `FrameDurations` alternating 2
+  and 1 jiffies it applies 72 frames of 1/60 s; with `MOUSECAPE_SHORT_ANIMATIONS=1` it
+  falls back to 24 frames; reset afterwards brings back the arrow. Not tested yet: the
+  app's warnings, Reduce button and frame chooser with long animations.
 - For the probe on another Mac, copy the built probe and
   `Scripts/frame-limit-test.sh` there and run the script in Terminal; it writes
   `frame-limit-report-<build>.txt` next to itself.
