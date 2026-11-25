@@ -76,6 +76,12 @@ public enum CursorNames {
         all[identifier] ?? "Unknown"
     }
 
+    /// The resize cursors, whose direction is their meaning: mirrored, Resize Northwest
+    /// would point northeast. Their hot spot often sits at the top left, like a pointer's.
+    public static func isResize(_ identifier: String) -> Bool {
+        all[identifier]?.hasPrefix("Resize ") ?? false
+    }
+
     static func rank(of identifier: String) -> Int {
         prominent.firstIndex(of: identifier) ?? prominent.count
     }

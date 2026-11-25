@@ -17,6 +17,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Cursors whose hot spot lies on their right or bottom edge apply. macOS refuses them, so
+  Mousecape moves the hot spot one point in; themes such as Katana lost a dozen cursors to
+  this. The library and the editor point such hot spots out.
+- When macOS rejects some cursors of a cape, the message names them.
+- Left-handed mode no longer flags the resize cursors (such as Resize Northwest) as not
+  mirrored like the arrow: their direction is their meaning, so they stay as they are.
 - The background agent stays on when its launch agent file disappears, as on every
   Homebrew upgrade: Mousecape keeps the setting itself and sets the agent up again when
   it opens. Before, a missing file turned the setting off.

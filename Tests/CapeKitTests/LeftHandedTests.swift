@@ -104,6 +104,7 @@ private func cursor(_ identifier: String, hotSpot: CGPoint = CGPoint(x: 1, y: 1)
         try cursor("com.apple.coregraphics.Arrow"),
         try cursor("com.apple.coregraphics.IBeam", hotSpot: CGPoint(x: 1, y: 1)),
         try cursor("com.apple.cursor.7", hotSpot: CGPoint(x: 8, y: 8)),                  // crosshair: centred
+        try cursor("com.apple.cursor.33", hotSpot: CGPoint(x: 1, y: 1)),                 // Resize Northwest: a direction
     ])
     #expect(cape.unevenMirroring == ["com.apple.coregraphics.IBeam": .notMirroredLikeArrow])
     cape.cursors[1].mirrorForLeftHanded = true

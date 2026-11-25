@@ -158,12 +158,14 @@ extension Cape {
 
     /// In left-handed mode: cursors that look like they point with a tip at the top left
     /// (their hot spot is there) but stay unmirrored while the arrow is mirrored, the way
-    /// some capes draw the I-beam as an arrow. Keyed by cursor identifier.
+    /// some capes draw the I-beam as an arrow. Resize cursors are left out: theirs is a
+    /// direction, which mirroring would turn. Keyed by cursor identifier.
     public var unevenMirroring: [String: CursorProblem] {
         guard let arrow = cursors.first(where: { $0.identifier == "com.apple.coregraphics.Arrow" }),
               leftHandedLook(of: arrow) != .unchanged else { return [:] }
         var problems: [String: CursorProblem] = [:]
-        for cursor in cursors where leftHandedLook(of: cursor) == .unchanged && cursor.size.width > 8 {
+        for cursor in cursors where leftHandedLook(of: cursor) == .unchanged && cursor.size.width > 8
+            && !CursorNames.isResize(cursor.identifier) {
             let x = cursor.hotSpot.x / cursor.size.width, y = cursor.hotSpot.y / cursor.size.height
             if x < 0.3 && y < 0.3 { problems[cursor.identifier] = .notMirroredLikeArrow }
         }
