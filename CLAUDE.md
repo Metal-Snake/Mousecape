@@ -61,8 +61,8 @@ Key facts:
   `~/Library/LaunchAgents/<bundle id>.listener.plist`, written by `LoginAgent` and loaded
   with `launchctl`. It is deliberately not SMAppService: that pinned the agent to the exact
   build of an app without a team ID. Don't switch it back.
-- **Window server limits** shape much of the code. It allows at most 24 frames per cursor
-  (`CapeCursor.maximumFrameCount`). Longer animations are reduced at apply time (every
+- **Window server limits** shape much of the code. Registering a cursor allows at most 24
+  frames (`CapeCursor.maximumFrameCount`; a check in SkyLight's client code, see NOTES.md). Longer animations are reduced at apply time (every
   n-th frame, or by time when `FrameDurations` exists). A reset removes the backups it
   restored (with the global flag, the only one that works across processes), so the next
   apply backs up afresh. Names under `com.apple.coregraphics.` can't be unregistered at

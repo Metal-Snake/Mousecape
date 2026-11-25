@@ -115,14 +115,15 @@ above is done, or a real problem calls for them.
       if it stops halfway, the scale stays at 16. Treat 16 as "not the user's choice" when
       reading the scale, as MaCursor does.
 
-- [ ] **Animations longer than 24 frames.** CX330-YCH's fork of Mousecape-swiftUI reports
-      that the 24-frame limit sits in SkyLight's client-side wrapper
-      (`SLSRegisterCursorWithImages2`), not in the window server, and registers longer
-      animations by calling the wrapper's internal IPC function directly. It finds that
-      function by matching SHA-256 digests of SkyLight's code per macOS build (25G241,
-      26B131, 26C5035r), so it breaks with every update. Not worth it as it is; worth only
-      checking whether the limit really is client-side and correcting
-      [NOTES.md](NOTES.md#frame-limit) if so. No clear licence: the idea only.
+- [ ] **Animations longer than 24 frames.** The limit is a check in SkyLight's client
+      wrapper; the window server stores 100 frames when the wrapper's internal IPC call is
+      used directly ([NOTES.md](NOTES.md#frame-limit), found by CX330-YCH's fork of
+      Mousecape-swiftUI, confirmed here on macOS 15.8.3). That fork finds the unexported
+      call by matching SHA-256 digests of SkyLight's code per macOS build (25G241, 26B131,
+      26C5035r), so it breaks with every update. Before anything else: check that such a
+      cursor plays all its frames on screen, and that macOS 27 behaves the same. Only then
+      weigh a way to find the call that survives updates, with the reduction to 24 frames
+      as the fallback. No clear licence: the idea only.
 
 ## Housekeeping
 

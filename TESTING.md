@@ -20,6 +20,10 @@ a manual test. What these tests found out about macOS is in [NOTES.md](NOTES.md)
   that another, finished process registered can't be removed with the non-global flag,
   but can with the global one ([NOTES.md](NOTES.md#registrations-last-for-the-session)).
   On macOS 15.8.3, names under `com.apple.coregraphics.` can't be removed with either.
+- The frame limit (`Scripts/frame-limit-probe.m`, on macOS 15.8.3): the public call
+  refuses 25 frames or more, the internal IPC call it wraps registers 100
+  ([NOTES.md](NOTES.md#frame-limit)). Not tested: whether such a cursor plays all its
+  frames on screen, and the same on macOS 27.
 
 **On macOS 27.2.1** (the build released as 3.1.0):
 
@@ -218,7 +222,7 @@ a manual test. What these tests found out about macOS is in [NOTES.md](NOTES.md)
 Themes from [EXAMPLES.md](EXAMPLES.md) that exercise less common paths:
 
 - **Many frames:** animated `.ani` themes from the RW Designer library can have more
-  than 24 frames, which macOS can't show and Mousecape reduces.
+  than 24 frames, which macOS's registration call refuses and Mousecape reduces.
 - **Long Linux animations:** Bibata's busy cursors have 54 frames, apple_cursor's 40.
 - **Left-handed variants:** Bibata's `-Right` packages are drawn for left-handed use;
   compare them with Mousecape's own mirroring.

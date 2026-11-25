@@ -55,7 +55,7 @@ them. Found by reading the original code and by testing on macOS 15.6 and 27.0.1
 
 ### Animations with more than 24 frames
 
-The window server refuses cursors with more than 24 frames
+macOS's cursor registration call refuses cursors with more than 24 frames
 ([frame limit](NOTES.md#frame-limit)). macOS registers its own cursors another way, so its
 Wait cursor (the beach ball) has 30 frames, and so do capes made from it.
 

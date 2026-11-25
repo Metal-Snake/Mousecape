@@ -7,11 +7,23 @@ repeat the checks is in [TESTING.md](TESTING.md).
 
 ## Frame limit
 
-The window server refuses cursors with more than 24 frames: registering 25 or more fails
-with `kCGErrorFailure`. On macOS 15.6 the limit is the same for every cursor name
-(standard, variant, core or made-up), size, pixel density and registration flag tried.
-macOS registers its own cursors another way, so its Wait cursor (the beach ball) has 30
-frames.
+`CGSRegisterCursorWithImages` refuses cursors with more than 24 frames: registering 25 or
+more fails with `kCGErrorFailure`. On macOS 15.6 the limit is the same for every cursor
+name (standard, variant, core or made-up), size, pixel density and registration flag
+tried. macOS registers its own cursors another way, so its Wait cursor (the beach ball)
+has 30 frames.
+
+The limit sits in SkyLight's client-side wrapper, not in the window server (measured on
+macOS 15.8.3, 24H241, with `Scripts/frame-limit-probe.m`). `SLSRegisterCursorWithImages`
+accepts 1 to 24 frames and at most 64 images, turns the images into pixel buffers and
+passes them to the internal, unexported `_CGSRegisterCursorImages`, which sends them to
+the window server. Called directly, that function registers 25, 48 and 100 frames, and
+`CGSCopyRegisteredCursorImages` returns them all. The server side
+(`_CGXRegisterCursorImages`, `CGXCursorCreate`, CoreDisplay's `CursorBitmapCreate`)
+checks only that the pixel data fits. Whether the window server also plays more than 24
+frames on screen is untested. On macOS 26 the wrapper is `SLSRegisterCursorWithImages2`
+(found by CX330-YCH's fork of Mousecape-swiftUI). Using the internal call would mean
+finding an unexported function in SkyLight's code, which changes with each macOS build.
 
 A registered cursor has one frame duration for all its frames. Animations whose frames
 last differently long can only keep their timing by repeating frames.
