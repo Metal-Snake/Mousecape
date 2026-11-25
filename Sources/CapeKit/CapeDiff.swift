@@ -18,6 +18,10 @@ public struct CapeDiff: Equatable, Sendable {
         case frameDuration(from: Double, to: Double)
         case frameTiming
         case size(from: CGSize, to: CGSize)
+        /// The left-handed setting: nil is Automatic, true Mirror, false Don't Mirror.
+        case leftHandedMirroring(from: Bool?, to: Bool?)
+        case leftHandedImages
+        case leftHandedHotSpot(from: CGPoint?, to: CGPoint?)
 
         public var description: String {
             switch self {
@@ -33,6 +37,21 @@ public struct CapeDiff: Equatable, Sendable {
                 String(localized: "Frame timing changed")
             case .size(let a, let b):
                 String(localized: "Size \(Self.size(a)) → \(Self.size(b)) pt")
+            case .leftHandedMirroring(let a, let b):
+                String(localized: "Left-handed \(Self.mirroring(a)) → \(Self.mirroring(b))")
+            case .leftHandedImages:
+                String(localized: "Left-handed images changed")
+            case .leftHandedHotSpot(let a, let b):
+                String(localized: "Left-handed hot spot \(a.map(Self.point) ?? "–") → \(b.map(Self.point) ?? "–")")
+            }
+        }
+
+        /// As the editor names the setting.
+        private static func mirroring(_ value: Bool?) -> String {
+            switch value {
+            case nil: String(localized: "Automatic")
+            case true?: String(localized: "Mirror")
+            case false?: String(localized: "Don't Mirror")
             }
         }
 
@@ -113,6 +132,13 @@ public struct CapeDiff: Equatable, Sendable {
             changes.append(.frameTiming)
         }
         if a.representations != b.representations { changes.append(.images) }
+        if a.mirrorForLeftHanded != b.mirrorForLeftHanded {
+            changes.append(.leftHandedMirroring(from: a.mirrorForLeftHanded, to: b.mirrorForLeftHanded))
+        }
+        if a.leftHandedRepresentations != b.leftHandedRepresentations { changes.append(.leftHandedImages) }
+        if a.leftHandedHotSpot != b.leftHandedHotSpot {
+            changes.append(.leftHandedHotSpot(from: a.leftHandedHotSpot, to: b.leftHandedHotSpot))
+        }
         return changes
     }
 }

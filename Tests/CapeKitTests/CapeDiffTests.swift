@@ -34,3 +34,19 @@ private func cursor(_ identifier: String, frames: Int = 1, hotSpot: CGPoint = .z
     #expect(diff.cursors[1].new == nil)
     #expect(diff.cursors[2].status == .added)
 }
+
+/// Changing only the left-handed setting is a change too (it makes a history entry).
+@Test func diffListsLeftHandedChanges() {
+    let old = Cape(identifier: "a", name: "A", author: "", cursors: [cursor("com.apple.coregraphics.IBeam")])
+    var new = old
+    new.cursors[0].mirrorForLeftHanded = true
+    let diff = CapeDiff(from: old, to: new)
+    #expect(diff.cursors.first?.status == .changed([.leftHandedMirroring(from: nil, to: true)]))
+    #expect(CapeDiff.CursorChange.leftHandedMirroring(from: nil, to: true).description == "Left-handed Automatic → Mirror")
+
+    new.cursors[0].leftHandedRepresentations = [Data([9])]
+    new.cursors[0].leftHandedHotSpot = CGPoint(x: 3, y: 1)
+    let both = CapeDiff(from: old, to: new)
+    #expect(both.cursors.first?.status == .changed([.leftHandedMirroring(from: nil, to: true), .leftHandedImages,
+                                                    .leftHandedHotSpot(from: nil, to: CGPoint(x: 3, y: 1))]))
+}

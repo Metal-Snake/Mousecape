@@ -23,6 +23,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - When macOS rejects some cursors of a cape, the message names them.
 - Left-handed mode no longer flags the resize cursors (such as Resize Northwest) as not
   mirrored like the arrow: their direction is their meaning, so they stay as they are.
+- The history's comparison shows changes to a cursor's left-handed setting, its
+  left-handed images and their hot spot. Before, a version that only changed these said
+  there were no differences.
 - The background agent stays on when its launch agent file disappears, as on every
   Homebrew upgrade: Mousecape keeps the setting itself and sets the agent up again when
   it opens. Before, a missing file turned the setting off.
