@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.5.0] - 2026-11-25
+
 ### Added
 
 - Install and update with Homebrew: `brew install --cask metal-snake/tap/mousecape`
@@ -259,7 +261,8 @@ difference from the original in detail.
   folder are refused, image sizes and animation lengths are checked before decoding, and
   links in themes that point outside the theme are ignored.
 
-[unreleased]: https://github.com/Metal-Snake/Mousecape/compare/v3.4.0...HEAD
+[unreleased]: https://github.com/Metal-Snake/Mousecape/compare/v3.5.0...HEAD
+[3.5.0]: https://github.com/Metal-Snake/Mousecape/compare/v3.4.0...v3.5.0
 [3.4.0]: https://github.com/Metal-Snake/Mousecape/compare/v3.3.0...v3.4.0
 [3.3.0]: https://github.com/Metal-Snake/Mousecape/compare/v3.2.0...v3.3.0
 [3.2.0]: https://github.com/Metal-Snake/Mousecape/compare/v3.1.0...v3.2.0
