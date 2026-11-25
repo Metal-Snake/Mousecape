@@ -33,13 +33,13 @@ there is no x86_64 build.
       a macOS runner.
 - [ ] **Notarization** needs a paid Developer ID. Until then, users run `xattr -cr` after
       downloading (README, release notes).
-- [ ] **Updates.** None at the moment. The original's Sparkle setup was dropped: it was an
-      old submodule that needs Xcode to build, and its feed pointed to the original's
-      appcast, so it would have offered the original's Intel-only builds. Options, from
-      least to most work:
+- [ ] **Updates.** Only through Homebrew (`brew upgrade --cask mousecape`, from the tap
+      Metal-Snake/homebrew-tap, which `Scripts/release.sh` updates). The original's
+      Sparkle setup was dropped: it was an old submodule that needs Xcode to build, and
+      its feed pointed to the original's appcast, so it would have offered the original's
+      Intel-only builds. Options for the app itself, from least to most work:
       1. An opt-in check of the GitHub releases API that only links to the release page.
-      2. A Homebrew tap with a cask (`brew upgrade`).
-      3. Sparkle 2 as a Swift package, embedded by `build-app.sh`, with our own EdDSA key
+      2. Sparkle 2 as a Swift package, embedded by `build-app.sh`, with our own EdDSA key
          and an appcast published with each release. Check first how Sparkle treats an
          ad-hoc signed app, whose code signature changes with every build. Cursie's
          `scripts/build-notarized-release.sh` shows how to embed and sign Sparkle's

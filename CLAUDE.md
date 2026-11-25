@@ -22,7 +22,7 @@ swift build                       # debug build of all targets
 swift test                        # all suites (Swift Testing, not XCTest)
 swift test --filter CapeKitTests  # one target; --filter also takes a test name
 Scripts/build-app.sh [--zip]      # release build → dist/Mousecape.app (signed, see script header)
-Scripts/release.sh                # test, build, tag vX.Y.Z, push, GitHub release (newest CHANGELOG version)
+Scripts/release.sh                # test, build, tag vX.Y.Z, push, GitHub release, Homebrew tap (newest CHANGELOG version)
 MOUSECAPE_LIBRARY=/some/dir …     # point the app at a throwaway library folder
 MOUSECAPE_SHORT_ANIMATIONS=1 …    # engine without long animations (reduce to 24 frames)
 ```

@@ -30,7 +30,19 @@ by ful1e5 (GPL-3.0), imported from its Linux release, next to the Svanslös exam
 
 ## Installing
 
-Download `Mousecape-<version>.zip` from the
+With [Homebrew](https://brew.sh):
+
+```
+brew tap metal-snake/tap
+brew trust metal-snake/tap      # Homebrew 7 or later asks for this once
+brew install --cask mousecape
+```
+
+This also puts `mousecloak`, the command line tool, on your path, and removes the
+quarantine flag that would make macOS block the app (the `xattr` step below).
+`brew upgrade --cask mousecape` updates it.
+
+Or by hand: download `Mousecape-<version>.zip` from the
 [releases](https://github.com/Metal-Snake/Mousecape/releases), unzip it, move
 Mousecape.app to Applications, and run once in Terminal:
 
@@ -39,8 +51,8 @@ xattr -cr /Applications/Mousecape.app
 ```
 
 The app is signed with a self-signed certificate, not notarized by Apple, so macOS blocks
-it until then. There are no automatic updates; [CHANGELOG.md](CHANGELOG.md) says what each
-version changes.
+it until then. There are no automatic updates (Homebrew updates when you ask it to);
+[CHANGELOG.md](CHANGELOG.md) says what each version changes.
 
 ## How it works
 

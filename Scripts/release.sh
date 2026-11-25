@@ -2,7 +2,8 @@
 #
 # Publishes the newest version in CHANGELOG.md as a GitHub release: checks → swift test →
 # Scripts/build-app.sh --zip → tag vX.Y.Z → push master and the tag → gh release with the
-# zip and the version's CHANGELOG section as notes.
+# zip and the version's CHANGELOG section as notes → the Homebrew cask in
+# Metal-Snake/homebrew-tap gets the new version and the zip's checksum.
 #
 # Before running it, move the [Unreleased] entries in CHANGELOG.md into a new
 # "## [X.Y.Z] - YYYY-MM-DD" section, add its link at the bottom, and commit.
@@ -23,6 +24,8 @@ die() { echo "error: $*" >&2; exit 1; }
 
 # Named explicitly: as a fork, gh would otherwise pick the parent, alexzielenski/Mousecape.
 REPO="Metal-Snake/Mousecape"
+# The Homebrew tap whose Casks/mousecape.rb points at the release zip.
+TAP_REPO="Metal-Snake/homebrew-tap"
 
 VERSION="$(sed -n 's/^## \[\([0-9][0-9.]*\)\] - .*/\1/p' CHANGELOG.md | head -n 1)"
 [ -n "$VERSION" ] || die "no released version in CHANGELOG.md"
@@ -39,9 +42,12 @@ grep -q "^\[$VERSION\]: " CHANGELOG.md || die "CHANGELOG.md has no link for [$VE
 security find-certificate -c "Mousecape Code Signing" >/dev/null 2>&1 \
     || die "no \"Mousecape Code Signing\" certificate (run Scripts/make-signing-certificate.sh)"
 gh auth status >/dev/null 2>&1 || die "gh is not logged in"
+git ls-remote --exit-code "https://github.com/$TAP_REPO.git" main >/dev/null 2>&1 \
+    || die "can't reach the Homebrew tap $TAP_REPO"
 
 NOTES="$(mktemp)"
-trap 'rm -f "$NOTES"' EXIT
+TAP_DIR="$(mktemp -d)"
+trap 'rm -rf "$NOTES" "$TAP_DIR"' EXIT
 # The version's section, without its heading, up to the next version or the links.
 awk -v heading="## [$VERSION]" '
     index($0, heading) == 1 { found = 1; next }
@@ -85,3 +91,16 @@ git push origin master "$TAG"
 
 echo "==> GitHub release…"
 gh release create "$TAG" "$ASSET" --repo "$REPO" --verify-tag --title "Mousecape $VERSION" --notes-file "$NOTES"
+
+echo "==> Homebrew tap…"
+# The release is out at this point; if this step fails, update Casks/mousecape.rb by hand.
+CHECKSUM="$(shasum -a 256 "$ASSET" | cut -d ' ' -f 1)"
+git clone --quiet "https://github.com/$TAP_REPO.git" "$TAP_DIR"
+CASK="$TAP_DIR/Casks/mousecape.rb"
+sed -i '' -E -e "s/^  version \"[^\"]*\"/  version \"$VERSION\"/" \
+              -e "s/^  sha256 \"[^\"]*\"/  sha256 \"$CHECKSUM\"/" "$CASK"
+grep -q "^  version \"$VERSION\"" "$CASK" && grep -q "^  sha256 \"$CHECKSUM\"" "$CASK" \
+    || die "could not update $CASK"
+git -C "$TAP_DIR" commit --quiet -am "feat(mousecape): update to $VERSION"
+git -C "$TAP_DIR" push --quiet origin main
+echo "==> Done: $TAG, and brew install --cask metal-snake/tap/mousecape installs it"

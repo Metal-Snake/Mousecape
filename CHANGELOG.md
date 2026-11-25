@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Install and update with Homebrew: `brew install --cask metal-snake/tap/mousecape`
+  (after `brew trust metal-snake/tap` on Homebrew 7). The cask also links `mousecloak`
+  and removes the quarantine flag.
+
 ## [3.4.0] - 2026-11-25
 
 ### Added
