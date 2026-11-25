@@ -14,6 +14,15 @@ a real Mac.
     when the folder changed, but a big library still stalls. Load the metadata first and
     the images on demand.
 
+- [ ] **Custom cursors fall back to the system's on a MacBook Neo** (`Mac17,5`, macOS 26),
+      reported to MaCursor (issue #30, fixed by PR #47). The custom cursor shows only near
+      the screen edges, during screen recording, or at a large pointer size. MaCursor's
+      fix pads every frame with transparent space to the right and bottom, to at least
+      96 × 96 points at 1x, keeping artwork, hot spot and timing; on by default, only on
+      that model. Not checked here: no MacBook Neo at hand, and unknown whether macOS 27
+      still does it. GPL-3.0, so only the idea. Our padding would go in the engine at
+      apply time, not into the cape.
+
 ## Build and release
 
 Apple silicon only, on purpose. Apple's support for Intel Macs ends soon, and fewer of
@@ -75,6 +84,9 @@ there is no x86_64 build.
   too (only gallery installs are known now; names alone are too vague, as with Bibata's
   20 variants).
 - [ ] **Menu bar extra** for switching capes quickly.
+- [ ] **A cape for light mode and one for dark mode**, switched by the agent when the system
+      appearance changes (`AppleInterfaceThemeChangedNotification`). Idea from
+      sdmj76/Mousecape-swiftUI (no clear licence: the idea only).
 - [ ] **Cursor trails:** a line that follows the pointer and shrinks back into it when it
       stops (MaCursor has one; GPL-3.0, so only the idea).
 - [ ] **Accessibility pointer size.** Mousecape's size and the system's pointer size
@@ -102,6 +114,15 @@ above is done, or a real problem calls for them.
 - [ ] **Guard against a cursor scale stuck at 16.** Capturing sets the scale to 16 and back;
       if it stops halfway, the scale stays at 16. Treat 16 as "not the user's choice" when
       reading the scale, as MaCursor does.
+
+- [ ] **Animations longer than 24 frames.** CX330-YCH's fork of Mousecape-swiftUI reports
+      that the 24-frame limit sits in SkyLight's client-side wrapper
+      (`SLSRegisterCursorWithImages2`), not in the window server, and registers longer
+      animations by calling the wrapper's internal IPC function directly. It finds that
+      function by matching SHA-256 digests of SkyLight's code per macOS build (25G241,
+      26B131, 26C5035r), so it breaks with every update. Not worth it as it is; worth only
+      checking whether the limit really is client-side and correcting
+      [NOTES.md](NOTES.md#frame-limit) if so. No clear licence: the idea only.
 
 ## Housekeeping
 

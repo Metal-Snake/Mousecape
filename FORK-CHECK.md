@@ -1,6 +1,6 @@
 # Fork check
 
-Last check: 2026-11-14
+Last check: 2026-11-25
 
 Once a month, the projects related to this fork are checked for work worth taking: the
 original Mousecape and its forks, Mousecape-swiftUI and its forks, MaCursor and its forks,
@@ -29,10 +29,10 @@ month old.
 
 ## State
 
-As of 2026-11-14:
+As of 2026-11-25:
 
 - **alexzielenski/Mousecape** (the original): no commits after `184f87b`.
-- **Forks of the original:** of 273, these have commits of their own:
+- **Forks of the original:** of 276, these have commits of their own:
   - SnowGlow-aww: macOS 26/27 fixes, faster apply, bug fixes. Its findings are in
     TODO.md (MightyMouse bounds, global unregister, backups, display changes, dumps,
     `--create`).
@@ -44,12 +44,22 @@ As of 2026-11-14:
     works here.
   - doctorllll (Windows import), chornthorn (SwiftUI port), MoriMeina and isandrel
     (forks of Mousecape-swiftUI: Windows import, UI): nothing we lack.
+  - pulkitxm (new): the original's branches, unchanged.
   - The rest only change build settings or signing.
-- **sdmj76/Mousecape-swiftUI:** no commits since 2026-08-28.
+- **sdmj76/Mousecape-swiftUI:** a cape per light/dark appearance and cape switching in its
+  menu bar extra (both in TODO.md as ideas), Quick Look fixes, a new engine submodule
+  (sidebar UI). Forks: CX330-YCH (new) registers animations longer than 24 frames through
+  SkyLight's internal IPC call, found by per-build code digests, and reapplies the cape on
+  wake (the long animations are in TODO.md, low priority; for wake, our agent reapplies
+  on display changes); MicroSharpAnt (new) has nothing of its own.
 - **kwd421/macOS_Cursie:** since v1.0.10 only its website.
 - **Juwan-Hwang/macOS27-Cursors:** v1.0.1 fixes its Windows `.ani` files and Linux alias
   links; `docs/MAPPING.md` unchanged.
-- **writronic/MaCursor** (GPL-3.0): v2.8.2, the version analysed for the `.cursor` import
-  and the low-priority engine ideas in TODO.md.
-- **Forks of MaCursor:** of 11, two have commits of their own: EKIKOUKA (README only) and
-  playagain96 (the MD3E Cursors theme, which MaCursor itself now ships).
+- **writronic/MaCursor** (GPL-3.0): v2.8.2 was analysed for the `.cursor` import and the
+  low-priority engine ideas in TODO.md. v2.8.5 adds a clipboard history (nothing for us);
+  after it, PR #47 pads cursor frames to 96 × 96 points on a MacBook Neo, where custom
+  cursors fall back to the system's (TODO.md, known issues), and the M3E themes moved
+  into its gallery.
+- **Forks of MaCursor:** of 13, these have commits of their own: EKIKOUKA (README only),
+  playagain96 and XDanfr (M3E themes, which MaCursor itself now ships) and gulzxeric
+  (PR #47 and its test branch).
