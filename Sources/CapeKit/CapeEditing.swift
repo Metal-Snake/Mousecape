@@ -458,11 +458,18 @@ public enum FrameSelection {
         Array(0..<min(count, frameCount))
     }
 
+    /// The shortest frame worth making: one refresh of a 60 Hz display. A shorter frame is
+    /// never seen, it only makes the animation longer in frames (and memory). Sampling a
+    /// loop with 5 ms slots once gave 256 frames that the app's preview, and possibly the
+    /// window server, played far too slowly.
+    public static let shortestFrame = 1.0 / 60
+
     /// For frames with their own durations: the frames to show, one duration for all, so the
     /// animation keeps its timing. Repeats each frame in units of the durations' common
-    /// divisor when that fits in `count` frames (exact); otherwise samples the loop at
-    /// `count` evenly spaced moments (the middle of each slot) and keeps the frame shown
-    /// then. Frames may repeat; short ones may be left out.
+    /// divisor when that fits in `count` frames and the unit is at least `shortestFrame`
+    /// (exact); otherwise samples the loop at evenly spaced moments (the middle of each
+    /// slot) and keeps the frame shown then, with as many slots as fit in `count` without
+    /// one being shorter than `shortestFrame`. Frames may repeat; short ones may be left out.
     public static func byTime(durations: [Double], count: Int = CapeCursor.maximumFrameCount) -> (frames: [Int], duration: Double) {
         guard !durations.isEmpty, count > 0 else { return ([], 1) }
         let total = durations.reduce(0, +)
@@ -473,7 +480,7 @@ public enum FrameSelection {
             let whole = ticks.map { Int($0.rounded()) }
             let divisor = whole.reduce(0) { gcd($0, $1) }
             let expanded = whole.enumerated().flatMap { index, n in Array(repeating: index, count: n / divisor) }
-            if expanded.count <= count {
+            if expanded.count <= count && Double(divisor) * unit >= shortestFrame - 1e-9 {
                 return (expanded, Double(divisor) * unit)
             }
             break
@@ -481,8 +488,11 @@ public enum FrameSelection {
         var ends: [Double] = []
         var elapsed = 0.0
         for duration in durations { elapsed += duration; ends.append(elapsed) }
-        let slot = total / Double(count)
-        let frames = (0..<count).map { k -> Int in
+        // The small addition keeps a loop of whole display frames (0.5 s: 30) from losing
+        // one to rounding.
+        let slots = min(count, max(1, Int((total / shortestFrame + 1e-6).rounded(.down))))
+        let slot = total / Double(slots)
+        let frames = (0..<slots).map { k -> Int in
             let moment = (Double(k) + 0.5) * slot
             return ends.firstIndex { moment < $0 } ?? durations.count - 1
         }

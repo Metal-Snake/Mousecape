@@ -50,6 +50,16 @@ Katana, whose resize cursors have their hot spot at x = 32 of 32). The engine mo
 hot spot one point in. One on the edge is too common, and the move too small, to warn
 about; the library and the editor only flag a hot spot beyond the edges.
 
+## Frames picked by time
+
+Frames with their own durations (`FrameDurations`) become frames of one duration, since
+macOS has one per cursor. When the durations' common divisor is shorter than a display
+refresh (a cape with 5 ms steps), expanding them exactly, or sampling the loop at the full
+256-frame limit, makes frames of a few milliseconds that no display shows. The app's
+preview (Core Animation) then played such a loop at about half speed. Whether the window
+server honours frames shorter than 1/60 s hasn't been measured; it doesn't matter any
+more, as no frame is made shorter than that.
+
 ## Registrations last for the session
 
 `CGSRemoveRegisteredCursor` takes a flag. With `false`, only the process that registered

@@ -49,12 +49,17 @@ static NSUInteger gcdOf(NSUInteger a, NSUInteger b) {
     return b == 0 ? a : gcdOf(b, a % b);
 }
 
+// The shortest frame worth making: one refresh of a 60 Hz display. Shorter frames are never
+// seen and only multiply the frames. The same as FrameSelection.shortestFrame in CapeKit.
+static const double MCShortestFrame = 1.0 / 60;
+
 // For frames with their own durations: the frames to show (into `indices`, room for
 // `limit`) and one duration for all, so the animation keeps its timing. Repeats each frame
-// in units of the durations' common divisor when that fits in `limit` frames (exact);
-// otherwise samples the loop at `limit` evenly spaced moments, the middle of each slot.
-// The same as FrameSelection.byTime in CapeKit. Returns the number of frames, 0 if the
-// durations can't be used.
+// in units of the durations' common divisor when that fits in `limit` frames and the unit
+// is at least MCShortestFrame (exact); otherwise samples the loop at evenly spaced moments,
+// the middle of each slot, with as many slots as fit in `limit` without one being shorter
+// than MCShortestFrame. The same as FrameSelection.byTime in CapeKit. Returns the number of
+// frames, 0 if the durations can't be used.
 NSUInteger MCFramesByTime(NSArray *durations, NSUInteger *indices, CGFloat *duration, NSUInteger limit) {
     NSUInteger n = durations.count;
     if (n == 0 || limit == 0) return 0;
@@ -75,7 +80,7 @@ NSUInteger MCFramesByTime(NSArray *durations, NSUInteger *indices, CGFloat *dura
         }
         if (!whole) continue;
         for (NSNumber *d in durations) expanded += (NSUInteger)round(d.doubleValue / units[u]) / divisor;
-        if (expanded <= limit) {
+        if (expanded <= limit && divisor * units[u] >= MCShortestFrame - 1e-9) {
             NSUInteger k = 0;
             for (NSUInteger i = 0; i < n; i++) {
                 NSUInteger repeats = (NSUInteger)round([durations[i] doubleValue] / units[u]) / divisor;
@@ -86,8 +91,11 @@ NSUInteger MCFramesByTime(NSArray *durations, NSUInteger *indices, CGFloat *dura
         }
         break;
     }
-    double slot = total / limit;
-    for (NSUInteger k = 0; k < limit; k++) {
+    // The small addition keeps a loop of whole display frames from losing one to rounding.
+    NSUInteger slots = (NSUInteger)MAX(1.0, floor(total / MCShortestFrame + 1e-6));
+    if (slots > limit) slots = limit;
+    double slot = total / slots;
+    for (NSUInteger k = 0; k < slots; k++) {
         double moment = (k + 0.5) * slot, end = 0;
         NSUInteger frame = n - 1;
         for (NSUInteger i = 0; i < n; i++) {
@@ -97,7 +105,7 @@ NSUInteger MCFramesByTime(NSArray *durations, NSUInteger *indices, CGFloat *dura
         indices[k] = frame;
     }
     *duration = slot;
-    return limit;
+    return slots;
 }
 
 // Keeps every n-th frame, n as small as possible to stay within `limit`, and shows each

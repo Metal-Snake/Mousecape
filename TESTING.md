@@ -221,7 +221,8 @@ a manual test. What these tests found out about macOS is in [NOTES.md](NOTES.md)
       `.rar` not at all (`tar` can't create one for a test).
 - [ ] **Frames picked by time:** apply a cape with `FrameDurations` (e.g. an imported
       `.ani` with uneven step durations) and compare the animation with Choose Frames →
-      By Time.
+      By Time. Open Hand in the Miku cape (8 frames, short steps) should give a few dozen
+      frames, not 256, and play as fast as the original.
 - [ ] **History:** compare two states, Restore This Version, Remove Saved States… and
       Revert to Original… in the app. Covered by `swift test` only.
 - [ ] **Dropping an archive with versions** on the library window. Opening it with the

@@ -94,7 +94,7 @@ struct FrameChooserView: View {
             Text("Choose Frames — \(cursor.name)")
                 .font(.title2.weight(.semibold))
             Text(cursor.frameDurations != nil
-                 ? "The frames have different durations, but macOS shows every frame equally long, and Mousecape applies at most \(limit) of them. By Time picks the frame shown at \(limit) evenly spaced moments of the loop, so the timing stays; the other choices keep the loop's length."
+                 ? "The frames have different durations, but macOS shows every frame equally long, and Mousecape applies at most \(limit) of them. By Time picks the frame shown at evenly spaced moments of the loop, at most \(limit) and none shorter than a display refresh, so the timing stays; the other choices keep the loop's length."
                  : "Mousecape applies at most \(limit) frames of an animation. Pick the ones to keep; by default one loop keeps its length, so the animation runs at the same speed.")
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)

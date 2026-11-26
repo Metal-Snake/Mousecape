@@ -38,6 +38,23 @@ private func shadedSheet(count: Int, side: Int = 4) throws -> Data {
     #expect(mixed.frames == mixed.frames.sorted())                    // in order, repeats allowed
 }
 
+/// No frame shorter than one refresh of a 60 Hz display: 5 ms and 500 ms would be 101
+/// exact 5 ms frames, and a 256-frame sample of a long loop gave 5 ms slots that played
+/// far too slowly. Sampled at display frames instead, the loop keeps its length.
+@Test func byTimeMakesNoFrameShorterThanADisplayRefresh() {
+    let result = FrameSelection.byTime(durations: [0.005, 0.5], count: CapeCursor.longAnimationFrameLimit)
+    #expect(result.frames.count == 30)                                  // 0.505 s at 60 Hz
+    #expect(result.duration >= FrameSelection.shortestFrame)
+    #expect(abs(result.duration * 30 - 0.505) < 1e-9)
+    // A long loop with uneven durations, as in the Miku cape: fewer frames than the limit.
+    let long = FrameSelection.byTime(durations: [0.165, 0.08, 0.085, 0.6, 0.35],
+                                     count: CapeCursor.longAnimationFrameLimit)
+    #expect(long.frames.count == 76)                                    // 1.28 s at 60 Hz
+    #expect(long.duration >= FrameSelection.shortestFrame)
+    // A loop of whole display frames isn't cut short by rounding.
+    #expect(FrameSelection.byTime(durations: [0.1, 0.4005], count: 256).frames.count == 30)
+}
+
 @Test func keepsFrameDurationsThroughPropertyList() throws {
     let cursor = CapeCursor(identifier: "com.apple.coregraphics.Wait", frameCount: 3, frameDurations: [0.1, 0.2, 0.3],
                             size: CGSize(width: 4, height: 4), representations: [try shadedSheet(count: 3)])

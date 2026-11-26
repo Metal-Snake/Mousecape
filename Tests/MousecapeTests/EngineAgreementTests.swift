@@ -53,6 +53,8 @@ private let timingCases: [[Double]] = [
     [1.0 / 60, 40.0 / 60],                                              // sampled
     Array(repeating: 0.1, count: 10) + Array(repeating: 0.01, count: 20),
     [0.033, 0.017, 0.1, 0.25, 0.005],
+    [0.005, 0.5],                                                       // exact but too short: sampled
+    [0.165, 0.08, 0.085, 0.6, 0.35],                                    // a long loop, fewer slots than the limit
 ]
 
 @Test(arguments: timingCases, [CapeCursor.maximumFrameCount, 40, CapeCursor.longAnimationFrameLimit])

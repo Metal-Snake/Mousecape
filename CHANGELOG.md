@@ -12,6 +12,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - A hot spot on the right or bottom edge of a cursor no longer shows a warning. Mousecape
   still moves it one point in when applying; only a hot spot beyond the edges is flagged.
 
+### Fixed
+
+- Animations whose frames last differently long (such as Open Hand in the Miku cape) no
+  longer turn into 256 tiny frames that play far too slowly. Picking frames by time now
+  makes no frame shorter than one refresh of a 60 Hz display, so such a loop becomes a
+  few dozen frames and keeps its speed, in Choose Frames and when applied.
+
 ## [3.5.0] - 2026-11-25
 
 ### Added
