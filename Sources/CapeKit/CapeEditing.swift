@@ -217,7 +217,7 @@ extension CapeCursor {
         } else if frameCount > limit {
             problems.append(.framesWillBeReduced(from: frameCount, to: Self.reducedFrameCount(frameCount, limit: limit)))
         }
-        if !Self.hotSpot(hotSpot, isInside: size) { problems.append(.hotSpotOutside) }
+        if !Self.hotSpot(hotSpot, isWithin: size) { problems.append(.hotSpotOutside) }
         for data in representations {
             guard let pixels = Self.pixelSize(of: data) else {
                 problems.append(.unreadableImage)
@@ -235,16 +235,18 @@ extension CapeCursor {
             }
             if !sheetFits(pixels) { problems.append(.leftHandedImageDoesNotFit(pixels)) }
         }
-        if let spot = leftHandedHotSpot, hasOwnLeftHandedImages, !Self.hotSpot(spot, isInside: size) {
+        if let spot = leftHandedHotSpot, hasOwnLeftHandedImages, !Self.hotSpot(spot, isWithin: size) {
             problems.append(.hotSpotOutside)
         }
         return problems
     }
 
-    /// Whether macOS takes the hot spot: 0 ≤ x < width and 0 ≤ y < height. One on the right
-    /// or bottom edge (common in Xcursor themes) is refused; the engine moves it a point in.
-    static func hotSpot(_ spot: CGPoint, isInside size: CGSize) -> Bool {
-        spot.x >= 0 && spot.y >= 0 && spot.x < size.width && spot.y < size.height
+    /// Whether the hot spot lies on the cursor, its edges included: 0 ≤ x ≤ width and
+    /// 0 ≤ y ≤ height. macOS refuses one on the right or bottom edge (x == width), which
+    /// Xcursor themes often have, but the engine moves it a point in without anyone
+    /// noticing, so only a hot spot beyond the edges is worth a warning.
+    static func hotSpot(_ spot: CGPoint, isWithin size: CGSize) -> Bool {
+        spot.x >= 0 && spot.y >= 0 && spot.x <= size.width && spot.y <= size.height
     }
 
     /// Whether a sheet of `pixels` holds the frames at the density its width gives. Any
@@ -358,7 +360,7 @@ public enum CursorProblem: Equatable, Sendable, CustomStringConvertible {
         case .leftHandedImageDoesNotFit(let px):
             String(localized: "A left-handed image is \(Int(px.width)) × \(Int(px.height)) px, which doesn't fit the cursor's size and frames.")
         case .hotSpotOutside:
-            String(localized: "The hot spot lies on the edge of the cursor or outside it, which macOS refuses; it is moved inside when applied.")
+            String(localized: "The hot spot lies outside the cursor; it is moved onto its edge when applied.")
         case .unreadableImage:
             String(localized: "An image cannot be read.")
         case .heightDoesNotMatchFrames(let px, let expected):

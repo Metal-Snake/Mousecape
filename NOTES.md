@@ -47,7 +47,8 @@ The hot spot must lie inside the cursor: `0 ≤ x < width` and `0 ≤ y < height
 `CGSRegisterCursorWithImages` refuses anything else with error 1000, a hot spot exactly on
 the right or bottom edge too (seen in its code on macOS 15.8.3, and with the Xcursor theme
 Katana, whose resize cursors have their hot spot at x = 32 of 32). The engine moves such a
-hot spot one point in.
+hot spot one point in. One on the edge is too common, and the move too small, to warn
+about; the library and the editor only flag a hot spot beyond the edges.
 
 ## Registrations last for the session
 

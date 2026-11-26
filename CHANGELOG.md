@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- A hot spot on the right or bottom edge of a cursor no longer shows a warning. Mousecape
+  still moves it one point in when applying; only a hot spot beyond the edges is flagged.
+
 ## [3.5.0] - 2026-11-25
 
 ### Added
