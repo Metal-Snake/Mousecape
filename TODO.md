@@ -114,6 +114,11 @@ above is done, or a real problem calls for them.
 - [ ] **Guard against a cursor scale stuck at 16.** Capturing sets the scale to 16 and back;
       if it stops halfway, the scale stays at 16. Treat 16 as "not the user's choice" when
       reading the scale, as MaCursor does.
+- [ ] **Port the engine to Swift**, so the rules that exist twice (CLAUDE.md, "Logic that
+      exists twice") exist once. Decided 2026-11-26: only when the benefit is big enough,
+      e.g. when the engine needs a larger rework anyway; until then the agreement tests
+      keep both sides in step. A shared C target for just the rules was rejected: the
+      rules would move from Swift to C, and CapeKit would need wrappers around pointers.
 
 ## Housekeeping
 
