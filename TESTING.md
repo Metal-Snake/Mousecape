@@ -20,6 +20,9 @@ a manual test. What these tests found out about macOS is in [NOTES.md](NOTES.md)
   that another, finished process registered can't be removed with the non-global flag,
   but can with the global one ([NOTES.md](NOTES.md#registrations-last-for-the-session)).
   On macOS 15.8.3, names under `com.apple.coregraphics.` can't be removed with either.
+- Frames picked by time (on macOS 15.8.3): Open Hand in the Miku cape, 8 frames with
+  short steps, becomes 72 frames and plays as fast as the original, in Choose Frames and
+  applied.
 - The frame limit (`Scripts/frame-limit-probe.m`, on macOS 15.8.3 and 27.2.1): the
   public call refuses 25 frames or more, the internal IPC call it wraps registers 100
   ([NOTES.md](NOTES.md#frame-limit)). With `--play`, an arrow with 48 numbered frames
@@ -219,10 +222,6 @@ a manual test. What these tests found out about macOS is in [NOTES.md](NOTES.md)
       cape. Covered by `swift test` only.
 - [ ] **Archives other than `.zip`:** `.7z` and `.tar.*` are covered by `swift test` only,
       `.rar` not at all (`tar` can't create one for a test).
-- [ ] **Frames picked by time:** apply a cape with `FrameDurations` (e.g. an imported
-      `.ani` with uneven step durations) and compare the animation with Choose Frames →
-      By Time. Open Hand in the Miku cape (8 frames, short steps) should give a few dozen
-      frames, not 256, and play as fast as the original.
 - [ ] **History:** compare two states, Restore This Version, Remove Saved States… and
       Revert to Original… in the app. Covered by `swift test` only.
 - [ ] **Dropping an archive with versions** on the library window. Opening it with the
