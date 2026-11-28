@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Preview a gallery theme before installing it: **Preview…** in a theme's context menu,
+  or next to each file in its details, downloads and converts the theme and shows every
+  cursor as it would be installed, animated, without saving anything. With several
+  versions, a menu switches between them; Install takes the one shown.
+
 ## [3.6.0] - 2026-11-28
 
 ### Added

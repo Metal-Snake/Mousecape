@@ -88,6 +88,11 @@ a manual test. What these tests found out about macOS is in [NOTES.md](NOTES.md)
   gallery's search field and is disabled in the library window. Installing Sweet cursors
   again and choosing Replace marks it "Installed" in the grid and in its details, with
   "Show in Library" and "Install Again".
+- Gallery preview: Preview… in the context menu of Sweet cursors (whose picture shows
+  only a logo) shows its 37 cursors, animated; Bibata Extra (several files, about a
+  minute to download) shows a menu of its versions, named by folder, kind and file. Preview… next to the file in the details of McMojave
+  cursors opens on top of the details; a click next to it closes only the preview, and
+  Install there adds the cape, closes both sheets and brings the library forward.
 - Gallery updates (simulated: a wrong checksum in `Gallery.plist` and the arrow's hot spot
   moved in the installed cape): Sweet shows "Update Available", also under Installed;
   the comparison lists only the arrow's hot spot (9, 9 → 4, 4); Update saves it, keeps

@@ -139,7 +139,8 @@ private struct ProblemBanner: View {
     }
 }
 
-private struct CursorTile: View {
+/// A cursor in a grid: animated, at twice its size where it fits, with its name and size.
+struct CursorTile: View {
     let cursor: CapeCursor
     let showsHotSpot: Bool
     let problems: [CursorProblem]

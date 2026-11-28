@@ -10,6 +10,7 @@ struct GalleryView: View {
     @State private var detailTheme: PlingTheme?
     @State private var updateRequest: UpdateRequest?
     @State private var installChoice: ThemeChoice?
+    @State private var previewRequest: PreviewRequest?
     @FocusState private var isSearchFocused: Bool
 
     private var gallery: CursorGallery { model.gallery }
@@ -51,7 +52,7 @@ struct GalleryView: View {
             if gallery.themes.isEmpty { gallery.reload() }
         }
         .sheet(item: $detailTheme) { theme in
-            ThemeDetailView(theme: theme, gallery: gallery,
+            ThemeDetailView(model: model, theme: theme, gallery: gallery,
                             installedCape: model.library.cape(installedFromGalleryTheme: theme.id),
                             installedFiles: Set(model.library.capes(installedFromGalleryTheme: theme.id)
                                 .compactMap(\.source?.fileName)),
@@ -64,6 +65,11 @@ struct GalleryView: View {
         .sheet(item: $installChoice) { choice in
             ThemeChoiceView(choice: choice, isInstalled: isInstalled) { options in
                 model.install(options)
+                openWindow(id: "library")
+            }
+        }
+        .sheet(item: $previewRequest) { request in
+            ThemePreviewView(model: model, theme: request.theme, files: request.files) {
                 openWindow(id: "library")
             }
         }
@@ -115,8 +121,11 @@ struct GalleryView: View {
                                 if theme.id == gallery.themes.last?.id { gallery.loadMore() }
                             }
                             .contextMenu {
+                                let installable = CursorGallery.installableFiles(of: theme)
                                 Button("Install") { installTheme(theme) }
-                                    .disabled(CursorGallery.installableFiles(of: theme).isEmpty)
+                                    .disabled(installable.isEmpty)
+                                Button("Preview…") { previewRequest = PreviewRequest(theme: theme, files: installable) }
+                                    .disabled(installable.isEmpty)
                                 if let update {
                                     Button("Show Update…") { updateRequest = UpdateRequest(theme: theme, file: update) }
                                 }
@@ -336,6 +345,7 @@ private struct ThemePreview: View {
 
 /// A theme's previews, details, description and files.
 private struct ThemeDetailView: View {
+    let model: AppModel
     let theme: PlingTheme
     let gallery: CursorGallery
     /// The cape this theme was installed as, if it is in the library.
@@ -348,6 +358,8 @@ private struct ThemeDetailView: View {
     let onShowUpdate: (PlingTheme.File) -> Void
     let onInstall: (PlingTheme.File) -> Void
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.openWindow) private var openWindow
+    @State private var previewRequest: PreviewRequest?
 
     var body: some View {
         VStack(spacing: 0) {
@@ -378,6 +390,13 @@ private struct ThemeDetailView: View {
         .frame(minWidth: 620, idealWidth: 680, maxWidth: .infinity, minHeight: 520, idealHeight: 640, maxHeight: .infinity)
         .resizableSheet(minWidth: 620, minHeight: 520, sizeKey: "themeDetail")
         .dismissesOnOutsideClick()
+        // On top of the details, so that they are still there after the preview.
+        .sheet(item: $previewRequest) { request in
+            ThemePreviewView(model: model, theme: request.theme, files: request.files) {
+                dismiss()
+                openWindow(id: "library")
+            }
+        }
     }
 
     private var previews: some View {
@@ -462,6 +481,8 @@ private struct ThemeDetailView: View {
                     }
                     Spacer()
                     if installable {
+                        Button("Preview…") { previewRequest = PreviewRequest(theme: theme, files: [file]) }
+                            .help("Download the file and show its cursors as Mousecape would install them")
                         Button(installedFiles.contains(file.name) ? "Install Again" : "Install") {
                             onInstall(file)
                             dismiss()

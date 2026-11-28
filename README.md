@@ -104,6 +104,11 @@ last change, rating or name (⌘F jumps to the search field on macOS 15 and late
 theme shows the value you sort by. Double-click one to install it; click it for its
 previews, description, files, rating and licence.
 
+The pictures on pling.com don't always show the cursors. **Preview…** (in a theme's
+context menu, or next to each file in its details) downloads the theme and shows every
+cursor as Mousecape would install it, animated, without adding anything to your library.
+With several versions, a menu switches between them; **Install** takes the one shown.
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/gallery-overview-dark.png">
   <img alt="The gallery of cursor themes online: a search for Bibata shows a grid of themes with previews, authors, downloads and licences; one is marked Update Available" src="docs/screenshots/gallery-overview-light.png">

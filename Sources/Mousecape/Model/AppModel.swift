@@ -340,23 +340,7 @@ final class AppModel {
     /// pling.com, unless the theme names its own.
     func prepareInstall(_ files: [PlingTheme.File], of theme: PlingTheme) async -> ThemeChoice? {
         do {
-            let downloads = try await gallery.download(files, of: theme)
-            defer {
-                for download in downloads { try? FileManager.default.removeItem(at: download.file.deletingLastPathComponent()) }
-            }
-            var options: [ThemeOption] = []
-            var firstError: Error?
-            for download in downloads {
-                let path = download.file, author = theme.author
-                do {
-                    // Unpacking and converting can take a moment; not on the main thread.
-                    let versions = try await Task.detached { try Self.convertDownload(at: path, author: author) }.value
-                    options += versions.map { $0.from(theme: theme, file: download.info) }
-                } catch {
-                    firstError = firstError ?? error        // another file may still work
-                }
-            }
-            if options.isEmpty { throw firstError ?? ThemeImportError.noThemeFound }
+            let options = try await galleryVersions(of: files, of: theme)
             if options.count == 1 {
                 install(options)
                 return nil
@@ -366,6 +350,30 @@ final class AppModel {
             errorMessage = String(localized: "“\(theme.name)” could not be installed: \(error.localizedDescription)")
             return nil
         }
+    }
+
+    /// Downloads files of a gallery theme and converts each, with every version an archive
+    /// holds, without saving anything: for installing, and for the preview. Fails only when
+    /// no file gives a version.
+    func galleryVersions(of files: [PlingTheme.File], of theme: PlingTheme) async throws -> [ThemeOption] {
+        let downloads = try await gallery.download(files, of: theme)
+        defer {
+            for download in downloads { try? FileManager.default.removeItem(at: download.file.deletingLastPathComponent()) }
+        }
+        var options: [ThemeOption] = []
+        var firstError: Error?
+        for download in downloads {
+            let path = download.file, author = theme.author
+            do {
+                // Unpacking and converting can take a moment; not on the main thread.
+                let versions = try await Task.detached { try Self.convertDownload(at: path, author: author) }.value
+                options += versions.map { $0.from(theme: theme, file: download.info) }
+            } catch {
+                firstError = firstError ?? error        // another file may still work
+            }
+        }
+        if options.isEmpty { throw firstError ?? ThemeImportError.noThemeFound }
+        return options
     }
 
     /// Imports versions of a gallery theme like a dropped file, each as a cape of its own: a
