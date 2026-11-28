@@ -43,6 +43,7 @@ struct CapeEditorView: View {
         .frame(minWidth: 860, idealWidth: 920, maxWidth: .infinity, minHeight: 540, idealHeight: 600, maxHeight: .infinity)
         .resizableSheet(minWidth: 860, minHeight: 540, sizeKey: "capeEditor")
         .interactiveDismissDisabled(hasChanges)
+        .dismissesOnOutsideClick(draft == session.original)   // as Cancel: never with edits
         .confirmationDialog("Discard your changes to “\(draft.name)”?", isPresented: $confirmDiscard) {
             Button("Discard Changes", role: .destructive) { dismiss() }
             Button("Keep Editing", role: .cancel) {}

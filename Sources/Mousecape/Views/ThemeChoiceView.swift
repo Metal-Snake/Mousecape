@@ -84,6 +84,7 @@ struct ThemeChoiceView: View {
         }
         .padding(20)
         .frame(minWidth: 660, idealWidth: 720, minHeight: 420, idealHeight: 580)
+        .dismissesOnOutsideClick()
         .onAppear { selectSuggested() }
     }
 

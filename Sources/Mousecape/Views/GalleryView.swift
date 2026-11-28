@@ -375,7 +375,9 @@ private struct ThemeDetailView: View {
             }
             .padding(12)
         }
-        .frame(minWidth: 620, idealWidth: 680, minHeight: 520, idealHeight: 640)
+        .frame(minWidth: 620, idealWidth: 680, maxWidth: .infinity, minHeight: 520, idealHeight: 640, maxHeight: .infinity)
+        .resizableSheet(minWidth: 620, minHeight: 520, sizeKey: "themeDetail")
+        .dismissesOnOutsideClick()
     }
 
     private var previews: some View {
@@ -570,6 +572,7 @@ private struct UpdateView: View {
         }
         .padding(20)
         .frame(minWidth: 640, idealWidth: 720, minHeight: 440, idealHeight: 540)
+        .dismissesOnOutsideClick()
         .task {
             do {
                 let update = try await model.prepareUpdate(request.file, of: request.theme)

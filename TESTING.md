@@ -178,6 +178,11 @@ a manual test. What these tests found out about macOS is in [NOTES.md](NOTES.md)
   spots).
 - Capture Current Cursors: the capture has no problems and applies.
 - The editor: setting the hot spot by click, Choose Frames, saving; resizable sheets.
+- Sheets (macOS 15): the editor can't be dragged below 860×540 (before, down to 6×1); the
+  details of a gallery theme grow and shrink to 620×520. A click in the window next to
+  them closes the details and an unchanged editor; an editor with a change stays open,
+  and closes again once the change is taken back. A click in the title bar leaves the
+  sheet open.
 - Windows cursors: a theme `.zip`, a theme folder and a single `.cur` import; the
   converted animated theme applies.
 - Capes drawn for the left hand (macOS 15.8.3, left-handed mode on): a copy of
@@ -198,6 +203,9 @@ a manual test. What these tests found out about macOS is in [NOTES.md](NOTES.md)
 
 ## Still to verify
 
+- [ ] **Closing sheets by a click next to them** on macOS 27, and for Which Version,
+      Update, History and Choose Frames (Choose Frames stays open once other frames are
+      picked).
 - [ ] **Unregistering `com.apple.coregraphics.` names on macOS 27.** Run
       `Scripts/unregister-probe.swift`: its second name should stay registered, as on
       macOS 15.8.3.

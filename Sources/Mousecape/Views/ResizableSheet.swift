@@ -18,7 +18,7 @@ private struct SheetWindowHook: NSViewRepresentable {
     func makeNSView(context: Context) -> HookView { HookView(minSize: minSize, sizeKey: sizeKey) }
     func updateNSView(_ view: HookView, context: Context) {}
 
-    final class HookView: NSView {
+    final class HookView: NSView, NSWindowDelegate {
         let minSize: CGSize
         let defaultsKey: String
         private var observing = false
@@ -49,6 +49,16 @@ private struct SheetWindowHook: NSViewRepresentable {
             window.styleMask.insert(.resizable)
             window.contentMinSize = minSize
             window.contentMaxSize = CGSize(width: 10_000, height: 10_000)
+            // SwiftUI sets the sheet window's minimum back to zero as the content lays
+            // out, so the sheet could be dragged down to nothing. It gives the window no
+            // delegate; this view becomes it and keeps the minimum itself.
+            if window.delegate == nil { window.delegate = self }
+        }
+
+        func windowWillResize(_ sender: NSWindow, to frameSize: NSSize) -> NSSize {
+            let smallest = sender.frameRect(forContentRect: CGRect(origin: .zero, size: minSize)).size
+            return NSSize(width: max(frameSize.width, smallest.width),
+                          height: max(frameSize.height, smallest.height))
         }
 
         private func restoreSize() {
