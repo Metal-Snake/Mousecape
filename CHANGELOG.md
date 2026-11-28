@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.7.0] - 2026-11-28
+
 ### Added
 
 - Preview a gallery theme before installing it: **Preview…** in a theme's context menu,
@@ -293,7 +295,8 @@ difference from the original in detail.
   folder are refused, image sizes and animation lengths are checked before decoding, and
   links in themes that point outside the theme are ignored.
 
-[unreleased]: https://github.com/Metal-Snake/Mousecape/compare/v3.6.0...HEAD
+[unreleased]: https://github.com/Metal-Snake/Mousecape/compare/v3.7.0...HEAD
+[3.7.0]: https://github.com/Metal-Snake/Mousecape/compare/v3.6.0...v3.7.0
 [3.6.0]: https://github.com/Metal-Snake/Mousecape/compare/v3.5.0...v3.6.0
 [3.5.0]: https://github.com/Metal-Snake/Mousecape/compare/v3.4.0...v3.5.0
 [3.4.0]: https://github.com/Metal-Snake/Mousecape/compare/v3.3.0...v3.4.0
