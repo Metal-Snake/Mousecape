@@ -28,6 +28,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   few dozen frames and keeps its speed, in Choose Frames and when applied.
 - The editor, History and Choose Frames can no longer be dragged smaller than their
   minimum size, down to nothing.
+- Resizable sheets open at the size last used right away, instead of opening at their
+  smallest width and then jumping to it.
 
 ## [3.5.0] - 2026-11-25
 

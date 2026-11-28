@@ -183,6 +183,8 @@ a manual test. What these tests found out about macOS is in [NOTES.md](NOTES.md)
   them closes the details and an unchanged editor; an editor with a change stays open,
   and closes again once the change is taken back. A click in the title bar leaves the
   sheet open.
+- The editor reopens at its last size (1020×669) without a visible resize: every resize
+  happens while the sheet window is still hidden.
 - Windows cursors: a theme `.zip`, a theme folder and a single `.cur` import; the
   converted animated theme applies.
 - Capes drawn for the left hand (macOS 15.8.3, left-handed mode on): a copy of

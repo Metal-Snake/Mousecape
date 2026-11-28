@@ -21,7 +21,6 @@ private struct SheetWindowHook: NSViewRepresentable {
     final class HookView: NSView, NSWindowDelegate {
         let minSize: CGSize
         let defaultsKey: String
-        private var observing = false
 
         init(minSize: CGSize, sizeKey: String) {
             self.minSize = minSize
@@ -31,17 +30,21 @@ private struct SheetWindowHook: NSViewRepresentable {
 
         required init?(coder: NSCoder) { nil }
 
+        /// Observations are selector-based, so they end by themselves when this view goes away.
         override func viewDidMoveToWindow() {
             super.viewDidMoveToWindow()
-            guard window != nil else { return }
+            guard let window else { return }
             makeResizable()
+            // SwiftUI sizes the window to the content (twice) before the sheet is shown,
+            // the width always to the minimum. Setting the saved size after each of these,
+            // while the window is still hidden, opens the sheet at that size right away.
+            NotificationCenter.default.addObserver(self, selector: #selector(didResize(_:)),
+                                                   name: NSWindow.didResizeNotification, object: window)
+            NotificationCenter.default.addObserver(self, selector: #selector(didEndResize(_:)),
+                                                   name: NSWindow.didEndLiveResizeNotification, object: window)
             // SwiftUI configures the sheet window while presenting it, after this view
             // joined it; set things again once that is done.
-            DispatchQueue.main.async { [weak self] in
-                self?.makeResizable()
-                self?.restoreSize()
-                self?.observeResizing()
-            }
+            DispatchQueue.main.async { [weak self] in self?.makeResizable() }
         }
 
         private func makeResizable() {
@@ -61,22 +64,20 @@ private struct SheetWindowHook: NSViewRepresentable {
                           height: max(frameSize.height, smallest.height))
         }
 
-        private func restoreSize() {
-            guard let window, let saved = UserDefaults.standard.string(forKey: defaultsKey) else { return }
+        /// The size last used, if it is at least the minimum; never larger than the screen.
+        private var savedSize: CGSize? {
+            guard let saved = UserDefaults.standard.string(forKey: defaultsKey) else { return nil }
             let size = NSSizeFromString(saved)
-            guard size.width >= minSize.width, size.height >= minSize.height else { return }
-            // Never larger than the screen the sheet is on.
-            let visible = window.screen?.visibleFrame.size ?? size
-            window.setContentSize(CGSize(width: min(size.width, visible.width),
-                                         height: min(size.height, visible.height)))
+            guard size.width >= minSize.width, size.height >= minSize.height else { return nil }
+            let visible = (window?.screen ?? NSScreen.main)?.visibleFrame.size ?? size
+            return CGSize(width: min(size.width, visible.width), height: min(size.height, visible.height))
         }
 
-        /// Selector-based, so the observation ends by itself when this view goes away.
-        private func observeResizing() {
-            guard let window, !observing else { return }
-            observing = true
-            NotificationCenter.default.addObserver(self, selector: #selector(didEndResize(_:)),
-                                                   name: NSWindow.didEndLiveResizeNotification, object: window)
+        @objc private func didResize(_ notification: Notification) {
+            guard let window, !window.isVisible, let size = savedSize,
+                  window.contentRect(forFrameRect: window.frame).size != size
+            else { return }
+            window.setContentSize(size)
         }
 
         @objc private func didEndResize(_ notification: Notification) {
