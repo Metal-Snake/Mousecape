@@ -3,16 +3,20 @@
 Last check: 2026-11-25
 
 Once a month, the projects related to this fork are checked for work worth taking: the
-original Mousecape and its forks, Mousecape-swiftUI and its forks, MaCursor and its forks,
-Cursie and macOS27-Cursors. A SessionStart hook in Claude Code (`Scripts/fork-check.sh
-hook`, set up in the user's own settings) reminds when the date above is more than a
-month old.
+original Mousecape and MaCursor with all their forks - forks of forks too, so
+Mousecape-swiftUI and its forks are part of the original's - plus Cursie and
+macOS27-Cursors. What is watched is set in `Scripts/fork-check.conf`;
+`Scripts/fork-check.sh` is generic and comes from the `fork-check` skill (replace it with
+a newer copy from there, keep the conf). A SessionStart hook in Claude Code
+(`Scripts/fork-check.sh hook`, set up in the user's own settings) reminds when the date
+above is more than a month old.
 
 ## How to check
 
 1. `Scripts/fork-check.sh changed` lists every branch that is new or moved since
    `Scripts/fork-heads.tsv` (repository, branch, old head or `new`). It takes about two
-   minutes.
+   minutes. `Scripts/fork-check.sh upstream` lists the pull requests and issues of the
+   original, Mousecape-swiftUI and MaCursor opened or updated since the last check.
 2. For each, read the new commits: `gh api repos/<owner>/<repo>/compare/<old>...<new>`,
    or, for a new fork, `repos/alexzielenski/Mousecape/compare/master...<owner>:<branch>`.
    Most new forks have no commits of their own. Never build or run fork code without
@@ -28,6 +32,11 @@ month old.
    "Last check", then `Scripts/fork-check.sh snapshot`, and commit all three files.
 
 ## State
+
+Since 2026-11-28 the check also follows forks of forks. About 19 of them were never
+looked at (13 forks of AdamWawrzynkowskiGF/Mousecape-TahoeSupport, four of isandrel's and
+MoriMeina's Mousecape-swiftUI, one of Vanyoo/Mousecape); `changed` lists their branches as
+`new` at the next check.
 
 As of 2026-11-25:
 
