@@ -17,6 +17,8 @@ struct FrameChooserView: View {
     @State private var durationEdited = false
     @State private var frames: [CGImage] = []
     @State private var failed = false
+    /// Once the user picked other frames, a click outside no longer closes the sheet.
+    @State private var isChanged = false
 
     /// The most frames the cursor keeps when applied (more with long animations).
     private let limit: Int
@@ -75,9 +77,15 @@ struct FrameChooserView: View {
         .padding(20)
         .frame(minWidth: 720, idealWidth: 760, maxWidth: .infinity, minHeight: 500, idealHeight: 540, maxHeight: .infinity)
         .resizableSheet(minWidth: 720, minHeight: 500, sizeKey: "frameChooser")
+        .dismissesOnOutsideClick(!isChanged)
         .task { frames = await FrameCache.shared.frames(for: cursor, scale: 2) }
-        .onChange(of: preset) { _, newValue in applyPreset(newValue) }
+        .onChange(of: preset) { _, newValue in
+            isChanged = true
+            applyPreset(newValue)
+        }
+        .onChange(of: frameDuration) { isChanged = true }
         .onChange(of: kept) { _, _ in
+            isChanged = true
             if !durationEdited { frameDuration = loopPreservingDuration }
         }
         .alert("Frames not changed", isPresented: $failed) {

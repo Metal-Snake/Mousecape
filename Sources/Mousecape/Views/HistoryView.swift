@@ -57,6 +57,7 @@ struct HistoryView: View {
         .padding(20)
         .frame(minWidth: 760, idealWidth: 820, maxWidth: .infinity, minHeight: 480, idealHeight: 560, maxHeight: .infinity)
         .resizableSheet(minWidth: 760, minHeight: 480, sizeKey: "history")
+        .dismissesOnOutsideClick()
         .onAppear(perform: reloadVersions)
         // Restoring changes the current state and adds a version: compare again then too.
         .task(id: CompareKey(entries: [earlier, later], versionCount: versions.count)) { await compare() }

@@ -7,8 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.7.0] - 2026-11-28
+
+### Added
+
+- Preview a gallery theme before installing it: **Preview…** in a theme's context menu,
+  or next to each file in its details, downloads and converts the theme and shows every
+  cursor as it would be installed, animated, without saving anything. With several
+  versions, a menu switches between them; Install takes the one shown.
+
+## [3.6.0] - 2026-11-28
+
+### Added
+
+- A click next to an open sheet closes it, as Close or Cancel would: the details of a
+  gallery theme, Which Version, Update, History, and the editor and Choose Frames as long
+  as nothing in them was changed. With changes the sheet stays open.
+
 ### Changed
 
+- The details of a gallery theme can be resized; the sheet remembers its size.
 - A hot spot on the right or bottom edge of a cursor no longer shows a warning. Mousecape
   still moves it one point in when applying; only a hot spot beyond the edges is flagged.
 
@@ -18,6 +36,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   longer turn into 256 tiny frames that play far too slowly. Picking frames by time now
   makes no frame shorter than one refresh of a 60 Hz display, so such a loop becomes a
   few dozen frames and keeps its speed, in Choose Frames and when applied.
+- The editor, History and Choose Frames can no longer be dragged smaller than their
+  minimum size, down to nothing.
+- Resizable sheets open at the size last used right away, instead of opening at their
+  smallest width and then jumping to it.
 
 ## [3.5.0] - 2026-11-25
 
@@ -273,7 +295,9 @@ difference from the original in detail.
   folder are refused, image sizes and animation lengths are checked before decoding, and
   links in themes that point outside the theme are ignored.
 
-[unreleased]: https://github.com/Metal-Snake/Mousecape/compare/v3.5.0...HEAD
+[unreleased]: https://github.com/Metal-Snake/Mousecape/compare/v3.7.0...HEAD
+[3.7.0]: https://github.com/Metal-Snake/Mousecape/compare/v3.6.0...v3.7.0
+[3.6.0]: https://github.com/Metal-Snake/Mousecape/compare/v3.5.0...v3.6.0
 [3.5.0]: https://github.com/Metal-Snake/Mousecape/compare/v3.4.0...v3.5.0
 [3.4.0]: https://github.com/Metal-Snake/Mousecape/compare/v3.3.0...v3.4.0
 [3.3.0]: https://github.com/Metal-Snake/Mousecape/compare/v3.2.0...v3.3.0
